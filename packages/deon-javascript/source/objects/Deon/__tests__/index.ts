@@ -7,7 +7,15 @@ import Deon from '../';
 // #region module
 describe('Deon', () => {
     it('works', () => {
-        const deon = new Deon();
+        const data = `
+{
+    name data
+}
+        `;
+
+        Deon.run(
+            data,
+        );
     });
 });
 // #endregion module

@@ -80,51 +80,53 @@ class Deon {
     }
 
     static runREPL() {
-        console.log('\n\tdeon read-evaluate-print loop >>>\n');
+        // console.log('\n\tdeon read-evaluate-print loop >>>\n');
 
-        let inputline = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
+        // let inputline = readline.createInterface({
+        //     input: process.stdin,
+        //     output: process.stdout,
+        // });
 
-        const recursiveAsyncReadLine = () => {
-            inputline.question('> ', (answer) => {
-                if (answer == 'exit') {
-                    return inputline.close();
-                }
+        // const recursiveAsyncReadLine = () => {
+        //     inputline.question('> ', (answer) => {
+        //         if (answer == 'exit') {
+        //             return inputline.close();
+        //         }
 
-                this.run(answer);
-                this.hadError = false;
+        //         this.run(answer);
+        //         this.hadError = false;
 
-                recursiveAsyncReadLine();
-            });
-        };
+        //         recursiveAsyncReadLine();
+        //     });
+        // };
 
-        recursiveAsyncReadLine();
+        // recursiveAsyncReadLine();
     }
 
     static run(
         data: string,
     ) {
         const scanner = new Scanner(data);
+        console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        const parser = new Parser(tokens);
-        const statements = parser.parse();
+        console.log('tokens', tokens);
+        // const parser = new Parser(tokens);
+        // const statements = parser.parse();
 
-        // Stop if there was a syntax error.
-        if (this.hadError) {
-            return;
-        }
+        // // Stop if there was a syntax error.
+        // if (this.hadError) {
+        //     return;
+        // }
 
-        const resolver = new Resolver(this.interpreter);
-        resolver.resolve(statements);
+        // const resolver = new Resolver(this.interpreter);
+        // resolver.resolve(statements);
 
-        // Stop if there was a resolution error.
-        if (this.hadError) {
-            return;
-        }
+        // // Stop if there was a resolution error.
+        // if (this.hadError) {
+        //     return;
+        // }
 
-        this.interpreter.interpret(statements);
+        // this.interpreter.interpret(statements);
     }
 
     static error(

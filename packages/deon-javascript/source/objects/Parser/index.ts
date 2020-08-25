@@ -38,11 +38,11 @@ class Parser {
 
     public declaration() {
         try {
-            if (
-                this.match(TokenType.VAR)
-            ) {
-                return this.variableDeclaration();
-            }
+            // if (
+            //     this.match(TokenType.VAR)
+            // ) {
+            //     return this.variableDeclaration();
+            // }
 
             return this.statement();
         } catch (error) {
@@ -55,20 +55,20 @@ class Parser {
         const name = this.consume(TokenType.IDENTIFIER, 'Expect variable name.');
 
         let initializer = null;
-        if (
-            this.match(TokenType.EQUAL)
-        ) {
-            initializer = this.expression();
-        }
+        // if (
+        //     this.match(TokenType.EQUAL)
+        // ) {
+        //     initializer = this.expression();
+        // }
 
-        this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        // this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
 
         return new Statement.VariableStatement(name, initializer);
     }
 
     public statement() {
         if (
-            this.match(TokenType.LEFT_BRACE)
+            this.match(TokenType.LEFT_CURLY_BRACKET)
         ) {
             return new Statement.BlockStatement(this.block());
         }
@@ -78,7 +78,7 @@ class Parser {
 
     public expressionStatement() {
         const expression = this.expression();
-        this.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+        // this.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
         return new Statement.ExpressionStatement(expression);
     }
 
@@ -87,77 +87,45 @@ class Parser {
     }
 
 
-    public function(
-        kind: string,
-    ) {
-        const name = this.consume(TokenType.IDENTIFIER, `Expect ${kind} name.`);
-
-        this.consume(TokenType.LEFT_PAREN, `Expect '(' after ${kind} name.`);
-
-        const parameters: Token[] = [];
-
-        if (!this.check(TokenType.RIGHT_PAREN)) {
-            do {
-                if (parameters.length >= 255) {
-                    this.error(this.peek(), 'Cannot have more than 255 parameters.');
-                }
-
-                parameters.push(
-                    this.consume(TokenType.IDENTIFIER, 'Expect parameter name.')
-                );
-            } while (
-                this.match(TokenType.COMMA)
-            );
-        }
-
-        this.consume(TokenType.RIGHT_PAREN, `Expect ')' after parameters.`);
-
-        this.consume(TokenType.LEFT_BRACE, `Expect '{' before ${kind} name..`);
-
-        const body = this.block();
-
-        return new Statement.FunctionStatement(name, parameters, body);
-    }
-
     public block() {
         const statements: any[] = [];
 
-        while (
-            !this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()
-        ) {
-            statements.push(this.declaration());
-        }
+        // while (
+        //     !this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()
+        // ) {
+        //     statements.push(this.declaration());
+        // }
 
-        this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+        // this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
 
         return statements;
     }
 
     public assignment(): any {
-        const expression = this.or();
+        // const expression = this.or();
 
-        if (
-            this.match(TokenType.EQUAL)
-        ) {
-            const equals = this.previous();
-            const value = this.assignment();
+        // if (
+        //     this.match(TokenType.EQUAL)
+        // ) {
+        //     const equals = this.previous();
+        //     const value = this.assignment();
 
-            if (
-                expression instanceof Expression.VariableExpression
-            ) {
-                const name = expression.name;
-                return new Expression.AssignExpression(name, value);
-            } else if (
-                expression instanceof Expression.GetExpression
-            ) {
-                const get = expression;
-                return new Expression.SetExpression(get.object, get.name, value);
-            }
+        //     if (
+        //         expression instanceof Expression.VariableExpression
+        //     ) {
+        //         const name = expression.name;
+        //         return new Expression.AssignExpression(name, value);
+        //     } else if (
+        //         expression instanceof Expression.GetExpression
+        //     ) {
+        //         const get = expression;
+        //         return new Expression.SetExpression(get.object, get.name, value);
+        //     }
 
-            this.error(equals, 'Invalid assignment target.');
-        }
+        //     this.error(equals, 'Invalid assignment target.');
+        // }
 
-        return expression;
+        // return expression;
     }
 
     public primary(): Expression.Expression {
@@ -167,13 +135,13 @@ class Parser {
             return new Expression.VariableExpression(this.previous());
         }
 
-        if (
-            this.match(TokenType.LEFT_PAREN)
-        ) {
-            const expression = this.expression();
-            this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
-            return new Expression.GroupingExpression(expression);
-        }
+        // if (
+        //     this.match(TokenType.LEFT_PAREN)
+        // ) {
+        //     const expression = this.expression();
+        //     this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+        //     return new Expression.GroupingExpression(expression);
+        // }
 
         throw this.error(this.peek(), "Expect expression.");
     }
@@ -205,21 +173,21 @@ class Parser {
         while(
             !this.isAtEnd()
         ) {
-            if (this.previous().type === TokenType.SEMICOLON) {
-                return;
-            }
+            // if (this.previous().type === TokenType.SEMICOLON) {
+            //     return;
+            // }
 
-            switch (this.peek().type) {
-                case TokenType.CLASS:
-                case TokenType.FUN:
-                case TokenType.VAR:
-                case TokenType.FOR:
-                case TokenType.IF:
-                case TokenType.WHILE:
-                case TokenType.PRINT:
-                case TokenType.RETURN:
-                    return;
-            }
+            // switch (this.peek().type) {
+            //     case TokenType.CLASS:
+            //     case TokenType.FUN:
+            //     case TokenType.VAR:
+            //     case TokenType.FOR:
+            //     case TokenType.IF:
+            //     case TokenType.WHILE:
+            //     case TokenType.PRINT:
+            //     case TokenType.RETURN:
+            //         return;
+            // }
 
             this.advance();
         }
