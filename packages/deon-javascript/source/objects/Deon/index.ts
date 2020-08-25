@@ -1,9 +1,9 @@
 // #region imports
     // #region libraries
-    import * as readline from 'readline';
     import {
         promises as fs,
     } from 'fs';
+
     import path from 'path';
     // #endregion libraries
 
@@ -20,11 +20,6 @@
     import {
         RuntimeError,
     } from '../Errors';
-
-    import {
-        EXIT_CODE_ERROR,
-        EXIT_CODE_RUNTIME_ERROR,
-    } from '../../data/constants';
 
     import {
         TokenType,
@@ -47,70 +42,60 @@ class Deon {
 
         if (length > 3) {
             console.log('\n\tUsage: deon <source-file>\n');
-            return
-        }
-
-        if (length === 3) {
-            await this.runFile(args[2]);
             return;
         }
 
-        this.runREPL();
+        if (length === 3) {
+            const data = await this.parseFile(
+                args[2],
+            );
+
+            if (data) {
+                console.log(data);
+            }
+
+            return;
+        }
+
+        return;
     }
 
-    static async runFile(
+    static async parseFile(
         file: string,
     ) {
         try {
-            const filepath = path.join(process.cwd(), file);
+            const absolutePath = path.isAbsolute(file);
+
+            const filepath = absolutePath
+                ? file
+                : path.join(process.cwd(), file);
+
             const data = await fs.readFile(filepath, 'utf-8');
 
-            this.run(data);
+            const parsed = this.parse(data);
 
             if (this.hadError) {
-                process.exit(EXIT_CODE_ERROR);
+                console.log(`Error parsing file: ${file}`);
+                return;
             }
 
-            if (this.hadRuntimeError) {
-                process.exit(EXIT_CODE_RUNTIME_ERROR);
-            }
+            return parsed;
         } catch (error) {
             console.log(`Error reading file: ${file}`);
+
+            return;
         }
     }
 
-    static runREPL() {
-        // console.log('\n\tdeon read-evaluate-print loop >>>\n');
-
-        // let inputline = readline.createInterface({
-        //     input: process.stdin,
-        //     output: process.stdout,
-        // });
-
-        // const recursiveAsyncReadLine = () => {
-        //     inputline.question('> ', (answer) => {
-        //         if (answer == 'exit') {
-        //             return inputline.close();
-        //         }
-
-        //         this.run(answer);
-        //         this.hadError = false;
-
-        //         recursiveAsyncReadLine();
-        //     });
-        // };
-
-        // recursiveAsyncReadLine();
-    }
-
-    static run(
+    static parse(
         data: string,
     ) {
         const scanner = new Scanner(data);
         console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
         console.log('tokens', tokens);
-        // const parser = new Parser(tokens);
+        const parser = new Parser(tokens);
+        console.log('parser', parser);
         // const statements = parser.parse();
 
         // // Stop if there was a syntax error.
@@ -127,6 +112,8 @@ class Deon {
         // }
 
         // this.interpreter.interpret(statements);
+
+        return '';
     }
 
     static error(

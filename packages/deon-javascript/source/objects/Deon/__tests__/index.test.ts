@@ -13,7 +13,7 @@ describe('Deon', () => {
 }
         `;
 
-        Deon.run(
+        Deon.parse(
             data,
         );
     });
