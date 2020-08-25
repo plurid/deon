@@ -6,9 +6,10 @@ export enum TokenType {
     COMMA,
 
     // Literals.
-    IDENTIFIER,
+    SIGNIFIER,
     STRING,
     LINK,
+    IDENTIFIER,
 
     // Entities.
     MAP,

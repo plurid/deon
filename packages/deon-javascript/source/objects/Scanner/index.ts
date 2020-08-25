@@ -77,6 +77,7 @@ class Scanner {
                 break;
             case '*':
                 if (this.match('/')) {
+                    // End of multiline comment.
                     this.advance();
                 }
                 break;
@@ -87,21 +88,19 @@ class Scanner {
                 // Ignore whitespace.
                 break;
 
+            case '\'':
+                this.singlelineString();
+                break;
             case '`':
-                this.multiline();
+                this.multilineString();
                 break;
             case '\n':
                 this.line++;
                 break;
 
-            case '\'':
-                this.string();
-                break;
-
             default:
                 if (this.isAlphaNumeric(character)) {
-                    // this.identifierOrLiteral();
-                    this.identifier();
+                    this.signifier();
                 } else {
                     Deon.error(this.line, 'Unexpected character.');
                 }
@@ -128,7 +127,7 @@ class Scanner {
     }
 
 
-    private string() {
+    private singlelineString() {
         while (this.peek() !== '\'' && !this.isAtEnd()) {
             if (this.peek() === '\n') {
                 this.line += 1;
@@ -153,7 +152,7 @@ class Scanner {
         this.addTokenLiteral(TokenType.STRING, value);
     }
 
-    private multiline() {
+    private multilineString() {
         while (this.peek() !== '`' && !this.isAtEnd()) {
             if (this.peek() === '\n') {
                 this.line += 1;
@@ -197,18 +196,12 @@ class Scanner {
         this.addTokenLiteral(TokenType.LINK, value);
     }
 
-    private identifier() {
+    private signifier() {
         while (this.isAlphaNumeric(this.peek())) {
             this.advance();
         }
 
-        const type = TokenType.IDENTIFIER;
-
-        this.addToken(type);
-    }
-
-    private identifierOrLiteral() {
-
+        this.addToken(TokenType.SIGNIFIER);
     }
 
     private endScan() {

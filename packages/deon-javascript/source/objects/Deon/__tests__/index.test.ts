@@ -19,6 +19,7 @@ describe('Deon', () => {
         // root comment
         mapList [
             listItem1, listItem2
+            listItem 3
         ]
         stringValue value // inline comment
         longLink #arbitraryLink
