@@ -1,0 +1,59 @@
+{
+    "name": "@plurid/deon",
+    "version": "0.0.0",
+    "description": "DeObject Notation Format of Structured Strings",
+    "keywords": [
+        "deon"
+    ],
+    "author": "ly3xqhl8g9 <ly3xqhl8g9@plurid.com> (https://plurid.com)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/plurid/deon"
+    },
+    "bugs": {
+        "email": "source@plurid.com",
+        "url": "https://github.com/plurid/deon/issues"
+    },
+    "homepage": "https://github.com/plurid/deon/tree/master/packages/deon-javascript/README.md",
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=12.0.0"
+    },
+    "main": "distribution/index.js",
+    "module": "distribution/index.es.js",
+    "typings": "distribution/types/index.d.ts",
+    "bin": {
+        "deon": "binder/deon"
+    },
+    "files": [
+        "distribution",
+        "binder"
+    ],
+    "preferGlobal": false,
+    "scripts": {
+        "test": "jest ./source",
+        "watch": "rollup -c ./scripts/rollup.config.js -w",
+        "build": "rollup -c ./scripts/rollup.config.js",
+        "prepublishOnly": "yarn build"
+    },
+    "devDependencies": {
+        "@rollup/plugin-node-resolve": "^9.0.0",
+        "@types/jest": "^26.0.10",
+        "@types/node": "^14.6.0",
+        "@typescript-eslint/eslint-plugin": "^3.10.0",
+        "@typescript-eslint/parser": "^3.10.0",
+        "eslint": "^7.7.0",
+        "jest": "^26.4.2",
+        "jest-config": "^26.4.2",
+        "replace-in-file": "^6.1.0",
+        "rollup": "^2.26.5",
+        "rollup-plugin-sourcemaps": "^0.6.2",
+        "rollup-plugin-typescript2": "^0.27.2",
+        "ts-jest": "^26.2.0",
+        "ts-node": "^9.0.0",
+        "typescript": "^4.0.2"
+    }
+}
