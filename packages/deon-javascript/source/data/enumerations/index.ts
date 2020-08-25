@@ -6,7 +6,12 @@ export enum TokenType {
     COMMA, HASH, BACKTICK, SLASH, STAR,
 
     // Literals.
-    IDENTIFIER, STRING,
+    IDENTIFIER,
+
+    // Entities.
+    MAP,
+    LIST,
+    STRING,
 
     EOF,
 }
