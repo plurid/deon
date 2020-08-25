@@ -61,9 +61,6 @@ class Scanner {
             case '#':
                 this.addToken(TokenType.HASH);
                 break;
-            case '`':
-                this.addToken(TokenType.BACKTICK);
-                break;
             case '/':
                 if (this.match('/')) {
                     // A comment goes until the end of the line.
@@ -84,6 +81,9 @@ class Scanner {
                 // Ignore whitespace.
                 break;
 
+            case '`':
+                this.addToken(TokenType.BACKTICK);
+                break;
             case '\n':
                 this.line++;
                 break;

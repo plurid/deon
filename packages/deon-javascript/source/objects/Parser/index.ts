@@ -38,11 +38,11 @@ class Parser {
 
     public declaration() {
         try {
-            // if (
-            //     this.match(TokenType.VAR)
-            // ) {
-            //     return this.variableDeclaration();
-            // }
+            if (
+                this.match(TokenType.IDENTIFIER)
+            ) {
+                return this.variableDeclaration();
+            }
 
             return this.statement();
         } catch (error) {
@@ -55,11 +55,15 @@ class Parser {
         const name = this.consume(TokenType.IDENTIFIER, 'Expect variable name.');
 
         let initializer = null;
-        // if (
-        //     this.match(TokenType.EQUAL)
-        // ) {
-        //     initializer = this.expression();
-        // }
+        if (
+            this.match(
+                TokenType.IDENTIFIER,
+                TokenType.LEFT_CURLY_BRACKET,
+                TokenType.LEFT_SQUARE_BRACKET,
+            )
+        ) {
+            initializer = this.expression();
+        }
 
         // this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
 
@@ -68,12 +72,27 @@ class Parser {
 
     public statement() {
         if (
-            this.match(TokenType.LEFT_CURLY_BRACKET)
+            this.match(
+                TokenType.LEFT_CURLY_BRACKET,
+            )
         ) {
-            return new Statement.BlockStatement(this.block());
+            return new Statement.BlockStatement(
+                this.block(TokenType.LEFT_CURLY_BRACKET),
+            );
         }
 
-        return this.expressionStatement();
+        if (
+            this.match(
+                TokenType.LEFT_SQUARE_BRACKET,
+            )
+        ) {
+            return new Statement.BlockStatement(
+                this.block(TokenType.LEFT_SQUARE_BRACKET),
+            );
+        }
+
+        return;
+        // return this.expressionStatement();
     }
 
     public expressionStatement() {
@@ -87,21 +106,66 @@ class Parser {
     }
 
 
-    public block() {
-        const statements: any[] = [];
+    public block(
+        tokenType: TokenType,
+    ) {
+        switch (tokenType) {
+            case TokenType.LEFT_CURLY_BRACKET: {
+                const statements: any[] = [];
 
-        // while (
-        //     !this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()
-        // ) {
-        //     statements.push(this.declaration());
-        // }
+                while (
+                    !this.check(TokenType.RIGHT_CURLY_BRACKET)
+                    && !this.isAtEnd()
+                ) {
+                    statements.push(this.declaration());
+                }
 
-        // this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+                this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after block.");
 
-        return statements;
+                return statements;
+            }
+            case TokenType.LEFT_SQUARE_BRACKET: {
+                const statements: any[] = [];
+
+                while (
+                    !this.check(TokenType.RIGHT_SQUARE_BRACKET)
+                    && !this.isAtEnd()
+                ) {
+                    statements.push(this.declaration());
+                }
+
+                this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after block.");
+
+                return statements;
+            }
+            default:
+                return [];
+        }
     }
 
     public assignment(): any {
+        const expression = this.primary();
+        console.log('expression', expression);
+
+        if (this.match(TokenType.IDENTIFIER)) {
+            const equals = this.previous();
+            const value = this.assignment();
+            console.log('equals', equals);
+            console.log('value', value);
+
+            // const name = expression.name;
+            // return new Expression.AssignExpression(name, value);
+        }
+
+        if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
+
+        }
+
+        if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
+
+        }
+
+
         // const expression = this.or();
 
         // if (
@@ -133,6 +197,12 @@ class Parser {
             this.match(TokenType.IDENTIFIER)
         ) {
             return new Expression.VariableExpression(this.previous());
+        }
+
+        if (
+            this.match(TokenType.STRING)
+        ) {
+            return new Expression.LiteralExpression(this.previous().literal);
         }
 
         // if (
