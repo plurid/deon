@@ -171,7 +171,7 @@ class Scanner {
         // The closing '.
         this.advance();
 
-        const value = this.source.substring(this.start + 1, this.current - 1);
+        const value = this.source.substring(this.start + 1, this.current - 1).trim();
         this.addTokenLiteral(TokenType.STRING, value);
     }
 
