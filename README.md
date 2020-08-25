@@ -256,7 +256,7 @@ A `value` can be surrounded in singlequotes `'` in order to support special char
 ```
 
 
-Multi-line values use the backtick <code>`</code>. The multi-line string is stripped of any space or new lines before the first characters and after the last character.
+Multi-line values use the backtick <code>`</code>. The multi-line string is stripped of any space or new lines before the first character and after the last character.
 
 
 ``` deon
