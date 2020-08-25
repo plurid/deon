@@ -44,7 +44,8 @@ class Parser {
                 this.match(TokenType.SIGNIFIER)
             ) {
                 console.log('declaration variable');
-                return this.variableDeclaration();
+                // return this.variableDeclaration();
+                return this.expression();
             }
 
             console.log('declaration statement');
@@ -56,9 +57,6 @@ class Parser {
     }
 
     public variableDeclaration() {
-        const previous = this.previous();
-        console.log('previous', previous);
-
         const name = this.consume(TokenType.SIGNIFIER, 'Expect variable name.');
         console.log('variableDeclaration', name);
 
@@ -202,12 +200,12 @@ class Parser {
         //     this.error(equals, 'Invalid assignment target.');
         // }
 
-        // return expression;
+        return expression;
     }
 
     public primary(): Expression.Expression {
         if (
-            this.match(TokenType.IDENTIFIER)
+            this.match(TokenType.SIGNIFIER)
         ) {
             return new Expression.VariableExpression(this.previous());
         }
@@ -216,6 +214,26 @@ class Parser {
             this.match(TokenType.STRING)
         ) {
             return new Expression.LiteralExpression(this.previous().literal);
+        }
+
+        if (
+            this.match(
+                TokenType.LEFT_CURLY_BRACKET,
+            )
+        ) {
+            const expression = this.expression();
+            this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
+            return new Expression.GroupingExpression(expression);
+        }
+
+        if (
+            this.match(
+                TokenType.LEFT_SQUARE_BRACKET,
+            )
+        ) {
+            const expression = this.expression();
+            this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect '}' after expression.");
+            return new Expression.GroupingExpression(expression);
         }
 
         // if (

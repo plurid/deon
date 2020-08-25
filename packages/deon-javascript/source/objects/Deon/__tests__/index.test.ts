@@ -11,6 +11,10 @@ describe('Deon', () => {
 {
     simpleKey simpleValue
 }
+
+link {
+    aaa bbb
+}
         `;
 
         const dataComplex = `
