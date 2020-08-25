@@ -91,13 +91,13 @@ class Deon {
         data: string,
     ) {
         const scanner = new Scanner(data);
-        console.log('scanner', scanner);
+        // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        console.log('tokens', tokens);
-        // const parser = new Parser(tokens);
-        // console.log('parser', parser);
-        // const statements = parser.parse();
-        // console.log('statements', statements);
+        // console.log('tokens', tokens);
+        const parser = new Parser(tokens);
+        console.log('parser', parser);
+        const statements = parser.parse();
+        console.log('statements', statements);
 
         // for (const statement of statements) {
         //     console.log('statement', statement);

@@ -65,8 +65,8 @@ shortLink [
         };
 
         Deon.parse(
-            // dataSimple,
-            dataComplex,
+            dataSimple,
+            // dataComplex,
         );
     });
 });

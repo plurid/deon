@@ -41,7 +41,7 @@ class Parser {
             console.log('declaration');
 
             if (
-                this.match(TokenType.IDENTIFIER)
+                this.match(TokenType.SIGNIFIER)
             ) {
                 console.log('declaration variable');
                 return this.variableDeclaration();
@@ -59,13 +59,13 @@ class Parser {
         const previous = this.previous();
         console.log('previous', previous);
 
-        const name = this.consume(TokenType.IDENTIFIER, 'Expect variable name.');
+        const name = this.consume(TokenType.SIGNIFIER, 'Expect variable name.');
         console.log('variableDeclaration', name);
 
         let initializer = null;
         if (
             this.match(
-                TokenType.IDENTIFIER,
+                TokenType.SIGNIFIER,
                 TokenType.LEFT_CURLY_BRACKET,
                 TokenType.LEFT_SQUARE_BRACKET,
             )
@@ -160,7 +160,7 @@ class Parser {
         const expression = this.primary();
         console.log('expression', expression);
 
-        if (this.match(TokenType.IDENTIFIER)) {
+        if (this.match(TokenType.SIGNIFIER)) {
             const equals = this.previous();
             const value = this.assignment();
             console.log('equals', equals);
