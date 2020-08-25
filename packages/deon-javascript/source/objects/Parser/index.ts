@@ -38,12 +38,16 @@ class Parser {
 
     public declaration() {
         try {
+            console.log('declaration');
+
             if (
                 this.match(TokenType.IDENTIFIER)
             ) {
+                console.log('declaration variable');
                 return this.variableDeclaration();
             }
 
+            console.log('declaration statement');
             return this.statement();
         } catch (error) {
             this.synchronize();
@@ -52,7 +56,11 @@ class Parser {
     }
 
     public variableDeclaration() {
+        const previous = this.previous();
+        console.log('previous', previous);
+
         const name = this.consume(TokenType.IDENTIFIER, 'Expect variable name.');
+        console.log('variableDeclaration', name);
 
         let initializer = null;
         if (
@@ -64,6 +72,7 @@ class Parser {
         ) {
             initializer = this.expression();
         }
+        console.log('initializer', initializer);
 
         // this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
 
@@ -76,7 +85,8 @@ class Parser {
                 TokenType.LEFT_CURLY_BRACKET,
             )
         ) {
-            return new Statement.BlockStatement(
+            console.log('Statement.Map');
+            return new Statement.MapStatement(
                 this.block(TokenType.LEFT_CURLY_BRACKET),
             );
         }
@@ -86,7 +96,8 @@ class Parser {
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
-            return new Statement.BlockStatement(
+            console.log('Statement.List');
+            return new Statement.ListStatement(
                 this.block(TokenType.LEFT_SQUARE_BRACKET),
             );
         }
@@ -144,6 +155,8 @@ class Parser {
     }
 
     public assignment(): any {
+        console.log('assignment');
+
         const expression = this.primary();
         console.log('expression', expression);
 

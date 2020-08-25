@@ -32,8 +32,7 @@ class Scanner {
             this.scanToken();
         }
 
-        const endOfFile = new Token(TokenType.EOF, '', null, this.line);
-        this.tokens.push(endOfFile);
+        this.endScan();
 
         return this.tokens;
     }
@@ -59,7 +58,7 @@ class Scanner {
                 this.addToken(TokenType.COMMA);
                 break;
             case '#':
-                this.addToken(TokenType.HASH);
+                this.link();
                 break;
             case '/':
                 if (this.match('/')) {
@@ -68,11 +67,18 @@ class Scanner {
                         this.advance();
                     }
                 } else {
-                    this.addToken(TokenType.SLASH);
+                    if (this.match('*')) {
+                        // A multline comment goes until starslash (*/).
+                        while (this.peek() !== '*' && !this.isAtEnd()) {
+                            this.advance();
+                        }
+                    }
                 }
                 break;
             case '*':
-                this.addToken(TokenType.STAR);
+                if (this.match('/')) {
+                    this.advance();
+                }
                 break;
 
             case ' ':
@@ -82,7 +88,7 @@ class Scanner {
                 break;
 
             case '`':
-                this.addToken(TokenType.BACKTICK);
+                this.multiline();
                 break;
             case '\n':
                 this.line++;
@@ -93,7 +99,8 @@ class Scanner {
                 break;
 
             default:
-                if (this.isAlpha(character)) {
+                if (this.isAlphaNumeric(character)) {
+                    // this.identifierOrLiteral();
                     this.identifier();
                 } else {
                     Deon.error(this.line, 'Unexpected character.');
@@ -101,6 +108,7 @@ class Scanner {
                 break;
         }
     }
+
 
     private addToken(
         type: TokenType,
@@ -119,6 +127,104 @@ class Scanner {
         this.tokens.push(newToken);
     }
 
+
+    private string() {
+        while (this.peek() !== '\'' && !this.isAtEnd()) {
+            if (this.peek() === '\n') {
+                this.line += 1;
+
+                Deon.error(this.line, 'Unterminated string.');
+                return;
+            }
+
+            this.advance();
+        }
+
+        // Unterminated string.
+        if (this.isAtEnd()) {
+            Deon.error(this.line, 'Unterminated string.');
+            return;
+        }
+
+        // The closing '.
+        this.advance();
+
+        const value = this.source.substring(this.start + 1, this.current - 1);
+        this.addTokenLiteral(TokenType.STRING, value);
+    }
+
+    private multiline() {
+        while (this.peek() !== '`' && !this.isAtEnd()) {
+            if (this.peek() === '\n') {
+                this.line += 1;
+            }
+
+            this.advance();
+        }
+
+        // Unterminated string.
+        if (this.isAtEnd()) {
+            Deon.error(this.line, 'Unterminated string.');
+            return;
+        }
+
+        // The closing '.
+        this.advance();
+
+        const value = this.source.substring(this.start + 1, this.current - 1);
+        this.addTokenLiteral(TokenType.STRING, value);
+    }
+
+    private link() {
+        while (this.peek() !== ' ' && !this.isAtEnd()) {
+            if (this.peek() === '\n') {
+                this.line += 1;
+
+                break;
+            }
+
+            this.advance();
+        }
+
+        // Unterminated link.
+        if (this.isAtEnd()) {
+            Deon.error(this.line, 'Unterminated link.');
+            return;
+        }
+
+        // Extract the value without the initial hash (#).
+        const value = this.source.substring(this.start + 1, this.current);
+        this.addTokenLiteral(TokenType.LINK, value);
+    }
+
+    private identifier() {
+        while (this.isAlphaNumeric(this.peek())) {
+            this.advance();
+        }
+
+        const type = TokenType.IDENTIFIER;
+
+        this.addToken(type);
+    }
+
+    private identifierOrLiteral() {
+
+    }
+
+    private endScan() {
+        const endOfFile = new Token(
+            TokenType.EOF,
+            '',
+            null,
+            this.line,
+        );
+
+        this.tokens.push(endOfFile);
+    }
+
+
+
+    // Utilities
     private advance() {
         this.current += 1;
         return this.source.charAt(this.current - 1);
@@ -147,28 +253,6 @@ class Scanner {
         return this.source.charAt(this.current);
     }
 
-    private string() {
-        while (this.peek() != '\'' && !this.isAtEnd()) {
-            if (this.peek() == '\n') {
-                this.line += 1;
-            }
-
-            this.advance();
-        }
-
-        // Unterminated string.
-        if (this.isAtEnd()) {
-            Deon.error(this.line, 'Unterminated string.');
-            return;
-        }
-
-        // The closing '.
-        this.advance();
-
-        const value = this.source.substring(this.start + 1, this.current - 1);
-        this.addTokenLiteral(TokenType.STRING, value);
-    }
-
     private peekNext() {
         if (this.current + 1 >= this.source.length) {
             return '\0';
@@ -186,14 +270,16 @@ class Scanner {
             || c === '-';
     }
 
-    private identifier() {
-        while (this.isAlpha(this.peek())) {
-            this.advance();
-        }
+    private isDigit(
+        character: string,
+    ) {
+        return character >= '0' && character <= '9';
+    }
 
-        const type = TokenType.IDENTIFIER;
-
-        this.addToken(type);
+    private isAlphaNumeric(
+        c: string,
+    ) {
+        return this.isAlpha(c) || this.isDigit(c);
     }
 
     private isAtEnd() {

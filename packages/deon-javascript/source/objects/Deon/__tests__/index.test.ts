@@ -9,7 +9,7 @@ describe('Deon', () => {
     it('works', () => {
         const dataSimple = `
 {
-    name data
+    simpleKey simpleValue
 }
         `;
 
@@ -25,7 +25,7 @@ describe('Deon', () => {
         #shortLink
         'long name' A name with multiple Spaces
         multiLine \`
-example
+        example
 of multiline
 value
         \`
@@ -64,6 +64,7 @@ shortLink [
         };
 
         Deon.parse(
+            // dataSimple,
             dataComplex,
         );
     });

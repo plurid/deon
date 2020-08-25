@@ -94,10 +94,18 @@ class Deon {
         console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
         console.log('tokens', tokens);
-        const parser = new Parser(tokens);
-        console.log('parser', parser);
-        const statements = parser.parse();
-        console.log('statements', statements);
+        // const parser = new Parser(tokens);
+        // console.log('parser', parser);
+        // const statements = parser.parse();
+        // console.log('statements', statements);
+
+        // for (const statement of statements) {
+        //     console.log('statement', statement);
+
+        //     for (const _statement of statement.statements) {
+        //         console.log('_statement', _statement);
+        //     }
+        // }
 
         // // Stop if there was a syntax error.
         // if (this.hadError) {

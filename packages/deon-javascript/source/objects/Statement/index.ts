@@ -21,6 +21,8 @@ export abstract class Statement {
 
 export interface Visitor<T> {
     visitBlockStatement: (blockStatement: BlockStatement) => T;
+    visitMapStatement: (blockStatement: MapStatement) => T;
+    visitListStatement: (blockStatement: ListStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitVariableStatement: (variableStatement: VariableStatement) => T;
 }
@@ -42,6 +44,44 @@ export class BlockStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitBlockStatement(this);
+    }
+}
+
+
+export class MapStatement extends Statement {
+    public statements: Statement[];
+
+    constructor(
+        statements: Statement[],
+    ) {
+        super();
+
+        this.statements = statements;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitMapStatement(this);
+    }
+}
+
+
+export class ListStatement extends Statement {
+    public statements: Statement[];
+
+    constructor(
+        statements: Statement[],
+    ) {
+        super();
+
+        this.statements = statements;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitListStatement(this);
     }
 }
 
