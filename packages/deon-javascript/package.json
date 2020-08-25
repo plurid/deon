@@ -34,7 +34,7 @@
     ],
     "preferGlobal": false,
     "scripts": {
-        "test": "jest ./source",
+        "test": "jest -c ./configurations/jest.config.js ./source",
         "watch": "rollup -c ./scripts/rollup.config.js -w",
         "build": "rollup -c ./scripts/rollup.config.js",
         "prepublishOnly": "yarn build"
