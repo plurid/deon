@@ -305,7 +305,7 @@ mapName {
 }
 ```
 
-The `mapValue` starts after the space of the `mapKey` and continues until the end of the line, until a comma, or at the space before the in-line comments (if any).
+The `mapValue` starts after the space of the `mapKey` and continues until the end of the line or until a comma.
 
 
 ``` deon
@@ -334,7 +334,7 @@ listName [
 ]
 ```
 
-The `list` value grouping starts at the first non-space character of the new line and ends at the end of line, at the comma, or at the space before the in-line comments (if any).
+The `list` value grouping starts at the first non-space character of the new line and ends at the end of line or at the comma.
 
 Such as
 
