@@ -409,6 +409,8 @@ mapName {
 }
 ```
 
+The `mapValue` can be a `string`, a `list`, or a `map`.
+
 
 
 ## Lists
@@ -420,7 +422,7 @@ listName [
 ]
 ```
 
-The `list` value grouping starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of line or at the comma.
+The `list` value grouping starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of the line or at the comma.
 
 Such as
 
@@ -435,6 +437,8 @@ or
 ``` deon
 listName [list Value 1, listValue2]
 ```
+
+Each list item can be a `string`, a `list`, or a `map`.
 
 
 
