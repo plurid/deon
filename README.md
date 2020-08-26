@@ -237,17 +237,38 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 ## General
 
-A `deon` file has a `root` which can be a `map` or a `list`, and multiple `leaflinks` which can be `string` values, `map`s or `list`s.
+A `deon` is comprised of a required `root` and none or more, optional `leaflink`s.
 
-In `deon` every endleaf value is a `string`. It is up to the consumer to make the type conversions required.
+In `deon` every endleaf value is a `string`. It is up to the consumer to handle the required type conversions.
 
 `deon` supports two types of value groupings, the `map` and the `list`.
+
+The `root` can be a `map` or a `list`.
+
+The `leaflink`s can be `string` values, `map`s or `list`s.
+
+A `map` can have `list`s as values. A `list` can have `map`s as values.
 
 
 
 ## Values
 
-A `value` can be surrounded in singlequotes `'` in order to support special characters, such as trailing spaces
+An endleaf `value`, simply called `value`, is a string of characters, with or without spaces:
+
+``` deon
+{
+    key simpleValue
+}
+```
+
+``` deon
+{
+    key value with spaces
+}
+```
+
+
+A `value` can be surrounded by singlequotes `'` in order to support special characters, such as trailing spaces
 
 ``` deon
 {
@@ -256,7 +277,7 @@ A `value` can be surrounded in singlequotes `'` in order to support special char
 ```
 
 
-Multi-line values use the backtick <code>`</code>. The multi-line string is stripped of any space or new lines before the first character and after the last character.
+Multi-line `value`s are surrounded by backticks <code>`</code>. The multi-line string is stripped of any whitespace or new lines before the first non-space character and after the last non-space character.
 
 
 ``` deon
@@ -297,6 +318,8 @@ mapName {
 }
 ```
 
+The `map` is comprised of key-value pairs. The `deon` `root` in the single `map` without `mapName`.
+
 The `mapKey` is an `A-Za-z0-9_-` string of characters. To support special characters (such as space), the `mapKey` must be surrounded by single quotes, such as
 
 ``` deon
@@ -334,7 +357,7 @@ listName [
 ]
 ```
 
-The `list` value grouping starts at the first non-space character of the new line and ends at the end of line or at the comma.
+The `list` value grouping starts at the first non-space character after the left square bracket `[` and ends at the end of line or at the comma.
 
 Such as
 
@@ -416,7 +439,7 @@ or with shortened linking
 key value
 ```
 
-To support linking with special characters in name, the leaflink must be surrounded by singlequotes `'`.
+To support linking with special characters in name, the `leaflink` must be surrounded by singlequotes `'`.
 
 
 ``` deon
