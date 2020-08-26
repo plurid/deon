@@ -1,6 +1,7 @@
 // #region imports
     // #region internal
     import {
+        DeonParseOptions,
         DeonStringifyOptions,
     } from '../interfaces';
     // #endregion internal
@@ -10,6 +11,14 @@
 
 // #region module
 const DEON_FILE_EXTENSION = '.deon';
+
+
+const deonParseOptions: DeonParseOptions = {
+    absolutePaths: {},
+    authorization: {},
+    datasignFiles: [],
+    datasignMap: {},
+};
 
 
 const deonStrigifyOptions: DeonStringifyOptions = {
@@ -29,6 +38,7 @@ const deonStrigifyOptions: DeonStringifyOptions = {
 export {
     DEON_FILE_EXTENSION,
 
+    deonParseOptions,
     deonStrigifyOptions,
 };
 // #endregion exports

@@ -26,6 +26,7 @@
     } from '../../data/enumerations';
 
     import {
+        PartialDeonParseOptions,
         PartialDeonStringifyOptions,
     } from '../../data/interfaces';
     // #endregion external
@@ -66,6 +67,7 @@ class Deon {
 
     static async parseFile(
         file: string,
+        options?: PartialDeonParseOptions,
     ) {
         try {
             const absolutePath = path.isAbsolute(file);
