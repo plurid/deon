@@ -32,7 +32,7 @@ The `deon` file extensions are `.deon` or `.don`.
 + [Lists](#lists)
 + [Comments](#comments)
 + [Linking](#linking)
-
++ [Importing](#importing)
 
 
 ## Example
@@ -514,3 +514,54 @@ A `leaflink` can be spreaded by tripledots `...`:
 ```
 
 Spreading overwrites the previously defined keys with the same name.
+
+
+
+## Importing
+
+A `.deon` file can import another `.deon` file using the following syntax
+
+``` deon
+import <name> from <path>
+```
+
+Where the `name` is an arbitrary string, and the `path` is the path of the targeted `.deon` file.
+
+The import imports the `root` from the targeted `.deon` file in order to be used as a regular, locally-defined `leaflink`.
+
+
+``` deon
+// file-1.deon
+{
+    name The Name
+}
+```
+
+
+``` deon
+// file-2.deon
+import file1 from ./file-1
+
+{
+    name #file1.name
+}
+```
+
+
+The `path`s of the imported files can be relative filesystem paths, and they will be automatically searched and imported if found, or absolute filesystem paths, if all the absolute paths are passed to the parser at parse-time.
+
+A `path` can also be an `URL` such as
+
+``` deon
+import urlFile from https://example.com/url-file.deon
+```
+
+In order to request `URL` files from protected routes, an `authorization` `map` of authorization `token`s can be passed at parse-time with all the domains required by the imports
+
+``` deon
+authorization {
+    example.com token
+}
+```
+
+with the `token` being passed into the `Authorization: Bearer <token>` header of the adequate domain at request-time.
