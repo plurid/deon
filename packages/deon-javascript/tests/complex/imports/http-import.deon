@@ -1,0 +1,5 @@
+import file from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/complex/imports/file.deon
+
+{
+    anotherMap #file.aMap
+}
