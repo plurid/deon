@@ -363,7 +363,7 @@ listName [
 ]
 ```
 
-The `list` value grouping starts at the first non-space character after the left square bracket `[` and ends at the end of line or at the comma.
+The `list` value grouping starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of line or at the comma.
 
 Such as
 
