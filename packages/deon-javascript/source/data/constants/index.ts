@@ -1,4 +1,28 @@
+// #region imports
+    // #region internal
+    import {
+        DeonStringifyOptions,
+    } from '../interfaces';
+    // #endregion internal
+// #endregion imports
+
+
+
 // #region module
-export const EXIT_CODE_ERROR = 65;
-export const EXIT_CODE_RUNTIME_ERROR = 70;
+const deonStrigifyOptions: DeonStringifyOptions = {
+    readable: true,
+    indentation: 4,
+    leaflinks: true,
+    leaflinkLevel: 1,
+    generatedHeader: true,
+    generatedComments: true,
+};
 // #endregion module
+
+
+
+// #region exports
+export {
+    deonStrigifyOptions,
+};
+// #endregion exports

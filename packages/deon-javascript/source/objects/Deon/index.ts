@@ -24,6 +24,10 @@
     import {
         TokenType,
     } from '../../data/enumerations';
+
+    import {
+        PartialDeonStringifyOptions,
+    } from '../../data/interfaces';
     // #endregion external
 // #endregion imports
 
@@ -121,6 +125,14 @@ class Deon {
         // }
 
         // this.interpreter.interpret(statements);
+
+        return '';
+    }
+
+    static stringify(
+        data: any,
+        options?: PartialDeonStringifyOptions,
+    ) {
 
         return '';
     }
