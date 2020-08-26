@@ -41,7 +41,7 @@ class Parser {
             console.log('declaration');
 
             if (
-                this.match(TokenType.SIGNIFIER)
+                this.match(TokenType.IDENTIFIER)
             ) {
                 console.log('declaration variable');
                 // return this.variableDeclaration();
@@ -84,9 +84,9 @@ class Parser {
             )
         ) {
             console.log('Statement.Map');
-            return new Statement.MapStatement(
-                this.block(TokenType.LEFT_CURLY_BRACKET),
-            );
+            // return new Statement.MapStatement(
+            //     this.block(TokenType.LEFT_CURLY_BRACKET),
+            // );
         }
 
         if (
@@ -95,9 +95,9 @@ class Parser {
             )
         ) {
             console.log('Statement.List');
-            return new Statement.ListStatement(
-                this.block(TokenType.LEFT_SQUARE_BRACKET),
-            );
+            // return new Statement.ListStatement(
+            //     this.block(TokenType.LEFT_SQUARE_BRACKET),
+            // );
         }
 
         return;
@@ -158,7 +158,7 @@ class Parser {
         const expression = this.primary();
         console.log('expression', expression);
 
-        if (this.match(TokenType.SIGNIFIER)) {
+        if (this.match(TokenType.IDENTIFIER)) {
             const equals = this.previous();
             const value = this.assignment();
             console.log('equals', equals);
@@ -210,7 +210,7 @@ class Parser {
 
     public primary(): Expression.Expression {
         if (
-            this.match(TokenType.SIGNIFIER)
+            this.match(TokenType.IDENTIFIER)
         ) {
             return new Expression.VariableExpression(this.previous());
         }

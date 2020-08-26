@@ -114,7 +114,7 @@ shortLink [
 });
 
 
-describe.only('Deon imports', () => {
+describe('Deon imports', () => {
     it('works', () => {
         const dataImport = `
 import deonFile from ./deonPath
@@ -131,6 +131,21 @@ import deonFile2 from ./deonPath2
 
         Deon.parse(
             dataImport,
+        );
+    });
+});
+
+
+describe.only('Deon values', () => {
+    it('works', () => {
+        const dataValues = `
+{
+    key value
+}
+        `;
+
+        Deon.parse(
+            dataValues,
         );
     });
 });

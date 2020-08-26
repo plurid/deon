@@ -11,193 +11,195 @@
 
 
 // #region module
-// class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
-class Resolver {
-    // private interpreter: Interpreter;
-    // private scopes: Map<string, boolean>[] = [];
+class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
+    private interpreter: Interpreter;
+    private scopes: Map<string, boolean>[] = [];
 
-    // constructor(
-    //     interpeter: Interpreter,
-    // ) {
-    //     this.interpreter = interpeter;
-    // }
+    constructor(
+        interpeter: Interpreter,
+    ) {
+        this.interpreter = interpeter;
+    }
 
-    // public visitBlockStatement(
-    //     statement: Statement.BlockStatement,
-    // ) {
-    //     this.beginScope();
+    public visitBlockStatement(
+        statement: Statement.BlockStatement,
+    ) {
+        this.beginScope();
 
-    //     this.resolve(
-    //         statement.statements,
-    //     );
+        this.resolve(
+            statement.statements,
+        );
 
-    //     this.endScope();
+        this.endScope();
 
-    //     return null;
-    // }
+        return null;
+    }
 
-    // public visitVariableStatement(
-    //     statement: Statement.VariableStatement,
-    // ) {
-    //     this.declare(statement.name);
+    public visitVariableStatement(
+        statement: Statement.VariableStatement,
+    ) {
+        this.declare(statement.name);
 
-    //     if (statement.initializer !== null) {
-    //         this.resolveExpression(statement.initializer);
-    //     }
+        if (statement.initializer !== null) {
+            this.resolveExpression(statement.initializer);
+        }
 
-    //     this.define(statement.name);
+        this.define(statement.name);
 
-    //     return null;
-    // }
-
-    // public visitVariableExpression(
-    //     expression: Expression.VariableExpression,
-    // ) {
-    //     const lastScopeIndex = this.scopes.length - 1;
-    //     const scope = this.scopes[lastScopeIndex];
-
-    //     if (
-    //         this.scopes.length !== 0
-    //         && scope.get(expression.name.lexeme) === false
-    //     ) {
-    //         Deon.error(
-    //             expression.name,
-    //             'Cannot read local variable in its own initializer.',
-    //         );
-    //     }
-
-    //     this.resolveLocal(
-    //         expression,
-    //         expression.name,
-    //     );
-
-    //     return null;
-    // }
-
-    // public visitAssignExpression(
-    //     expression: Expression.AssignExpression,
-    // ) {
-    //     this.resolveExpression(expression.value);
-    //     this.resolveLocal(
-    //         expression,
-    //         expression.name,
-    //     );
-    //     return null;
-    // }
-
-    // public visitExpressionStatement(
-    //     statement: Statement.ExpressionStatement,
-    // ) {
-    //     this.resolveExpression(statement.expression);
-    //     return null;
-    // }
-
-    // public visitGroupingExpression(
-    //     expression: Expression.GroupingExpression,
-    // ) {
-    //     this.resolveExpression(expression.expression);
-    //     return null;
-    // }
-
-    // public visitLiteralExpression(
-    //     expression: Expression.LiteralExpression,
-    // ) {
-    //     return null;
-    // }
+        return null;
+    }
 
 
-    // public resolve(
-    //     statements: Statement.Statement[],
-    // ) {
-    //     for (const statement of statements) {
-    //         this.resolveStatement(statement);
-    //     }
-    // }
+    public visitVariableExpression(
+        expression: Expression.VariableExpression,
+    ) {
+        const lastScopeIndex = this.scopes.length - 1;
+        const scope = this.scopes[lastScopeIndex];
 
-    // public resolveStatement(
-    //     statement: Statement.Statement,
-    // ) {
-    //     statement.accept(this);
-    // }
+        if (
+            this.scopes.length !== 0
+            && scope.get(expression.name.lexeme) === false
+        ) {
+            Deon.error(
+                expression.name,
+                'Cannot read local variable in its own initializer.',
+            );
+        }
 
-    // public resolveExpression(
-    //     expression: Expression.Expression,
-    // ) {
-    //     expression.accept(this);
-    // }
+        this.resolveLocal(
+            expression,
+            expression.name,
+        );
+
+        return null;
+    }
+
+    public visitAssignExpression(
+        expression: Expression.AssignExpression,
+    ) {
+        this.resolveExpression(expression.value);
+        this.resolveLocal(
+            expression,
+            expression.name,
+        );
+        return null;
+    }
+
+    public visitExpressionStatement(
+        statement: Statement.ExpressionStatement,
+    ) {
+        this.resolveExpression(statement.expression);
+        return null;
+    }
+
+    public visitGroupingExpression(
+        expression: Expression.GroupingExpression,
+    ) {
+        this.resolveExpression(expression.expression);
+        return null;
+    }
+
+    public visitLiteralExpression(
+        expression: Expression.LiteralExpression,
+    ) {
+        return null;
+    }
 
 
-    // private beginScope() {
-    //     this.scopes.push(
-    //         new Map(),
-    //     );
-    // }
 
-    // private endScope() {
-    //     this.scopes.pop();
-    // }
+    public resolve(
+        statements: Statement.Statement[],
+    ) {
+        for (const statement of statements) {
+            this.resolveStatement(statement);
+        }
+    }
 
-    // private declare(
-    //     name: Token,
-    // ) {
-    //     if (
-    //         this.scopes.length === 0
-    //     ) {
-    //         return;
-    //     }
+    public resolveStatement(
+        statement: Statement.Statement,
+    ) {
+        statement.accept(this);
+    }
 
-    //     const lastScopeIndex = this.scopes.length - 1;
+    public resolveExpression(
+        expression: Expression.Expression,
+    ) {
+        expression.accept(this);
+    }
 
-    //     const scope = this.scopes[lastScopeIndex];
 
-    //     if (scope.has(name.lexeme)) {
-    //         Deon.error(
-    //             name,
-    //             'Variable with this name already declared in this scope.',
-    //         );
-    //     }
 
-    //     scope.set(
-    //         name.lexeme,
-    //         false,
-    //     );
-    //     this.scopes[lastScopeIndex] = new Map(scope);
-    // }
+    private beginScope() {
+        this.scopes.push(
+            new Map(),
+        );
+    }
 
-    // private define(
-    //     name: Token,
-    // ) {
-    //     if (
-    //         this.scopes.length === 0
-    //     ) {
-    //         return;
-    //     }
+    private endScope() {
+        this.scopes.pop();
+    }
 
-    //     const lastScopeIndex = this.scopes.length - 1;
+    private declare(
+        name: Token,
+    ) {
+        if (
+            this.scopes.length === 0
+        ) {
+            return;
+        }
 
-    //     const scope = this.scopes[lastScopeIndex];
-    //     scope.set(
-    //         name.lexeme,
-    //         true,
-    //     );
-    //     this.scopes[lastScopeIndex] = new Map(scope);
-    // }
+        const lastScopeIndex = this.scopes.length - 1;
 
-    // private resolveLocal(
-    //     expression: Expression.Expression,
-    //     name: Token,
-    // ) {
-    //     for (const [key, scope] of this.scopes.entries()) {
-    //         if (scope.has(name.lexeme)) {
-    //             this.interpreter.resolve(
-    //                 expression,
-    //                 this.scopes.length - 1 - key,
-    //             )
-    //         }
-    //     }
+        const scope = this.scopes[lastScopeIndex];
 
-    //     // Not found. Assume it is global.
-    // }
+        if (scope.has(name.lexeme)) {
+            Deon.error(
+                name,
+                'Variable with this name already declared in this scope.',
+            );
+        }
+
+        scope.set(
+            name.lexeme,
+            false,
+        );
+        this.scopes[lastScopeIndex] = new Map(scope);
+    }
+
+    private define(
+        name: Token,
+    ) {
+        if (
+            this.scopes.length === 0
+        ) {
+            return;
+        }
+
+        const lastScopeIndex = this.scopes.length - 1;
+
+        const scope = this.scopes[lastScopeIndex];
+        scope.set(
+            name.lexeme,
+            true,
+        );
+        this.scopes[lastScopeIndex] = new Map(scope);
+    }
+
+    private resolveLocal(
+        expression: Expression.Expression,
+        name: Token,
+    ) {
+        for (const [key, scope] of this.scopes.entries()) {
+            if (scope.has(name.lexeme)) {
+                this.interpreter.resolve(
+                    expression,
+                    this.scopes.length - 1 - key,
+                )
+            }
+        }
+
+        // Not found. Assume it is global.
+    }
 }
 // #endregion module
 

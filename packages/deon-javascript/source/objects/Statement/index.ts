@@ -21,8 +21,8 @@ export abstract class Statement {
 
 export interface Visitor<T> {
     visitBlockStatement: (blockStatement: BlockStatement) => T;
-    visitMapStatement: (blockStatement: MapStatement) => T;
-    visitListStatement: (blockStatement: ListStatement) => T;
+    // visitMapStatement: (blockStatement: MapStatement) => T;
+    // visitListStatement: (blockStatement: ListStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitVariableStatement: (variableStatement: VariableStatement) => T;
 }
@@ -48,42 +48,42 @@ export class BlockStatement extends Statement {
 }
 
 
-export class MapStatement extends Statement {
-    public statements: Statement[];
+// export class MapStatement extends Statement {
+//     public statements: Statement[];
 
-    constructor(
-        statements: Statement[],
-    ) {
-        super();
+//     constructor(
+//         statements: Statement[],
+//     ) {
+//         super();
 
-        this.statements = statements;
-    }
+//         this.statements = statements;
+//     }
 
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitMapStatement(this);
-    }
-}
+//     accept<T>(
+//         visitor: Visitor<T>,
+//     ) {
+//         return visitor.visitMapStatement(this);
+//     }
+// }
 
 
-export class ListStatement extends Statement {
-    public statements: Statement[];
+// export class ListStatement extends Statement {
+//     public statements: Statement[];
 
-    constructor(
-        statements: Statement[],
-    ) {
-        super();
+//     constructor(
+//         statements: Statement[],
+//     ) {
+//         super();
 
-        this.statements = statements;
-    }
+//         this.statements = statements;
+//     }
 
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitListStatement(this);
-    }
-}
+//     accept<T>(
+//         visitor: Visitor<T>,
+//     ) {
+//         return visitor.visitListStatement(this);
+//     }
+// }
 
 
 export class ExpressionStatement extends Statement {
