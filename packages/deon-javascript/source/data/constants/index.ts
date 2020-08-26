@@ -9,6 +9,9 @@
 
 
 // #region module
+const DEON_FILE_EXTENSION = '.deon';
+
+
 const deonStrigifyOptions: DeonStringifyOptions = {
     readable: true,
     indentation: 4,
@@ -24,6 +27,8 @@ const deonStrigifyOptions: DeonStringifyOptions = {
 
 // #region exports
 export {
+    DEON_FILE_EXTENSION,
+
     deonStrigifyOptions,
 };
 // #endregion exports
