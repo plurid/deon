@@ -82,7 +82,7 @@ const data = {
             id: '01',
             name: 'One',
             active: 'true',
-        }
+        },
         {
             id: '02',
             name: 'Two',
@@ -422,7 +422,7 @@ listName [
 ]
 ```
 
-The `list` value grouping starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of the line or at the comma.
+The `list` item value starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of the line or at the comma.
 
 Such as
 
