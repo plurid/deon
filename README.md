@@ -20,7 +20,7 @@
 
 `deon` is a notation format for structured strings.
 
-The file extensions can be `.deon` or `.don`.
+The `deon` file extensions are `.deon` or `.don`.
 
 
 ### Contents
@@ -249,6 +249,10 @@ The `leaflink`s can be `string` values, `map`s or `list`s.
 
 A `map` can have `list`s as values. A `list` can have `map`s as values.
 
+The order of the `root` or of any of the `leaflink`s is not important.
+
+The per `map` `key` names and the `leaflink` `map` names are expected to be unique.
+
 
 
 ## Values
@@ -318,7 +322,7 @@ mapName {
 }
 ```
 
-The `map` is comprised of key-value pairs. The `deon` `root` in the single `map` without `mapName`.
+The `map` is comprised of key-value pairs. The `deon` `root` is the single `map` without a `mapName`.
 
 The `mapKey` is an `A-Za-z0-9_-` string of characters. To support special characters (such as space), the `mapKey` must be surrounded by single quotes, such as
 
@@ -409,7 +413,9 @@ Multi-line comments use the slashstar `/*` to start, and the starslash to end `*
 
 ## Linking
 
-A link is designated using the hash sign `#`.
+### General
+
+A `leaflink` is designated using the hash sign `#`.
 
 The `.deon` file
 
@@ -448,4 +454,61 @@ To support linking with special characters in name, the `leaflink` must be surro
 }
 
 'key with spaces' value
+```
+
+
+### Dot-access
+
+A `leaflink` can be dot-accessed:
+
+``` deon
+{
+    entities [
+        {
+            name #entity1.name
+        }
+    ]
+}
+
+#entity1 {
+    name The Entity
+}
+```
+
+or dot-accessed with shortened link
+
+``` deon
+{
+    entities [
+        {
+            #entity1.name
+        }
+    ]
+}
+
+#entity1 {
+    name The Entity
+}
+```
+
+in which case, the `key` will be the last key of the dot-access string.
+
+
+### Spreading
+
+A `leaflink` can be spreaded by tripledots `...`:
+
+``` deon
+{
+    entities [
+        {
+            ...#entity1
+        }
+    ]
+}
+
+#entity1 {
+    name The Entity
+    timestamp 1598425060
+}
 ```
