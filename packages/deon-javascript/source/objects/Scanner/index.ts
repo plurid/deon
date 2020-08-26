@@ -34,6 +34,8 @@ class Scanner {
 
         this.endScan();
 
+        this.identify();
+
         return this.tokens;
     }
 
@@ -215,6 +217,125 @@ class Scanner {
         this.tokens.push(endOfFile);
     }
 
+    private identify() {
+        const tokens: Token[] = [];
+        let lookup = false;
+        let lineStart = -1;
+        let temp: Token[] = [];
+
+        const stringifyTemporary = () => {
+            if (temp.length > 0) {
+                const stringToken = this.stringFromSignifiers(temp);
+                tokens.push(stringToken);
+
+                temp = [];
+            }
+        }
+
+        const identifySignifier = (
+            index: number,
+            token: Token,
+        ) => {
+            const inGroup = this.inGroup(index);
+
+            if (inGroup === 'MAP') {
+                const identifierToken = this.identifierFromSignifier(token);
+                tokens.push(identifierToken);
+            } else {
+                tokens.push(token);
+            }
+        }
+
+        for (const [index, token] of this.tokens.entries()) {
+            // console.log('token', token);
+            // console.log('lookup', lookup);
+            // console.log('lineStart', lineStart);
+            // console.log('temp', temp);
+            // console.log('----------------');
+
+            if (
+                token.type !== TokenType.SIGNIFIER
+                && token.type !== TokenType.STRING
+            ) {
+                stringifyTemporary();
+
+                tokens.push(token);
+                lookup = false;
+                continue;
+            }
+
+            if (token.type === TokenType.STRING) {
+                tokens.push(token);
+                continue;
+
+
+                // const previousIndex = index - 1;
+                // const previousToken = this.tokens[previousIndex];
+
+                // if (!previousToken) {
+                //     const identifierToken = this.identifierFromSignifier(token);
+                //     tokens.push(identifierToken);
+                //     lookup = true;
+                //     lineStart = token.line;
+                //     continue;
+                // }
+
+                // if (
+                //     previousToken.line === token.line
+                //     && previousToken.type !== TokenType.LEFT_CURLY_BRACKET
+                //     && previousToken.type !== TokenType.COMMA
+                // ) {
+                //     tokens.push(token);
+                //     continue;
+                // }
+
+                // if (previousToken
+                //     && previousToken.type === TokenType.LEFT_CURLY_BRACKET
+                // ) {
+                //     if (temp.length > 0) {
+                //         const stringToken = this.stringFromSignifiers(temp);
+                //         tokens.push(stringToken);
+
+                //         temp = [];
+                //     }
+
+                //     const identifierToken = this.identifierFromSignifier(token);
+                //     tokens.push(identifierToken);
+                //     lookup = true;
+                //     lineStart = token.line;
+                //     continue;
+                // }
+            }
+
+            if (lookup) {
+                if (lineStart === token.line) {
+                    temp.push(token);
+                } else {
+                    stringifyTemporary();
+
+                    identifySignifier(
+                        index,
+                        token,
+                    );
+                    lineStart = token.line;
+                    temp = [];
+                }
+            } else {
+                lookup = true;
+                lineStart = token.line;
+
+                identifySignifier(
+                    index,
+                    token,
+                );
+            }
+        }
+
+        this.tokens = [
+            ...tokens,
+        ];
+    }
+
 
 
     // Utilities
@@ -277,6 +398,85 @@ class Scanner {
 
     private isAtEnd() {
         return this.current >= this.source.length;
+    }
+
+    private stringFromSignifiers(
+        tokens: Token[],
+    ) {
+        let texts: string[] = [];
+        const line = tokens[0].line;
+
+        for (const token of tokens) {
+            texts.push(token.lexeme);
+        }
+
+        const text = texts.join(' ');
+
+        const stringToken = new Token(
+            TokenType.STRING,
+            text,
+            text,
+            line,
+        );
+
+        return stringToken;
+    }
+
+    private identifierFromSignifier(
+        token: Token,
+    ) {
+        const lexeme = token.lexeme.replace(/'/g, '');
+
+        const identifierToken = new Token(
+            TokenType.IDENTIFIER,
+            lexeme,
+            null,
+            token.line,
+        );
+
+        return identifierToken;
+    }
+
+    private inGroup(
+        position: number,
+    ) {
+        const tokens = this.tokens.slice(0, position).reverse();
+
+        const curlyBrackets = {
+            left: 0,
+            right: 0,
+        };
+        const squareBrackets = {
+            left: 0,
+            right: 0,
+        };
+
+        for (const token of tokens) {
+            switch (token.type) {
+                case TokenType.LEFT_CURLY_BRACKET:
+                    curlyBrackets.left += 1;
+                    break;
+                case TokenType.RIGHT_CURLY_BRACKET:
+                    curlyBrackets.right += 1;
+                    break;
+                case TokenType.LEFT_SQUARE_BRACKET:
+                    squareBrackets.left += 1;
+                    break;
+                case TokenType.RIGHT_SQUARE_BRACKET:
+                    squareBrackets.right += 1;
+                    break;
+            }
+
+            if (curlyBrackets.left > curlyBrackets.right) {
+                return 'MAP';
+            }
+
+            if (squareBrackets.left > squareBrackets.right) {
+                return 'LIST';
+            }
+        }
+
+        return;
     }
 }
 // #endregion module

@@ -7,15 +7,46 @@ import Deon from '../';
 // #region module
 describe('Deon', () => {
     it('works', () => {
-        const dataSimple = `
+        const dataEmpty = `
 {
-    simpleKey simpleValue
-}
-
-link {
-    aaa bbb
+    c [
+        20 44
+        30
+    ]
+    c {
+        20 30
+    }
+    c 20 30
 }
         `;
+
+        const dataIdentify2 = `
+{
+    a b c d
+    'one two' three four
+    e fg h
+}
+
+a { a b, c d, e f}
+        `;
+
+        const dataIdentify = `
+{
+    one two three four
+    five six seven
+    eight nine
+}
+        `;
+
+//         const dataSimple = `
+// {
+//     simpleKey simpleValue
+// }
+
+// link {
+//     aaa bbb
+// }
+//         `;
 
         const dataComplex = `
 {
@@ -69,7 +100,8 @@ shortLink [
         };
 
         Deon.parse(
-            dataSimple,
+            dataEmpty,
+            // dataSimple,
             // dataComplex,
         );
     });

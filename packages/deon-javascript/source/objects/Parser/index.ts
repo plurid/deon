@@ -164,8 +164,13 @@ class Parser {
             console.log('equals', equals);
             console.log('value', value);
 
-            // const name = expression.name;
-            // return new Expression.AssignExpression(name, value);
+            if (
+                expression instanceof Expression.VariableExpression
+            ) {
+                const name = expression.name;
+                console.log('name', name);
+                return new Expression.AssignExpression(name, value);
+            }
         }
 
         if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
