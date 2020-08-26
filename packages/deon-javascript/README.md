@@ -20,6 +20,11 @@
 
 `deon` is a notation format for structured strings.
 
+`deon` is intended to be:
+
++ light on syntax — friendly for human read/write;
++ moderately fast — with a general use case for configuration-like files, loaded once at runtime;
+
 The `deon` file extension is `.deon`.
 
 
