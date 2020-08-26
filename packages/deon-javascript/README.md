@@ -345,7 +345,7 @@ The `mapValue` starts after the space of the `mapKey` and continues until the en
 
 ``` deon
 mapName {
-    mapKey1 mapValue1
+    mapKey1 map Value 1
     mapKey2 mapValue2
 }
 ```
@@ -354,7 +354,7 @@ or
 
 ``` deon
 mapName {
-    mapKey1 mapValue1, mapKey2 mapValue2
+    mapKey1 map Value 1, mapKey2 mapValue2
 }
 ```
 
@@ -364,7 +364,7 @@ mapName {
 
 ``` deon
 listName [
-    listValue1
+    list Value 1
     listValue2
 ]
 ```
@@ -375,14 +375,14 @@ Such as
 
 ``` deon
 listName [
-    listValue1, listValue2
+    list Value 1, listValue2
 ]
 ```
 
 or
 
 ``` deon
-listName [listValue1, listValue2]
+listName [list Value 1, listValue2]
 ```
 
 
