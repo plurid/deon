@@ -14,6 +14,7 @@ const deonStrigifyOptions: DeonStringifyOptions = {
     indentation: 4,
     leaflinks: true,
     leaflinkLevel: 1,
+    leaflinkShortening: true,
     generatedHeader: true,
     generatedComments: true,
 };

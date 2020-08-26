@@ -4,6 +4,7 @@ export interface DeonStringifyOptions {
     indentation: number;
     leaflinks: boolean;
     leaflinkLevel: number;
+    leaflinkShortening: boolean;
     generatedHeader: boolean;
     generatedComments: boolean;
 }
