@@ -7,6 +7,11 @@ import Deon from '../';
 // #region module
 describe('Deon', () => {
     it('works', () => {
+        const dataImport = `
+import deonFile from ./deonPath
+        `;
+
+
         const dataEmpty = `
 {
     c [
@@ -100,7 +105,8 @@ shortLink [
         };
 
         Deon.parse(
-            dataEmpty,
+            dataImport,
+            // dataEmpty,
             // dataSimple,
             // dataComplex,
         );

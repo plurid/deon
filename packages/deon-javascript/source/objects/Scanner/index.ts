@@ -18,12 +18,18 @@ class Scanner {
     private start: number = 0;
     private current: number = 0;
     private line: number = 1;
+    private keywords: Record<string, TokenType>;
 
     constructor(
         source: string,
     ) {
         this.source = source;
         this.tokens = [];
+
+        this.keywords = {
+            import: TokenType.IMPORT,
+            from: TokenType.FROM,
+        };
     }
 
     public scanTokens() {
@@ -79,13 +85,13 @@ class Scanner {
                     while (this.peek() !== '\n' && !this.isAtEnd()) {
                         this.advance();
                     }
-                } else {
-                    if (this.match('*')) {
-                        // A multline comment goes until starslash (*/).
-                        while (this.peek() !== '*' && !this.isAtEnd()) {
-                            this.advance();
-                        }
+                } else if (this.match('*')) {
+                    // A multline comment goes until starslash (*/).
+                    while (this.peek() !== '*' && !this.isAtEnd()) {
+                        this.advance();
                     }
+                } else {
+                    this.signifier();
                 }
                 break;
             case '*':
@@ -214,7 +220,15 @@ class Scanner {
             this.advance();
         }
 
-        this.addToken(TokenType.SIGNIFIER);
+        // See if the signifier is a reserved word.
+        const text = this.source.substring(this.start, this.current);
+        let type = this.keywords[text];
+
+        if (!type) {
+            type = TokenType.SIGNIFIER;
+        }
+
+        this.addToken(type);
     }
 
     private endScan() {
@@ -392,7 +406,9 @@ class Scanner {
         return (c >= 'a' && c <= 'z')
             || (c >= 'A' && c <= 'Z')
             || c === '_'
-            || c === '-';
+            || c === '-'
+            || c === '.'
+            || c === '/';
     }
 
     private isDigit(
