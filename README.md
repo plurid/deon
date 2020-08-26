@@ -42,6 +42,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Importing](#importing)
 + [Stringifying](#stringifying)
 + [Advanced Usage](#advanced-usage)
++ [In Use](#in-use)
 
 
 
@@ -751,3 +752,13 @@ const data = Deon.parse(
     },
 );
 ```
+
+
+
+## In Use
+
+`deon` is used in:
+
++ [`joiner`](htts://github.com/plurid/joiner) - configuration file
++ [`performer`](htts://github.com/plurid/performer) - configuration file
++ [`pluridoc`](htts://github.com/plurid/pluridoc)` - plurid plane configuration
