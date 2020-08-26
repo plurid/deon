@@ -62,6 +62,17 @@ class Scanner {
             case '#':
                 this.link();
                 break;
+            case '.':
+                if (this.match('.')) {
+                    if (this.match('.')) {
+                        if (this.match('#')) {
+                            this.addToken(TokenType.TRIPLE_DOT);
+                        }
+                    }
+                } else {
+                    this.addToken(TokenType.DOT);
+                }
+                break;
             case '/':
                 if (this.match('/')) {
                     // A comment goes until the end of the line.
