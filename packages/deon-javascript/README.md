@@ -27,6 +27,8 @@
 
 The `deon` file extension is `.deon`.
 
+Why `deobject`? More of a play-on-words, although a case can be made considering the [linking](#linking) feature and the 'assembly' of the `root`.
+
 
 ### Contents
 
