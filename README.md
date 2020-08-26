@@ -45,6 +45,55 @@ The `deon` file extension is `.deon`.
 
 ## Example
 
+The following `.deon` file
+
+``` deon
+// deon
+
+{
+    entities [
+        {
+            id 01
+            name One
+            active true
+        }
+        {
+            id 02
+            name Two
+            active false
+        }
+    ]
+    #time
+}
+
+time 1598439736
+```
+
+will produce the following data
+
+``` typescript
+// JavaScript/TypeScript
+
+const data = {
+    entities: [
+        {
+            id: '01',
+            name: 'One',
+            active: 'true',
+        }
+        {
+            id: '02',
+            name: 'Two',
+            active: 'false',
+        },
+    ],
+    time: '1598439736',
+};
+```
+
+
+### Comparisons
+
 Consider the following commonly-used formats with an example file from [`performer`](https://github.com/plurid/performer):
 
 
