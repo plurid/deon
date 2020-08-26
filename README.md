@@ -33,6 +33,7 @@ The `deon` file extension is `.deon`.
 + [Comments](#comments)
 + [Linking](#linking)
 + [Importing](#importing)
++ [Stringifying](#stringifying)
 + [Advanced Usage](#advanced-usage)
 
 
@@ -515,7 +516,7 @@ A `leaflink` can be spreaded by tripledots `...`:
 }
 ```
 
-Spreading overwrites the previously defined keys with the same name.
+Spreading overwrites the previously defined keys, if any, with the same name as the keys in the spreaded `map`.
 
 
 
@@ -530,6 +531,8 @@ import <name> from <path>
 Where the `name` is an arbitrary string, and the `path` is the path of the targeted `.deon` file.
 
 The import imports the `root` from the targeted `.deon` file in order to be used as a regular, locally-defined `leaflink`.
+
+The import statement order in file is not important. Imports will be resolved primarily, before any other action. The import `name` must be unique among all the other imports and among the locally-defined `leaflink`s, given that there is no discernible conceptual difference between them.
 
 
 ``` deon
@@ -550,7 +553,7 @@ import file1 from ./file-1
 ```
 
 
-The `path`s of the imported files can be relative filesystem paths, and they will be automatically searched and imported if found, or absolute filesystem paths, if all the absolute paths are passed to the parser at parse-time.
+The `path`s of the imported files can be relative filesystem paths, and they will be automatically searched and imported if found, or absolute filesystem paths, if all the used absolute paths are passed to the parser at parse-time.
 
 A `path` can also be an `URL` such as
 
@@ -570,13 +573,31 @@ with the `token` being passed into the `Authorization: Bearer <token>` header of
 
 
 
+## Stringifying
+
+A `stringify` method is implemented in order to convert an in-memory data representation to string. An `options` object can be passed.
+
+``` typescript
+interface DeonStringifyOptions {
+    readable: boolean;
+    indentation: number;
+    leaflinks: boolean;
+    leaflinkLevel: number;
+    leaflinkShortening: boolean;
+    generatedHeader: boolean;
+    generatedComments: boolean;
+}
+```
+
+
+
 ## Advanced Usage
 
 ### Datasign Type Conversion
 
 When handling the parsing of `.deon` data, a `.datasign` file can be passed to handle the type conversions.
 
-For example, given an `JavaScript/TypeScript` use case:
+For example, given a `JavaScript/TypeScript` use case:
 
 ``` datasign
 // ./Entity.datasign
@@ -605,7 +626,7 @@ data Entity {
 
 
 ``` typescript
-// index.ts
+// ./index.ts
 import Deon from '@plurid/deon';
 
 
