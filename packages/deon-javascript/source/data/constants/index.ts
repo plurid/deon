@@ -10,7 +10,8 @@
 
 
 // #region module
-const DEON_FILE_EXTENSION = '.deon';
+const DEON_FILENAME_EXTENSION = '.deon';
+const DEON_MEDIA_TYPE = 'application/deon';
 
 
 const deonParseOptions: DeonParseOptions = {
@@ -36,7 +37,8 @@ const deonStrigifyOptions: DeonStringifyOptions = {
 
 // #region exports
 export {
-    DEON_FILE_EXTENSION,
+    DEON_FILENAME_EXTENSION,
+    DEON_MEDIA_TYPE,
 
     deonParseOptions,
     deonStrigifyOptions,
