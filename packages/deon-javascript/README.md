@@ -512,3 +512,5 @@ A `leaflink` can be spreaded by tripledots `...`:
     timestamp 1598425060
 }
 ```
+
+Spreading overwrites the previously defined keys with the same name.
