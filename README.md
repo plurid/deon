@@ -249,7 +249,7 @@ A `deon` is comprised of a required `root` and none or more, optional `leaflink`
 
 In `deon` every endleaf value is a `string`. It is up to the consumer to handle the required type conversions based on the problem domain interface. An [advanced use case](#advanced-usage) couples `deon` with [`datasign`](https://github.com/plurid/datasign) to handle type conversions.
 
-`deon` supports two types of value groupings, the `map` and the `list`.
+`deon` supports two types of value groupings, the [`map`](#maps) and the [`list`](#lists).
 
 The `root` can be a `map` or a `list`.
 
