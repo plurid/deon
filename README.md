@@ -33,6 +33,8 @@ The `deon` file extensions are `.deon` or `.don`.
 + [Comments](#comments)
 + [Linking](#linking)
 + [Importing](#importing)
++ [Advanced Usage](#advanced-usage)
+
 
 
 ## Example
@@ -239,7 +241,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 A `deon` is comprised of a required `root` and none or more, optional `leaflink`s.
 
-In `deon` every endleaf value is a `string`. It is up to the consumer to handle the required type conversions.
+In `deon` every endleaf value is a `string`. It is up to the consumer to handle the required type conversions based on the problem domain interface. An [advanced use case](#advanced-usage) couples `deon` with [`datasign`](https://github.com/plurid/datasign) to handle type conversions.
 
 `deon` supports two types of value groupings, the `map` and the `list`.
 
@@ -565,3 +567,63 @@ authorization {
 ```
 
 with the `token` being passed into the `Authorization: Bearer <token>` header of the adequate domain at request-time.
+
+
+
+## Advanced Usage
+
+### Datasign Type Conversion
+
+When handling the parsing of `.deon` data, a `.datasign` file can be passed to handle the type conversions.
+
+For example, given an `JavaScript/TypeScript` use case:
+
+``` datasign
+// ./Entity.datasign
+data Entity {
+    name: string;
+    age: number;
+}
+```
+
+
+``` deon
+// ./entity.deon
+{
+    entities: [
+        {
+            name Entity One
+            age 1
+        }
+        {
+            name Entity Two
+            age 1.3
+        }
+    ]
+}
+```
+
+
+``` typescript
+// index.ts
+import Deon from '@plurid/deon';
+
+
+const deonFile = './entity.deon';
+const datasignFile = './Entity.datasign';
+
+const data = Deon.parse(
+    deonFile,
+    {
+        // pass an array of all the .datasign files to be considered for type handling
+        datasignFiles: [
+            datasignFile,
+        ],
+        // pass an object of the mappings between the fields from the .deon file
+        // and the expected types from the .datasign file
+        datasignMap: {
+            entities: 'Entity[]',
+        },
+    },
+);
+```
