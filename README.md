@@ -20,7 +20,7 @@
 
 `deon` is a notation format for structured strings.
 
-The `deon` file extensions are `.deon` or `.don`.
+The `deon` file extension is `.deon`.
 
 
 ### Contents
