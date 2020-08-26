@@ -122,6 +122,7 @@ import deonFile from ./deonPath
 {
     field #deonFile.field
     import import
+    ...#deonFile
 }
 
 import deonFile2 from ./deonPath2

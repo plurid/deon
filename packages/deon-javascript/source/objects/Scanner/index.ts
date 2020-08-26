@@ -69,36 +69,13 @@ class Scanner {
                 this.link();
                 break;
             case '.':
-                if (this.match('.')) {
-                    if (this.match('.')) {
-                        if (this.match('#')) {
-                            this.addToken(TokenType.TRIPLE_DOT);
-                        }
-                    }
-                } else {
-                    this.addToken(TokenType.DOT);
-                }
+                this.dot();
                 break;
             case '/':
-                if (this.match('/')) {
-                    // A comment goes until the end of the line.
-                    while (this.peek() !== '\n' && !this.isAtEnd()) {
-                        this.advance();
-                    }
-                } else if (this.match('*')) {
-                    // A multline comment goes until starslash (*/).
-                    while (this.peek() !== '*' && !this.isAtEnd()) {
-                        this.advance();
-                    }
-                } else {
-                    this.signifier();
-                }
+                this.slash();
                 break;
             case '*':
-                if (this.match('/')) {
-                    // End of multiline comment.
-                    this.advance();
-                }
+                this.star();
                 break;
 
             case ' ':
@@ -140,7 +117,12 @@ class Scanner {
     ) {
         const text = this.source.substring(this.start, this.current);
 
-        const newToken = new Token(type, text, literal, this.line);
+        const newToken = new Token(
+            type,
+            text,
+            literal,
+            this.line,
+        );
 
         this.tokens.push(newToken);
     }
@@ -213,6 +195,49 @@ class Scanner {
         // Extract the value without the initial hash (#).
         const value = this.source.substring(this.start + 1, this.current);
         this.addTokenLiteral(TokenType.LINK, value);
+    }
+
+    private dot() {
+        if (this.match('.')) {
+            if (this.match('.')) {
+                if (this.match('#')) {
+                    this.tripleDot();
+                } else {
+                    Deon.error(this.line, 'Can only spread leaflinks.');
+                }
+            } else {
+                this.signifier();
+            }
+        } else {
+            this.signifier();
+        }
+    }
+
+    private tripleDot() {
+        this.addToken(TokenType.TRIPLE_DOT);
+    }
+
+    private slash() {
+        if (this.match('/')) {
+            // A comment goes until the end of the line.
+            while (this.peek() !== '\n' && !this.isAtEnd()) {
+                this.advance();
+            }
+        } else if (this.match('*')) {
+            // A multline comment goes until starslash (*/).
+            while (this.peek() !== '*' && !this.isAtEnd()) {
+                this.advance();
+            }
+        } else {
+            this.signifier();
+        }
+    }
+
+    private star() {
+        if (this.match('/')) {
+            // End of multiline comment.
+            this.advance();
+        }
     }
 
     private signifier() {
@@ -490,7 +515,9 @@ class Scanner {
     private inGroup(
         position: number,
     ) {
-        const tokens = this.tokens.slice(0, position).reverse();
+        const tokens = this.tokens
+            .slice(0, position)
+            .reverse();
 
         const curlyBrackets = {
             left: 0,
