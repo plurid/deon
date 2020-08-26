@@ -112,4 +112,25 @@ shortLink [
         );
     });
 });
+
+
+describe.only('Deon imports', () => {
+    it('works', () => {
+        const dataImport = `
+import deonFile from ./deonPath
+
+{
+    field #deonFile.field
+    import import
+}
+
+import deonFile2 from ./deonPath2
+
+        `;
+
+        Deon.parse(
+            dataImport,
+        );
+    });
+});
 // #endregion module

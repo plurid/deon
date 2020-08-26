@@ -228,6 +228,29 @@ class Scanner {
             type = TokenType.SIGNIFIER;
         }
 
+        switch (type) {
+            case TokenType.IMPORT: {
+                const inGroup = this.inGroup(this.tokens.length - 1);
+
+                if (inGroup) {
+                    type = TokenType.SIGNIFIER;
+                    break;
+                }
+
+                break;
+            }
+            case TokenType.FROM: {
+                const inGroup = this.inGroup(this.tokens.length - 1);
+
+                if (inGroup) {
+                    type = TokenType.SIGNIFIER;
+                    break;
+                }
+
+                break;
+            }
+        }
+
         this.addToken(type);
     }
 
