@@ -759,6 +759,6 @@ const data = Deon.parse(
 
 `deon` is used in:
 
-+ [`joiner`](htts://github.com/plurid/joiner) - configuration file
-+ [`performer`](htts://github.com/plurid/performer) - configuration file
-+ [`pluridoc`](htts://github.com/plurid/pluridoc) - plurid plane configuration
++ - [`joiner`](htts://github.com/plurid/joiner) - configuration file
++ - [`performer`](htts://github.com/plurid/performer) - configuration file
++ - [`pluridoc`](htts://github.com/plurid/pluridoc) - plurid plane configuration
