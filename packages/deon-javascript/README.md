@@ -255,11 +255,11 @@ The `root` can be a `map` or a `list`.
 
 The `leaflink`s can be `string` values, `map`s or `list`s.
 
-A `map` can have `list`s as values. A `list` can have `map`s as values.
+The `map`s and the `list`s can have `string`s, `list`s, and `map`s as values,
 
 The order of the `root` or of any of the `leaflink`s is not important.
 
-The per `map` `key` names and the `leaflink` `map` names are expected to be unique.
+The per `map` `key` names and the `leaflink`s names are expected to be unique.
 
 
 
