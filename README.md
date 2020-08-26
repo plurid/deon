@@ -22,10 +22,10 @@
 
 `deon` is intended to be:
 
-+ light on syntax — friendly for human read/write;
++ light on syntax — friendly for human read/write, should feel more like note-taking than data entry;
 + moderately fast — with a general use case for configuration-like files, loaded once at runtime;
 
-The `deon` file extension is `.deon`.
+The `deon` filename extension is `.deon`, and the media type is `application/deon`.
 
 Why `deobject`? More of a play-on-words, although a case can be made considering the [linking](#linking) feature and the 'assembly' of the `root`.
 
