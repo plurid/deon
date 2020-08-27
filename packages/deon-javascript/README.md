@@ -423,6 +423,8 @@ listName [
 ]
 ```
 
+A `list` is comprised of a `listName` and the list items. The `deon` `root` is the single `list` without a `listName`.
+
 A `list` item value starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of the line or at the comma.
 
 Such as
