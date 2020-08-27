@@ -75,9 +75,9 @@ class Parser {
             )
         ) {
             console.log('Statement.Map');
-            // return new Statement.MapStatement(
-            //     this.block(TokenType.LEFT_CURLY_BRACKET),
-            // );
+            return new Statement.RootStatement(
+                this.block(TokenType.LEFT_CURLY_BRACKET),
+            );
         }
 
         if (
@@ -86,18 +86,17 @@ class Parser {
             )
         ) {
             console.log('Statement.List');
-            // return new Statement.ListStatement(
-            //     this.block(TokenType.LEFT_SQUARE_BRACKET),
-            // );
+            return new Statement.RootStatement(
+                this.block(TokenType.LEFT_SQUARE_BRACKET),
+            );
         }
 
-        return;
-        // return this.expressionStatement();
+        return this.expressionStatement();
     }
 
     public expressionStatement() {
         const expression = this.expression();
-        // this.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+
         return new Statement.ExpressionStatement(expression);
     }
 

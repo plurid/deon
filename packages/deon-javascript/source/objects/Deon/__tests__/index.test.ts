@@ -137,9 +137,37 @@ import deonFile2 from ./deonPath2
 
 
 describe.only('Deon values', () => {
-    it('simple key value', async () => {
+//     it('simple key value', async () => {
+//         const dataValues = `
+// key value
+//         `;
+
+//         const data = await Deon.parse(
+//             dataValues,
+//         );
+
+//         expect(data.key).toEqual('value');
+//     });
+
+//     it('multiple key value', async () => {
+//         const dataValues = `
+// key1 value one
+// key2 value two
+//         `;
+
+//         const data = await Deon.parse(
+//             dataValues,
+//         );
+
+//         expect(data.key1).toEqual('value one');
+//         expect(data.key2).toEqual('value two');
+//     });
+
+    it('simple root map', async () => {
         const dataValues = `
-key value
+{
+    key value
+}
         `;
 
         const data = await Deon.parse(
@@ -149,18 +177,18 @@ key value
         expect(data.key).toEqual('value');
     });
 
-    it('multiple key value', async () => {
-        const dataValues = `
-key1 value one
-key2 value two
-        `;
+//     it('simple root list', async () => {
+//         const dataValues = `
+// [
+//     value
+// ]
+//         `;
 
-        const data = await Deon.parse(
-            dataValues,
-        );
+//         const data = await Deon.parse(
+//             dataValues,
+//         );
 
-        expect(data.key1).toEqual('value one');
-        expect(data.key2).toEqual('value two');
-    });
+//         expect(data.key).toEqual('value');
+//     });
 });
 // #endregion module

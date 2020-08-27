@@ -112,14 +112,17 @@ class Deon {
         // console.log('parser', parser);
         const statements = parser.parse();
 
-        // // Stop if there was a syntax error.
-        if (this.hadError) {
-            return;
-        }
-
-        // for (const statement of statements) {
-        //     console.log('statement', statement);
+        // // // Stop if there was a syntax error.
+        // if (this.hadError) {
+        //     return;
         // }
+
+        for (const statement of statements) {
+            console.log('statement', statement);
+            // for (const stmt of statement.statements) {
+            //     console.log('stmt', stmt);
+            // }
+        }
 
         const resolver = new Resolver(this.interpreter);
         resolver.resolve(statements);
@@ -132,6 +135,9 @@ class Deon {
         const interpretedData = await this.interpreter.interpret(statements);
 
         return interpretedData;
+        // return {
+        //     key: 'value',
+        // };
     }
 
     static stringify(

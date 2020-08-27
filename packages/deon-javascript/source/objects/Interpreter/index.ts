@@ -22,6 +22,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public globals: Environment = new Environment();
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
+    private rootEnvironment: Environment = new Environment();
 
 
     public async interpret(
@@ -57,9 +58,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
     public extract() {
+        console.log('this.environment', this.environment);
+        console.log('this.rootEnvironment', this.rootEnvironment);
+
         const obj: any = {};
 
-        const values = this.environment.getAll();
+        const values = this.rootEnvironment.getAll();
 
         for (const [key, value] of values) {
             obj[key] = value;
@@ -73,6 +77,40 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     /** STATEMENTS */
     public visitBlockStatement(
         statement: Statement.BlockStatement,
+    ) {
+        this.executeBlock(
+            statement.statements,
+            new Environment(this.environment),
+        );
+
+        return null;
+    }
+
+    public visitRootStatement(
+        statement: Statement.RootStatement,
+    ) {
+        this.executeBlock(
+            statement.statements,
+            new Environment(this.environment),
+            'root',
+        );
+
+        return null;
+    }
+
+    public visitMapStatement(
+        statement: Statement.MapStatement,
+    ) {
+        this.executeBlock(
+            statement.statements,
+            new Environment(this.environment),
+        );
+
+        return null;
+    }
+
+    public visitListStatement(
+        statement: Statement.ListStatement,
     ) {
         this.executeBlock(
             statement.statements,
@@ -154,6 +192,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public executeBlock(
         statements: Statement.Statement[],
         environment: Environment,
+        type?: string,
     ) {
         const previous = this.environment;
 
@@ -162,6 +201,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             for (const statement of statements) {
                 this.execute(statement);
+            }
+
+            if (type === 'root') {
+                this.rootEnvironment = this.environment;
             }
         } catch (error) {
             this.environment = previous;

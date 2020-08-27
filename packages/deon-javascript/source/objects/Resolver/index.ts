@@ -35,6 +35,48 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public visitRootStatement(
+        statement: Statement.RootStatement,
+    ) {
+        this.beginScope();
+
+        this.resolve(
+            statement.statements,
+        );
+
+        this.endScope();
+
+        return null;
+    }
+
+    public visitMapStatement(
+        statement: Statement.MapStatement,
+    ) {
+        this.beginScope();
+
+        this.resolve(
+            statement.statements,
+        );
+
+        this.endScope();
+
+        return null;
+    }
+
+    public visitListStatement(
+        statement: Statement.ListStatement,
+    ) {
+        this.beginScope();
+
+        this.resolve(
+            statement.statements,
+        );
+
+        this.endScope();
+
+        return null;
+    }
+
     public visitVariableStatement(
         statement: Statement.VariableStatement,
     ) {
