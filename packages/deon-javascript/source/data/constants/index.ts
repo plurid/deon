@@ -14,6 +14,11 @@ const DEON_FILENAME_EXTENSION = '.deon';
 const DEON_MEDIA_TYPE = 'application/deon';
 
 
+const fetcherDefaultHeaders = {
+    Accept: 'text/plain,' + DEON_MEDIA_TYPE,
+};
+
+
 const deonParseOptions: DeonParseOptions = {
     absolutePaths: {},
     authorization: {},
@@ -39,6 +44,7 @@ const deonStrigifyOptions: DeonStringifyOptions = {
 export {
     DEON_FILENAME_EXTENSION,
     DEON_MEDIA_TYPE,
+    fetcherDefaultHeaders,
 
     deonParseOptions,
     deonStrigifyOptions,

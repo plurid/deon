@@ -12,6 +12,10 @@
     import {
         RuntimeError,
     } from '../Errors';
+
+    import {
+        fetcher,
+    } from '../../utilities/fetcher';
     // #endregion external
 // #endregion imports
 
@@ -30,7 +34,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     ) {
         try {
             for (const statement of statements) {
-                this.execute(statement);
+                await this.execute(statement);
             }
 
             return this.extract();
@@ -41,10 +45,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    public execute(
+    public async execute(
         statement: Statement.Statement,
     ) {
-        statement.accept(this);
+        await statement.accept(this);
     }
 
     public resolve(
@@ -78,7 +82,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
-
+        const data = await fetcher(statement.path.lexeme);
+        console.log('data visitImportStatement', data);
 
         return null;
     }
