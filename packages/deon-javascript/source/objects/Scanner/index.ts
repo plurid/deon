@@ -537,7 +537,6 @@ class Scanner {
         };
 
         for (const token of tokens) {
-            console.log('token', token);
             switch (token.type) {
                 case TokenType.LEFT_CURLY_BRACKET:
                     curlyBrackets.left += 1;
@@ -552,9 +551,6 @@ class Scanner {
                     squareBrackets.right += 1;
                     break;
             }
-
-            console.log('curlyBrackets', curlyBrackets);
-            console.log('squareBrackets', squareBrackets);
 
             if (curlyBrackets.left > curlyBrackets.right) {
                 return 'MAP';

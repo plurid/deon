@@ -43,6 +43,10 @@ class Deon {
     static async main(
         args: string[],
     ) {
+        this.interpreter = new Interpreter();
+        this.hadError = false;
+        this.hadRuntimeError = false;
+
         const length = args.length;
 
         if (length > 3) {
@@ -96,6 +100,10 @@ class Deon {
     static async parse(
         data: string,
     ) {
+        this.interpreter = new Interpreter();
+        this.hadError = false;
+        this.hadRuntimeError = false;
+
         const scanner = new Scanner(data);
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
@@ -121,7 +129,7 @@ class Deon {
             return;
         }
 
-        const interpretedData = this.interpreter.interpret(statements);
+        const interpretedData = await this.interpreter.interpret(statements);
 
         return interpretedData;
     }

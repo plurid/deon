@@ -24,7 +24,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private environment: Environment = this.globals;
 
 
-    public interpret(
+    public async interpret(
         statements: Statement.Statement[],
     ) {
         try {
