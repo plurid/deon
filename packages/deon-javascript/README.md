@@ -759,7 +759,7 @@ const data = Deon.parse(
 
 ## In Use
 
-`deon` is used in:
+`deon` is used by:
 
 + [`joiner`](https://github.com/plurid/joiner) - configuration file
 + [`performer`](https://github.com/plurid/performer) - configuration file
