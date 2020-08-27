@@ -139,9 +139,7 @@ import deonFile2 from ./deonPath2
 describe.only('Deon values', () => {
     it('works', () => {
         const dataValues = `
-{
     key value
-}
         `;
 
         Deon.parse(

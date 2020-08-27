@@ -311,12 +311,16 @@ class Scanner {
         ) => {
             const inGroup = this.inGroup(index);
 
-            if (inGroup === 'MAP') {
-                const identifierToken = this.identifierFromSignifier(token);
-                tokens.push(identifierToken);
-            } else {
-                tokens.push(token);
+            switch (inGroup) {
+                case 'MAP':
+                case 'LEAFLINK': {
+                    const identifierToken = this.identifierFromSignifier(token);
+                    tokens.push(identifierToken);
+                    return;
+                }
             }
+
+            tokens.push(token);
         }
 
         for (const [index, token] of this.tokens.entries()) {
@@ -519,6 +523,10 @@ class Scanner {
             .slice(0, position)
             .reverse();
 
+        if (tokens.length === 0) {
+            return 'LEAFLINK';
+        }
+
         const curlyBrackets = {
             left: 0,
             right: 0,
@@ -529,6 +537,7 @@ class Scanner {
         };
 
         for (const token of tokens) {
+            console.log('token', token);
             switch (token.type) {
                 case TokenType.LEFT_CURLY_BRACKET:
                     curlyBrackets.left += 1;
@@ -544,12 +553,22 @@ class Scanner {
                     break;
             }
 
+            console.log('curlyBrackets', curlyBrackets);
+            console.log('squareBrackets', squareBrackets);
+
             if (curlyBrackets.left > curlyBrackets.right) {
                 return 'MAP';
             }
 
             if (squareBrackets.left > squareBrackets.right) {
                 return 'LIST';
+            }
+
+            if (
+                curlyBrackets.left === curlyBrackets.right
+                && squareBrackets.left === squareBrackets.right
+            ) {
+                return 'LEAFLINK';
             }
         }
 

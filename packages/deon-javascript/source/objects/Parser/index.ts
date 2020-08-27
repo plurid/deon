@@ -38,17 +38,12 @@ class Parser {
 
     public declaration() {
         try {
-            console.log('declaration');
-
             if (
                 this.match(TokenType.IDENTIFIER)
-            ) {
-                console.log('declaration variable');
-                // return this.variableDeclaration();
-                return this.expression();
+                ) {
+                return this.leaflinkDeclaration();
             }
 
-            console.log('declaration statement');
             return this.statement();
         } catch (error) {
             this.synchronize();
@@ -56,23 +51,19 @@ class Parser {
         }
     }
 
-    public variableDeclaration() {
-        const name = this.consume(TokenType.SIGNIFIER, 'Expect variable name.');
-        console.log('variableDeclaration', name);
+    public leaflinkDeclaration() {
+        const name = this.previous();
 
         let initializer = null;
         if (
             this.match(
-                TokenType.SIGNIFIER,
+                TokenType.STRING,
                 TokenType.LEFT_CURLY_BRACKET,
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
             initializer = this.expression();
         }
-        console.log('initializer', initializer);
-
-        // this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
 
         return new Statement.VariableStatement(name, initializer);
     }
@@ -153,72 +144,41 @@ class Parser {
     }
 
     public assignment(): any {
-        console.log('assignment');
-
         const expression = this.primary();
-        console.log('expression', expression);
 
-        if (this.match(TokenType.IDENTIFIER)) {
-            const equals = this.previous();
-            const value = this.assignment();
-            console.log('equals', equals);
-            console.log('value', value);
-
-            if (
-                expression instanceof Expression.VariableExpression
-            ) {
-                const name = expression.name;
-                console.log('name', name);
-                return new Expression.AssignExpression(name, value);
-            }
-        }
-
-        if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
-
-        }
-
-        if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
-
-        }
-
-
-        // const expression = this.or();
-
-        // if (
-        //     this.match(TokenType.EQUAL)
-        // ) {
+        // if (this.match(TokenType.STRING)) {
         //     const equals = this.previous();
         //     const value = this.assignment();
+        //     console.log('equals', equals);
+        //     console.log('value', value);
 
         //     if (
         //         expression instanceof Expression.VariableExpression
         //     ) {
         //         const name = expression.name;
+        //         console.log('name', name);
         //         return new Expression.AssignExpression(name, value);
-        //     } else if (
-        //         expression instanceof Expression.GetExpression
-        //     ) {
-        //         const get = expression;
-        //         return new Expression.SetExpression(get.object, get.name, value);
         //     }
+        // }
 
-        //     this.error(equals, 'Invalid assignment target.');
+        // if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
+
+        // }
+
+        // if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
+
         // }
 
         return expression;
     }
 
     public primary(): Expression.Expression {
-        if (
-            this.match(TokenType.IDENTIFIER)
-        ) {
-            return new Expression.VariableExpression(this.previous());
-        }
+        const previous = this.previous();
 
         if (
-            this.match(TokenType.STRING)
+            previous.type === TokenType.STRING
         ) {
-            return new Expression.LiteralExpression(this.previous().literal);
+            return new Expression.LiteralExpression(previous.literal);
         }
 
         if (
