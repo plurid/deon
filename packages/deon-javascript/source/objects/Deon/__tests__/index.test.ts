@@ -104,7 +104,8 @@ shortLink [
             },
         };
 
-        const data = await Deon.parse(
+        const deon = new Deon();
+        const data = await deon.parse(
             dataImport,
             // dataEmpty,
             // dataSimple,
@@ -129,7 +130,8 @@ import deonFile2 from ./deonPath2
 
         `;
 
-        const data = await Deon.parse(
+        const deon = new Deon();
+        const data = await deon.parse(
             dataImport,
         );
     });
@@ -142,7 +144,8 @@ describe.only('Deon values', () => {
 // key value
 //         `;
 
-//         const data = await Deon.parse(
+        // const deon = new Deon();
+//         const data = await deon.parse(
 //             dataValues,
 //         );
 
@@ -155,7 +158,8 @@ describe.only('Deon values', () => {
 // key2 value two
 //         `;
 
-//         const data = await Deon.parse(
+        // const deon = new Deon();
+//         const data = await deon.parse(
 //             dataValues,
 //         );
 
@@ -175,7 +179,8 @@ one two
 three four
         `;
 
-        const data = await Deon.parse(
+        const deon = new Deon();
+        const data = await deon.parse(
             dataValues,
         );
 
@@ -189,7 +194,8 @@ three four
 // ]
 //         `;
 
-//         const data = await Deon.parse(
+        // const deon = new Deon();
+//         const data = await deon.parse(
 //             dataValues,
 //         );
 

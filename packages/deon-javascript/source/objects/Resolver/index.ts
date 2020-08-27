@@ -4,7 +4,6 @@
     import * as Statement from '../Statement';
     import Interpreter from '../Interpreter';
     import Token from '../Token';
-    import Deon from '../Deon';
     // #endregion external
 // #endregion imports
 
@@ -14,10 +13,13 @@
 class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
     private interpreter: Interpreter;
     private scopes: Map<string, boolean>[] = [];
+    private deonError: any;
 
     constructor(
         interpeter: Interpreter,
+        error: any,
     ) {
+        this.deonError = error;
         this.interpreter = interpeter;
     }
 
@@ -111,7 +113,7 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
             this.scopes.length !== 0
             && scope.get(expression.name.lexeme) === false
         ) {
-            Deon.error(
+            this.deonError(
                 expression.name,
                 'Cannot read local variable in its own initializer.',
             );
@@ -207,7 +209,7 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         const scope = this.scopes[lastScopeIndex];
 
         if (scope.has(name.lexeme)) {
-            Deon.error(
+            this.deonError(
                 name,
                 'Variable with this name already declared in this scope.',
             );

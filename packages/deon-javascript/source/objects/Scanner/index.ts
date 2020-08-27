@@ -5,7 +5,6 @@
     } from '../../data/enumerations';
 
     import Token from '../Token';
-    import Deon from '../Deon';
     // #endregion external
 // #endregion imports
 
@@ -19,12 +18,15 @@ class Scanner {
     private current: number = 0;
     private line: number = 1;
     private keywords: Record<string, TokenType>;
+    private deonError: any;
 
     constructor(
         source: string,
+        error: any,
     ) {
         this.source = source;
         this.tokens = [];
+        this.deonError = error;
 
         this.keywords = {
             import: TokenType.IMPORT,
@@ -98,7 +100,7 @@ class Scanner {
                 if (this.isAlphaNumeric(character)) {
                     this.signifier();
                 } else {
-                    Deon.error(this.line, 'Unexpected character.');
+                    this.deonError(this.line, 'Unexpected character.');
                 }
                 break;
         }
@@ -133,7 +135,7 @@ class Scanner {
             if (this.peek() === '\n') {
                 this.line += 1;
 
-                Deon.error(this.line, 'Unterminated string.');
+                this.deonError(this.line, 'Unterminated string.');
                 return;
             }
 
@@ -142,7 +144,7 @@ class Scanner {
 
         // Unterminated string.
         if (this.isAtEnd()) {
-            Deon.error(this.line, 'Unterminated string.');
+            this.deonError(this.line, 'Unterminated string.');
             return;
         }
 
@@ -164,7 +166,7 @@ class Scanner {
 
         // Unterminated string.
         if (this.isAtEnd()) {
-            Deon.error(this.line, 'Unterminated string.');
+            this.deonError(this.line, 'Unterminated string.');
             return;
         }
 
@@ -188,7 +190,7 @@ class Scanner {
 
         // Unterminated link.
         if (this.isAtEnd()) {
-            Deon.error(this.line, 'Unterminated link.');
+            this.deonError(this.line, 'Unterminated link.');
             return;
         }
 
@@ -203,7 +205,7 @@ class Scanner {
                 if (this.match('#')) {
                     this.tripleDot();
                 } else {
-                    Deon.error(this.line, 'Can only spread leaflinks.');
+                    this.deonError(this.line, 'Can only spread leaflinks.');
                 }
             } else {
                 this.signifier();

@@ -1,8 +1,8 @@
 // #region imports
     // #region external
-    import {
-        TokenType,
-    } from '../../data/enumerations';
+    // import {
+    //     TokenType,
+    // } from '../../data/enumerations';
 
     import Deon from '../Deon';
     import * as Expression from '../Expression';
@@ -27,6 +27,14 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
     private rootEnvironment: Environment = new Environment();
+    private runtimeError: any;
+
+
+    constructor(
+        runtimeError: any,
+    ) {
+        this.runtimeError = runtimeError;
+    }
 
 
     public async interpret(
@@ -39,7 +47,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             return this.extract();
         } catch (error) {
-            Deon.runtimeError(error);
+            this.runtimeError(error);
 
             return;
         }
@@ -83,7 +91,15 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.ImportStatement,
     ) {
         const data = await fetcher(statement.path.lexeme);
+
+        if (!data) {
+            return;
+        }
+
+        const deon = new Deon();
+        const parsedData = await deon.parse(data);
         console.log('data visitImportStatement', data);
+        console.log('parsedData', parsedData);
 
         return null;
     }

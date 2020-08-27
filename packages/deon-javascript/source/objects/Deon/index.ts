@@ -9,9 +9,6 @@
 
 
     // #region external
-    /**
-     * circular dependency fixable when Deon and Scanner are in the same file
-     */
     import Scanner from '../Scanner';
     import Token from '../Token';
     import Parser from '../Parser';
@@ -36,17 +33,15 @@
 
 // #region module
 class Deon {
-    static interpreter: Interpreter = new Interpreter();
-    static hadError = false;
-    static hadRuntimeError = false;
+    private interpreter: Interpreter = new Interpreter(
+        this.runtimeError,
+    );
+    private hadError = false;
+    private hadRuntimeError = false;
 
-    static async main(
+    async main(
         args: string[],
     ) {
-        this.interpreter = new Interpreter();
-        this.hadError = false;
-        this.hadRuntimeError = false;
-
         const length = args.length;
 
         if (length > 3) {
@@ -69,7 +64,7 @@ class Deon {
         return;
     }
 
-    static async parseFile(
+    async parseFile(
         file: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -97,18 +92,20 @@ class Deon {
         }
     }
 
-    static async parse(
+    async parse(
         data: string,
     ) {
-        this.interpreter = new Interpreter();
-        this.hadError = false;
-        this.hadRuntimeError = false;
-
-        const scanner = new Scanner(data);
+        const scanner = new Scanner(
+            data,
+            this.error,
+        );
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
         // console.log('tokens', tokens);
-        const parser = new Parser(tokens);
+        const parser = new Parser(
+            tokens,
+            this.error,
+        );
         // console.log('parser', parser);
         const statements = parser.parse();
         // console.log('statements', statements);
@@ -125,7 +122,10 @@ class Deon {
         //     // }
         // }
 
-        const resolver = new Resolver(this.interpreter);
+        const resolver = new Resolver(
+            this.interpreter,
+            this.error,
+        );
         resolver.resolve(statements);
 
         // Stop if there was a resolution error.
@@ -141,7 +141,7 @@ class Deon {
         // };
     }
 
-    static stringify(
+    stringify(
         data: any,
         options?: PartialDeonStringifyOptions,
     ) {
@@ -149,7 +149,7 @@ class Deon {
         return '';
     }
 
-    static error(
+    error(
         entity: number | Token,
         message: string,
     ) {
@@ -167,7 +167,7 @@ class Deon {
         }
     }
 
-    static runtimeError(
+    runtimeError(
         error: RuntimeError,
     ) {
         console.log(
@@ -176,7 +176,7 @@ class Deon {
         this.hadRuntimeError = true;
     }
 
-    static report(
+    report(
         line: number,
         where: string,
         message: string,

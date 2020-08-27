@@ -1,6 +1,5 @@
 // #region imports
     // #region external
-    import Deon from '../Deon';
     import Token from '../Token';
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
@@ -18,11 +17,15 @@ class Parser {
     private tokens: Token[];
     private current = 0;
     private ParseError = class ParseError extends Error {};
+    private deonError: any;
+
 
     constructor(
         tokens: Token[],
+        error: any,
     ) {
         this.tokens = tokens;
+        this.deonError = error;
     }
 
 
@@ -244,7 +247,7 @@ class Parser {
         token: Token,
         message: string,
     ) {
-        Deon.error(token, message);
+        this.deonError(token, message);
 
         return new this.ParseError();
     }
