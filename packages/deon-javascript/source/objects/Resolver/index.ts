@@ -194,7 +194,7 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
                 this.interpreter.resolve(
                     expression,
                     this.scopes.length - 1 - key,
-                )
+                );
             }
         }
 

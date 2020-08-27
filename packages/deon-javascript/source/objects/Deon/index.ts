@@ -99,7 +99,7 @@ class Deon {
         const scanner = new Scanner(data);
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        // console.log('tokens', tokens);
+        console.log('tokens', tokens);
         const parser = new Parser(tokens);
         // console.log('parser', parser);
         const statements = parser.parse();
@@ -113,17 +113,17 @@ class Deon {
             console.log('statement', statement);
         }
 
-        // const resolver = new Resolver(this.interpreter);
-        // resolver.resolve(statements);
+        const resolver = new Resolver(this.interpreter);
+        resolver.resolve(statements);
 
-        // // Stop if there was a resolution error.
-        // if (this.hadError) {
-        //     return;
-        // }
+        // Stop if there was a resolution error.
+        if (this.hadError) {
+            return;
+        }
 
-        // this.interpreter.interpret(statements);
+        const interpretedData = this.interpreter.interpret(statements);
 
-        return '';
+        return interpretedData;
     }
 
     static stringify(

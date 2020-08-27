@@ -31,8 +31,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             for (const statement of statements) {
                 this.execute(statement);
             }
+
+            return '';
         } catch (error) {
             Deon.runtimeError(error);
+
+            return;
         }
     }
 
