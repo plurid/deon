@@ -74,7 +74,6 @@ class Parser {
                 TokenType.LEFT_CURLY_BRACKET,
             )
         ) {
-            console.log('Statement.Map');
             return new Statement.RootStatement(
                 this.block(TokenType.LEFT_CURLY_BRACKET),
             );
@@ -85,13 +84,31 @@ class Parser {
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
-            console.log('Statement.List');
             return new Statement.RootStatement(
                 this.block(TokenType.LEFT_SQUARE_BRACKET),
             );
         }
 
+        if (
+            this.match(
+                TokenType.IMPORT,
+            )
+        ) {
+            return this.importStatement();
+        }
+
         return this.expressionStatement();
+    }
+
+    public importStatement() {
+        const importName = this.consume(TokenType.IDENTIFIER, "Expect name for import.");
+        this.consume(TokenType.FROM, "Expect 'from' for import.");
+        const importPath = this.consume(TokenType.IDENTIFIER, "Expect path for import.");
+
+        return new Statement.ImportStatement(
+            importName,
+            importPath,
+        );
     }
 
     public expressionStatement() {
@@ -196,7 +213,7 @@ class Parser {
             )
         ) {
             const expression = this.expression();
-            this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect '}' after expression.");
+            this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after expression.");
             return new Expression.GroupingExpression(expression);
         }
 

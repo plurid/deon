@@ -20,14 +20,37 @@ export abstract class Statement {
 
 
 export interface Visitor<T> {
+    visitImportStatement: (importStatement: ImportStatement) => T;
     visitBlockStatement: (blockStatement: BlockStatement) => T;
-    visitRootStatement: (blockStatement: RootStatement) => T;
-    visitMapStatement: (blockStatement: MapStatement) => T;
-    visitListStatement: (blockStatement: ListStatement) => T;
+    visitRootStatement: (rootStatement: RootStatement) => T;
+    visitMapStatement: (mapStatement: MapStatement) => T;
+    visitListStatement: (listStatement: ListStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitVariableStatement: (variableStatement: VariableStatement) => T;
 }
 
+
+
+export class ImportStatement extends Statement {
+    public name: Token;
+    public path: Token;
+
+    constructor(
+        name: Token,
+        path: Token,
+    ) {
+        super();
+
+        this.name = name;
+        this.path = path;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitImportStatement(this);
+    }
+}
 
 
 export class BlockStatement extends Statement {
@@ -104,44 +127,6 @@ export class ListStatement extends Statement {
         return visitor.visitListStatement(this);
     }
 }
-
-
-// export class MapStatement extends Statement {
-//     public statements: Statement[];
-
-//     constructor(
-//         statements: Statement[],
-//     ) {
-//         super();
-
-//         this.statements = statements;
-//     }
-
-//     accept<T>(
-//         visitor: Visitor<T>,
-//     ) {
-//         return visitor.visitMapStatement(this);
-//     }
-// }
-
-
-// export class ListStatement extends Statement {
-//     public statements: Statement[];
-
-//     constructor(
-//         statements: Statement[],
-//     ) {
-//         super();
-
-//         this.statements = statements;
-//     }
-
-//     accept<T>(
-//         visitor: Visitor<T>,
-//     ) {
-//         return visitor.visitListStatement(this);
-//     }
-// }
 
 
 export class ExpressionStatement extends Statement {

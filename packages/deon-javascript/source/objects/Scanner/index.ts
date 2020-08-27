@@ -257,7 +257,10 @@ class Scanner {
             case TokenType.IMPORT: {
                 const inGroup = this.inGroup(this.tokens.length - 1);
 
-                if (inGroup) {
+                if (
+                    inGroup
+                    && inGroup !== 'LEAFLINK'
+                ) {
                     type = TokenType.SIGNIFIER;
                     break;
                 }
@@ -267,7 +270,10 @@ class Scanner {
             case TokenType.FROM: {
                 const inGroup = this.inGroup(this.tokens.length - 1);
 
-                if (inGroup) {
+                if (
+                    inGroup
+                    && inGroup !== 'LEAFLINK'
+                ) {
                     type = TokenType.SIGNIFIER;
                     break;
                 }

@@ -75,6 +75,14 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
     /** STATEMENTS */
+    public visitImportStatement(
+        statement: Statement.ImportStatement,
+    ) {
+
+
+        return null;
+    }
+
     public visitBlockStatement(
         statement: Statement.BlockStatement,
     ) {

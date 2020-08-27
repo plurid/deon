@@ -107,22 +107,23 @@ class Deon {
         const scanner = new Scanner(data);
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        // console.log('tokens', tokens);
+        console.log('tokens', tokens);
         const parser = new Parser(tokens);
         // console.log('parser', parser);
         const statements = parser.parse();
+        console.log('statements', statements);
 
         // // // Stop if there was a syntax error.
         // if (this.hadError) {
         //     return;
         // }
 
-        for (const statement of statements) {
-            console.log('statement', statement);
-            // for (const stmt of statement.statements) {
-            //     console.log('stmt', stmt);
-            // }
-        }
+        // for (const statement of statements) {
+        //     console.log('statement', statement);
+        //     // for (const stmt of statement.statements) {
+        //     //     console.log('stmt', stmt);
+        //     // }
+        // }
 
         const resolver = new Resolver(this.interpreter);
         resolver.resolve(statements);

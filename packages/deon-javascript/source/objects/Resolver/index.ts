@@ -21,6 +21,15 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         this.interpreter = interpeter;
     }
 
+
+    public visitImportStatement(
+        statement: Statement.ImportStatement,
+    ) {
+        console.log('import statement', statement);
+
+        return null;
+    }
+
     public visitBlockStatement(
         statement: Statement.BlockStatement,
     ) {
@@ -152,7 +161,10 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
     public resolve(
         statements: Statement.Statement[],
     ) {
-        for (const statement of statements) {
+        const orderedStatements = this.orderStatements(statements);
+        console.log('orderedStatements', orderedStatements);
+
+        for (const statement of orderedStatements) {
             this.resolveStatement(statement);
         }
     }
@@ -241,6 +253,38 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
 
         // Not found. Assume it is global.
+    }
+
+    private orderStatements(
+        statements: Statement.Statement[],
+    ) {
+        const importStatements: Statement.Statement[] = [];
+        const leaflinkStatements: Statement.Statement[] = [];
+        const rootStatement: Statement.Statement[] = [];
+
+        for (const statement of statements) {
+            if (statement instanceof Statement.ImportStatement) {
+                importStatements.push(statement);
+                continue;
+            }
+
+            if (statement instanceof Statement.VariableStatement) {
+                leaflinkStatements.push(statement);
+                continue;
+            }
+
+            if (statement instanceof Statement.RootStatement) {
+                rootStatement.push(statement);
+            }
+        }
+
+        const orderedStatements = [
+            ...importStatements,
+            ...leaflinkStatements,
+            ...rootStatement,
+        ];
+
+        return orderedStatements;
     }
 }
 // #endregion module

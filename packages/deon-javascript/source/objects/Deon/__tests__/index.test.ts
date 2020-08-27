@@ -165,9 +165,14 @@ describe.only('Deon values', () => {
 
     it('simple root map', async () => {
         const dataValues = `
+import name from path
+
 {
     key value
 }
+
+one two
+three four
         `;
 
         const data = await Deon.parse(
