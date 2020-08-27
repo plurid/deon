@@ -22,10 +22,10 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
 
-    public visitImportStatement(
+    public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
-        console.log('import statement', statement);
+        console.log('statement', statement);
 
         return null;
     }

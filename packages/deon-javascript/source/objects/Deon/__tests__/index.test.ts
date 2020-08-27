@@ -165,7 +165,7 @@ describe.only('Deon values', () => {
 
     it('simple root map', async () => {
         const dataValues = `
-import name from path
+import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
 
 {
     key value

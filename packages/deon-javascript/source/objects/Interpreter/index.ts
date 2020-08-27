@@ -75,7 +75,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
     /** STATEMENTS */
-    public visitImportStatement(
+    public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
 

@@ -466,7 +466,8 @@ class Scanner {
             || c === '_'
             || c === '-'
             || c === '.'
-            || c === '/';
+            || c === '/'
+            || c === ':';
     }
 
     private isDigit(
