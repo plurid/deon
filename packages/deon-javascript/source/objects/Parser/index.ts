@@ -41,10 +41,12 @@ class Parser {
 
     public declaration() {
         try {
+            // console.log('aaa toke', this.tokens[this.current]);
+
             if (
                 this.match(TokenType.IDENTIFIER)
-                ) {
-                return this.leaflinkDeclaration();
+            ) {
+                return this.leafDeclaration();
             }
 
             return this.statement();
@@ -54,18 +56,41 @@ class Parser {
         }
     }
 
-    public leaflinkDeclaration() {
+    public leafDeclaration() {
         const name = this.previous();
+        // console.log('leafDeclaration name', name);
+        // console.log('bbbb toke', this.tokens[this.current]);
 
         let initializer = null;
         if (
             this.match(
                 TokenType.STRING,
+            )
+        ) {
+            // console.log('cccc toke', this.tokens[this.current]);
+
+            initializer = this.expression();
+            return new Statement.VariableStatement(name, initializer);
+        }
+
+        if (
+            this.match(
                 TokenType.LEFT_CURLY_BRACKET,
+            )
+        ) {
+            return this.statement();
+            // initializer = this.expression();
+            // return new Statement.MapStatement(name, initializer);
+        }
+
+        if (
+            this.match(
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
-            initializer = this.expression();
+            return this.statement();
+            // initializer = this.expression();
+            // return new Statement.ListStatement(name, initializer);
         }
 
         return new Statement.VariableStatement(name, initializer);
@@ -77,8 +102,22 @@ class Parser {
                 TokenType.LEFT_CURLY_BRACKET,
             )
         ) {
+            const root = !this.isRoot();
+
+            if (root) {
+                return new Statement.MapStatement(
+                    this.block(
+                        TokenType.LEFT_CURLY_BRACKET,
+                        root,
+                    ),
+                );
+            }
+
             return new Statement.RootStatement(
-                this.block(TokenType.LEFT_CURLY_BRACKET),
+                this.block(
+                    TokenType.LEFT_CURLY_BRACKET,
+                    root,
+                ),
             );
         }
 
@@ -87,8 +126,22 @@ class Parser {
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
+            const root = !this.isRoot();
+
+            if (root) {
+                return new Statement.ListStatement(
+                    this.block(
+                        TokenType.LEFT_SQUARE_BRACKET,
+                        root,
+                    ),
+                );
+            }
+
             return new Statement.RootStatement(
-                this.block(TokenType.LEFT_SQUARE_BRACKET),
+                this.block(
+                    TokenType.LEFT_SQUARE_BRACKET,
+                    root,
+                ),
             );
         }
 
@@ -127,7 +180,10 @@ class Parser {
 
     public block(
         tokenType: TokenType,
+        root: boolean,
     ) {
+        // console.log('root', root);
+
         switch (tokenType) {
             case TokenType.LEFT_CURLY_BRACKET: {
                 const statements: any[] = [];
@@ -163,7 +219,8 @@ class Parser {
     }
 
     public assignment(): any {
-        const expression = this.primary();
+        let expression: any = this.primary();
+        console.log('expression', expression);
 
         // if (this.match(TokenType.STRING)) {
         //     const equals = this.previous();
@@ -179,14 +236,25 @@ class Parser {
         //         return new Expression.AssignExpression(name, value);
         //     }
         // }
+        // const previous = this.previous();
+        // console.log('previous', previous);
+
+        // console.log('ddd toke', this.tokens[this.current]);
 
         // if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
-
+        //     expression = this.block(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //         false,
+        //     );
         // }
 
         // if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
-
+        //     expression = this.block(
+        //         TokenType.LEFT_SQUARE_BRACKET,
+        //         false,
+        //     );
         // }
+        // console.log('expression', expression);
 
         return expression;
     }
@@ -201,24 +269,25 @@ class Parser {
         }
 
         if (
-            this.match(
-                TokenType.LEFT_CURLY_BRACKET,
-            )
+            previous.type === TokenType.LEFT_CURLY_BRACKET
         ) {
-            const expression = this.expression();
-            this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
-            return new Expression.GroupingExpression(expression);
+            // console.log('bracket LEFT_CURLY_BRACKET');
+            const expression: any = this.block(
+                TokenType.LEFT_CURLY_BRACKET,
+                false,
+            );
+            console.log('aaaaaDDD', expression);
+            // this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
+            // return new Expression.GroupingExpression(expression);
         }
 
-        if (
-            this.match(
-                TokenType.LEFT_SQUARE_BRACKET,
-            )
-        ) {
-            const expression = this.expression();
-            this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after expression.");
-            return new Expression.GroupingExpression(expression);
-        }
+        // if (
+        //     previous.type === TokenType.LEFT_SQUARE_BRACKET
+        // ) {
+        //     const expression = this.expression();
+        //     this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after expression.");
+        //     return new Expression.GroupingExpression(expression);
+        // }
 
         // if (
         //     this.match(TokenType.LEFT_PAREN)
@@ -319,6 +388,16 @@ class Parser {
 
     private previous() {
         return this.tokens[this.current - 1];
+    }
+
+    private isRoot() {
+        const token = this.previous();
+
+        if (token.type === TokenType.IDENTIFIER) {
+            return true;
+        }
+
+        return false;
     }
 }
 // #endregion module

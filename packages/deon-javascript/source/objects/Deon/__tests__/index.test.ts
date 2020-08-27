@@ -167,24 +167,54 @@ describe.only('Deon values', () => {
 //         expect(data.key2).toEqual('value two');
 //     });
 
-    it('simple root map', async () => {
-        const dataValues = `
-import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
+//     it('simple root map', async () => {
+//         const dataValues = `
+// import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
 
+// {
+//     key value
+// }
+
+// one two
+// three four
+//         `;
+
+//         const deon = new Deon();
+//         const data = await deon.parse(
+//             dataValues,
+//         );
+
+//         expect(data.key).toEqual('value');
+//     });
+
+    it('complex root map', async () => {
+        const dataValues = `
 {
     key value
+    key2 {
+        one two
+        // three {
+        //     four five six seven
+        //     eight {
+        //         nine foo
+        //         ten {
+        //             asd fff
+        //             hhh jjj
+        //             zz nm
+        //         }
+        //     }
+        // }
+    }
 }
-
-one two
-three four
         `;
 
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        // console.log(data);
 
-        expect(data.key).toEqual('value');
+        // expect(data.key).toEqual('value');
     });
 
 //     it('simple root list', async () => {
