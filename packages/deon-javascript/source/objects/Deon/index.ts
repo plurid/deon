@@ -93,13 +93,13 @@ class Deon {
         }
     }
 
-    static parse(
+    static async parse(
         data: string,
     ) {
         const scanner = new Scanner(data);
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        console.log('tokens', tokens);
+        // console.log('tokens', tokens);
         const parser = new Parser(tokens);
         // console.log('parser', parser);
         const statements = parser.parse();
@@ -109,9 +109,9 @@ class Deon {
             return;
         }
 
-        for (const statement of statements) {
-            console.log('statement', statement);
-        }
+        // for (const statement of statements) {
+        //     console.log('statement', statement);
+        // }
 
         const resolver = new Resolver(this.interpreter);
         resolver.resolve(statements);

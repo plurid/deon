@@ -71,6 +71,10 @@ class Environment {
         return this.ancestor(distance)?.values.get(name);
     }
 
+    public getAll() {
+        return this.values;
+    }
+
     public ancestor(
         distance: number,
     ) {

@@ -32,7 +32,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 this.execute(statement);
             }
 
-            return '';
+            return this.extract();
         } catch (error) {
             Deon.runtimeError(error);
 
@@ -54,6 +54,18 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             expression,
             depth,
         );
+    }
+
+    public extract() {
+        const obj: any = {};
+
+        const values = this.environment.getAll();
+
+        for (const [key, value] of values) {
+            obj[key] = value;
+        }
+
+        return obj;
     }
 
 

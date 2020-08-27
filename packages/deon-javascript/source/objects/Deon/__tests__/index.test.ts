@@ -6,7 +6,7 @@ import Deon from '../';
 
 // #region module
 describe('Deon', () => {
-    it('works', () => {
+    it('works', async () => {
         const dataImport = `
 import deonFile from ./deonPath
         `;
@@ -104,7 +104,7 @@ shortLink [
             },
         };
 
-        Deon.parse(
+        const data = await Deon.parse(
             dataImport,
             // dataEmpty,
             // dataSimple,
@@ -115,7 +115,7 @@ shortLink [
 
 
 describe('Deon imports', () => {
-    it('works', () => {
+    it('works', async () => {
         const dataImport = `
 import deonFile from ./deonPath
 
@@ -129,7 +129,7 @@ import deonFile2 from ./deonPath2
 
         `;
 
-        Deon.parse(
+        const data = await Deon.parse(
             dataImport,
         );
     });
@@ -137,14 +137,16 @@ import deonFile2 from ./deonPath2
 
 
 describe.only('Deon values', () => {
-    it('works', () => {
+    it('simple key value', async () => {
         const dataValues = `
-    key value
+key value
         `;
 
-        Deon.parse(
+        const data = await Deon.parse(
             dataValues,
         );
+
+        expect(data.key).toEqual('value');
     });
 });
 // #endregion module
