@@ -98,8 +98,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
         const deon = new Deon();
         const parsedData = await deon.parse(data);
-        console.log('data visitImportStatement', data);
-        console.log('parsedData', parsedData);
+
+        this.environment.define(
+            statement.name.lexeme,
+            parsedData,
+        );
 
         return null;
     }
