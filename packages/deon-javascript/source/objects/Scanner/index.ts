@@ -302,16 +302,16 @@ class Scanner {
         const tokens: Token[] = [];
         let mode = '';
         let mapLookup = false;
-        let lineStart = -1;
+        let mapItemLine = -1;
         let listItemLine = -1;
-        let temp: Token[] = [];
+        let temporary: Token[] = [];
 
         const stringifyTemporary = () => {
-            if (temp.length > 0) {
-                const stringToken = this.stringFromSignifiers(temp);
+            if (temporary.length > 0) {
+                const stringToken = this.stringFromSignifiers(temporary);
                 tokens.push(stringToken);
 
-                temp = [];
+                temporary = [];
             }
         }
 
@@ -343,12 +343,6 @@ class Scanner {
                     break;
             }
 
-            // console.log('token', token);
-            // console.log('lookup', lookup);
-            // console.log('lineStart', lineStart);
-            // console.log('temp', temp);
-            // console.log('----------------');
-
             if (
                 token.type !== TokenType.SIGNIFIER
                 && token.type !== TokenType.STRING
@@ -367,50 +361,12 @@ class Scanner {
 
                 tokens.push(token);
                 continue;
-
-
-                // const previousIndex = index - 1;
-                // const previousToken = this.tokens[previousIndex];
-
-                // if (!previousToken) {
-                //     const identifierToken = this.identifierFromSignifier(token);
-                //     tokens.push(identifierToken);
-                //     lookup = true;
-                //     lineStart = token.line;
-                //     continue;
-                // }
-
-                // if (
-                //     previousToken.line === token.line
-                //     && previousToken.type !== TokenType.LEFT_CURLY_BRACKET
-                //     && previousToken.type !== TokenType.COMMA
-                // ) {
-                //     tokens.push(token);
-                //     continue;
-                // }
-
-                // if (previousToken
-                //     && previousToken.type === TokenType.LEFT_CURLY_BRACKET
-                // ) {
-                //     if (temp.length > 0) {
-                //         const stringToken = this.stringFromSignifiers(temp);
-                //         tokens.push(stringToken);
-
-                //         temp = [];
-                //     }
-
-                //     const identifierToken = this.identifierFromSignifier(token);
-                //     tokens.push(identifierToken);
-                //     lookup = true;
-                //     lineStart = token.line;
-                //     continue;
-                // }
             }
 
             if (mode === 'MAP') {
                 if (mapLookup) {
-                    if (lineStart === token.line) {
-                        temp.push(token);
+                    if (mapItemLine === token.line) {
+                        temporary.push(token);
                     } else {
                         stringifyTemporary();
 
@@ -418,12 +374,12 @@ class Scanner {
                             index,
                             token,
                         );
-                        lineStart = token.line;
-                        temp = [];
+                        mapItemLine = token.line;
+                        temporary = [];
                     }
                 } else {
                     mapLookup = true;
-                    lineStart = token.line;
+                    mapItemLine = token.line;
 
                     identifySignifier(
                         index,
@@ -434,12 +390,12 @@ class Scanner {
 
             if (mode === 'LIST') {
                 if (listItemLine === token.line) {
-                    temp.push(token);
+                    temporary.push(token);
                 } else {
                     stringifyTemporary();
 
                     listItemLine = token.line;
-                    temp.push(token);
+                    temporary.push(token);
                 }
             }
         }
