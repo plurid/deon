@@ -92,13 +92,16 @@ export class RootStatement extends Statement {
 
 
 export class MapStatement extends Statement {
+    public name: Token;
     public statements: Statement[];
 
     constructor(
+        name: Token,
         statements: Statement[],
     ) {
         super();
 
+        this.name = name;
         this.statements = statements;
     }
 

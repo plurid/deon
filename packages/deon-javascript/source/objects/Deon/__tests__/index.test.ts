@@ -190,7 +190,7 @@ describe.only('Deon values', () => {
     it('complex root map', async () => {
         const dataValues = `
 {
-    key1 value1
+    // key1 value1
     // key2 value2
     // key3 value3
     // key4 value4
@@ -199,20 +199,20 @@ describe.only('Deon values', () => {
     // key7 value7
     // key8 value8
     // key9 value9
-    key2 {
+    key3 {
         one two
-    //     three four
-    //     // three {
-    //     //     four five six seven
-    //     //     eight {
-    //     //         nine foo
-    //     //         ten {
-    //     //             asd fff
-    //     //             hhh jjj
-    //     //             zz nm
-    //     //         }
-    //     //     }
-    //     // }
+        three four
+        three {
+            four five six seven
+        //     eight {
+        //         nine foo
+        //         ten {
+        //             asd fff
+        //             hhh jjj
+        //             zz nm
+        //         }
+        //     }
+        }
     }
 }
         `;
