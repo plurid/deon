@@ -17,6 +17,9 @@ export abstract class Expression {
 export interface Visitor<T> {
     visitAssignExpression: (assignExpression: AssignExpression) => T;
     visitGroupingExpression: (groupingExpression: GroupingExpression) => T;
+    visitRootExpression: (rootExpression: RootExpression) => T;
+    visitMapExpression: (mapExpression: MapExpression) => T;
+    visitListExpression: (listExpression: ListExpression) => T;
     visitLiteralExpression: (literalExpression: LiteralExpression) => T;
     visitVariableExpression: (variableExpression: VariableExpression) => T;
 }
@@ -59,6 +62,63 @@ export class GroupingExpression extends Expression {
         visitor: Visitor<T>,
     ) {
         return visitor.visitGroupingExpression(this);
+    }
+}
+
+
+export class RootExpression extends Expression {
+    public expression: Expression[];
+
+    constructor(
+        expression: Expression[],
+    ) {
+        super();
+
+        this.expression = expression;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitRootExpression(this);
+    }
+}
+
+
+export class MapExpression extends Expression {
+    public expression: Expression[];
+
+    constructor(
+        expression: Expression[],
+    ) {
+        super();
+
+        this.expression = expression;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitMapExpression(this);
+    }
+}
+
+
+export class ListExpression extends Expression {
+    public expression: Expression[];
+
+    constructor(
+        expression: Expression[],
+    ) {
+        super();
+
+        this.expression = expression;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitListExpression(this);
     }
 }
 
@@ -121,6 +181,32 @@ export class ASTPrinter implements Visitor<string> {
             'group',
             groupingExpression.expression,
         );
+    }
+
+    public visitRootExpression(
+        mapExpression: MapExpression,
+    ) {
+        return '';
+    }
+
+    public visitMapExpression(
+        mapExpression: MapExpression,
+    ) {
+        return '';
+        // return this.parenthesize(
+        //     'group',
+        //     mapExpression.expression,
+        // );
+    }
+
+    public visitListExpression(
+        groupingExpression: ListExpression,
+    ) {
+        return '';
+        // return this.parenthesize(
+        //     'group',
+        //     groupingExpression.expression,
+        // );
     }
 
     public visitLiteralExpression(

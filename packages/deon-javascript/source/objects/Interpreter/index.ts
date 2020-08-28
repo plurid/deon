@@ -163,10 +163,15 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public visitListStatement(
         statement: Statement.ListStatement,
     ) {
-        this.executeBlock(
+        const name = statement.name.lexeme;
+
+        const environment = this.executeBlock(
             statement.statements,
             new Environment(this.environment),
         );
+
+        console.log('environment', environment);
+
 
         return null;
     }

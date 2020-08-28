@@ -41,25 +41,103 @@ class Parser {
 
     public declaration() {
         try {
+            const current = this.peek();
+            // console.log('declaration current', current);
+
             if (
-                this.match(TokenType.IDENTIFIER)
+                current.type === TokenType.IDENTIFIER
             ) {
-                const b = this.leafDeclaration();
-                console.log('BBBBB', b);
-                return b;
+                return this.handleIdentifier();
             }
 
-            return this.statement();
+            if (
+                current.type === TokenType.LEFT_CURLY_BRACKET
+            ) {
+                return this.handleMap();
+            }
+
+            if (
+                current.type === TokenType.LEFT_SQUARE_BRACKET
+            ) {
+                return this.handleList();
+            }
+
+            this.advance();
+            return TokenType[current.type];
+            // return this.statement();
         } catch (error) {
-            console.log('aaaa BBBBB', error);
+            console.log('declaration error', error);
             this.synchronize();
             return null;
         }
     }
 
+    public handleIdentifier() {
+        const name = this.peek();
+        this.advance();
+        const value = this.peek();
+
+        switch (value.type) {
+            case TokenType.STRING: {
+                const expression = new Expression.LiteralExpression(value.literal);
+                return new Statement.VariableStatement(name, expression);
+            }
+            case TokenType.LEFT_CURLY_BRACKET: {
+                const expression = this.handleMap();
+                return new Statement.VariableStatement(name, expression);
+            }
+            case TokenType.LEFT_SQUARE_BRACKET: {
+                const expression = this.handleList();
+                return new Statement.VariableStatement(name, expression);
+            }
+        }
+
+        console.log('handleIdentifier name', name);
+        console.log('handleIdentifier value', value);
+
+        return 'IDENTIFIER';
+    }
+
+    public handleMap() {
+        const isRoot = this.isRoot();
+
+        if (!isRoot) {
+            return new Expression.MapExpression(
+                this.block(
+                    TokenType.LEFT_CURLY_BRACKET,
+                ),
+            );
+        }
+
+        return new Expression.RootExpression(
+            this.block(
+                TokenType.LEFT_CURLY_BRACKET,
+            ),
+        );
+    }
+
+    public handleList() {
+        const isRoot = this.isRoot();
+
+        if (!isRoot) {
+            return new Expression.ListExpression(
+                this.block(
+                    TokenType.LEFT_SQUARE_BRACKET,
+                ),
+            );
+        }
+
+        return new Expression.RootExpression(
+            this.block(
+                TokenType.LEFT_SQUARE_BRACKET,
+            ),
+        );
+    }
+
+
     public leafDeclaration() {
         const name = this.previous();
-        console.log('leafDeclaration name', name);
+        // console.log('leafDeclaration name', name);
         // console.log('bbbb toke', this.tokens[this.current]);
 
         let initializer = null;
@@ -76,29 +154,29 @@ class Parser {
             return new Statement.VariableStatement(name, initializer);
         }
 
-        if (
-            this.match(
-                TokenType.LEFT_CURLY_BRACKET,
-            )
-        ) {
-            const statements = this.block(
-                TokenType.LEFT_CURLY_BRACKET,
-            );
-            this.advance();
-            this.advance();
-            // this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
+        // if (
+        //     this.match(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //     )
+        // ) {
+        //     const statements = this.block(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //     );
+        //     this.advance();
+        //     this.advance();
+        //     // this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
 
-            console.log('TokenType.LEFT_CURLY_BRACKET', statements);
-            // return new Statement.VariableStatement(name, (st as any).expression);
+        //     // console.log('TokenType.LEFT_CURLY_BRACKET', statements);
+        //     // return new Statement.VariableStatement(name, (st as any).expression);
 
-            // return this.statement();
-            // initializer = this.expression();
-            // return new Statement.VariableStatement(name, initializer);
+        //     // return this.statement();
+        //     // initializer = this.expression();
+        //     // return new Statement.VariableStatement(name, initializer);
 
-            const a = new Statement.MapStatement(name, statements);
-            console.log('AAAAAA', a);
-            return a;
-        }
+        //     const a = new Statement.MapStatement(name, statements);
+        //     // console.log('AAAAAA', a);
+        //     return a;
+        // }
 
         // if (
         //     this.match(
@@ -119,21 +197,22 @@ class Parser {
                 TokenType.LEFT_CURLY_BRACKET,
             )
         ) {
-            console.log('LEFT_CURLY_BRACKET');
+            // console.log('LEFT_CURLY_BRACKET');
 
             const root = this.isRoot();
-            console.log('statement root', root);
+            // console.log('statement root', root);
 
             if (!root) {
-                const previous = this.previous();
-                console.log('previous', previous);
+                return;
+                // const previous = this.previous();
+                // // console.log('previous', previous);
 
-                return new Statement.MapStatement(
-                    previous,
-                    this.block(
-                        TokenType.LEFT_CURLY_BRACKET,
-                    ),
-                );
+                // return new Statement.MapStatement(
+                //     previous,
+                //     this.block(
+                //         TokenType.LEFT_CURLY_BRACKET,
+                //     ),
+                // );
             }
 
             return new Statement.RootStatement(
@@ -151,11 +230,16 @@ class Parser {
             const root = this.isRoot();
 
             if (!root) {
-                return new Statement.ListStatement(
-                    this.block(
-                        TokenType.LEFT_SQUARE_BRACKET,
-                    ),
-                );
+                return;
+
+                // const previous = this.previous();
+
+                // return new Statement.ListStatement(
+                //     previous,
+                //     this.block(
+                //         TokenType.LEFT_SQUARE_BRACKET,
+                //     ),
+                // );
             }
 
             return new Statement.RootStatement(
@@ -202,17 +286,18 @@ class Parser {
         tokenType: TokenType,
     ) {
         // console.log('root', root);
+        this.advance();
 
         switch (tokenType) {
             case TokenType.LEFT_CURLY_BRACKET: {
                 const statements: any[] = [];
 
-                while (
-                    !this.check(TokenType.RIGHT_CURLY_BRACKET)
-                    && !this.isAtEnd()
-                ) {
-                    statements.push(this.declaration());
-                }
+                // while (
+                //     !this.check(TokenType.RIGHT_CURLY_BRACKET)
+                //     && !this.isAtEnd()
+                // ) {
+                //     statements.push(this.declaration());
+                // }
 
                 // this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after block.");
 
@@ -221,14 +306,14 @@ class Parser {
             case TokenType.LEFT_SQUARE_BRACKET: {
                 const statements: any[] = [];
 
-                while (
-                    !this.check(TokenType.RIGHT_SQUARE_BRACKET)
-                    && !this.isAtEnd()
-                ) {
-                    statements.push(this.declaration());
-                }
+                // while (
+                //     !this.check(TokenType.RIGHT_SQUARE_BRACKET)
+                //     && !this.isAtEnd()
+                // ) {
+                //     statements.push(this.declaration());
+                // }
 
-                this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after block.");
+                // this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expect ']' after block.");
 
                 return statements;
             }
@@ -255,16 +340,19 @@ class Parser {
         //         return new Expression.AssignExpression(name, value);
         //     }
         // }
-        const previous = this.previous();
-        // console.log('assignment previous', previous);
 
-        // console.log('ddd toke', this.tokens[this.current]);
 
-        if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
-            expression = this.block(
-                TokenType.LEFT_CURLY_BRACKET,
-            );
-        }
+        // const previous = this.previous();
+        // // console.log('assignment previous', previous);
+
+        // // console.log('ddd toke', this.tokens[this.current]);
+
+        // if (this.match(TokenType.LEFT_CURLY_BRACKET)) {
+        //     expression = this.block(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //     );
+        // }
+
 
         // if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
         //     expression = this.block(
@@ -390,7 +478,7 @@ class Parser {
     }
 
     private advance() {
-        console.log('CURRENT TOKEN', this.tokens[this.current]);
+        // console.log('CURRENT TOKEN', this.tokens[this.current]);
 
         if (!this.isAtEnd()) {
             this.current += 1;
@@ -417,8 +505,13 @@ class Parser {
      */
     private isRoot() {
         const tokens = this.tokens
-            .slice(0, this.current)
+            .slice(0, this.current + 1)
             .reverse();
+        // console.log('isRoot tokens', tokens);
+
+        if (tokens.length === 0) {
+            return true;
+        }
 
         for (const [index, token] of tokens.entries()) {
             if (
@@ -426,6 +519,7 @@ class Parser {
                 || token.type === TokenType.LEFT_SQUARE_BRACKET
             ) {
                 const previousToken = tokens[index + 1];
+                // console.log('previousToken', previousToken);
 
                 if (
                     previousToken
