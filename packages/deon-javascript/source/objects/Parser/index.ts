@@ -33,6 +33,7 @@ class Parser {
         const statements: any[] = [];
 
         while (!this.isAtEnd()) {
+            console.log('statements statements statements', statements);
             statements.push(this.declaration());
         }
 
@@ -41,7 +42,7 @@ class Parser {
 
     public declaration() {
         try {
-            // console.log('aaa toke', this.tokens[this.current]);
+            console.log('declaration CURRENT TOKEN', this.tokens[this.current]);
 
             if (
                 this.match(TokenType.IDENTIFIER)
@@ -58,7 +59,7 @@ class Parser {
 
     public leafDeclaration() {
         const name = this.previous();
-        // console.log('leafDeclaration name', name);
+        console.log('leafDeclaration name', name);
         // console.log('bbbb toke', this.tokens[this.current]);
 
         let initializer = null;
@@ -67,31 +68,32 @@ class Parser {
                 TokenType.STRING,
             )
         ) {
-            // console.log('cccc toke', this.tokens[this.current]);
 
             initializer = this.expression();
+            console.log('leafDeclaration STRING token', this.tokens[this.current]);
+            console.log('initializer', initializer);
             return new Statement.VariableStatement(name, initializer);
         }
 
-        if (
-            this.match(
-                TokenType.LEFT_CURLY_BRACKET,
-            )
-        ) {
-            return this.statement();
-            // initializer = this.expression();
-            // return new Statement.MapStatement(name, initializer);
-        }
+        // if (
+        //     this.match(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //     )
+        // ) {
+        //     // return this.statement();
+        //     initializer = this.expression();
+        //     return new Statement.VariableStatement(name, initializer);
+        // }
 
-        if (
-            this.match(
-                TokenType.LEFT_SQUARE_BRACKET,
-            )
-        ) {
-            return this.statement();
-            // initializer = this.expression();
-            // return new Statement.ListStatement(name, initializer);
-        }
+        // if (
+        //     this.match(
+        //         TokenType.LEFT_SQUARE_BRACKET,
+        //     )
+        // ) {
+        //     // return this.statement();
+        //     initializer = this.expression();
+        //     return new Statement.VariableStatement(name, initializer);
+        // }
 
         return new Statement.VariableStatement(name, initializer);
     }
@@ -102,9 +104,11 @@ class Parser {
                 TokenType.LEFT_CURLY_BRACKET,
             )
         ) {
-            const root = !this.isRoot();
+            const root = this.isRoot();
 
-            if (root) {
+            console.log('statement root', root);
+
+            if (!root) {
                 return new Statement.MapStatement(
                     this.block(
                         TokenType.LEFT_CURLY_BRACKET,
@@ -126,9 +130,9 @@ class Parser {
                 TokenType.LEFT_SQUARE_BRACKET,
             )
         ) {
-            const root = !this.isRoot();
+            const root = this.isRoot();
 
-            if (root) {
+            if (!root) {
                 return new Statement.ListStatement(
                     this.block(
                         TokenType.LEFT_SQUARE_BRACKET,
@@ -261,6 +265,7 @@ class Parser {
 
     public primary(): Expression.Expression {
         const previous = this.previous();
+        console.log('primary previous', previous);
 
         if (
             previous.type === TokenType.STRING
@@ -268,18 +273,18 @@ class Parser {
             return new Expression.LiteralExpression(previous.literal);
         }
 
-        if (
-            previous.type === TokenType.LEFT_CURLY_BRACKET
-        ) {
-            // console.log('bracket LEFT_CURLY_BRACKET');
-            const expression: any = this.block(
-                TokenType.LEFT_CURLY_BRACKET,
-                false,
-            );
-            console.log('aaaaaDDD', expression);
-            // this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
-            // return new Expression.GroupingExpression(expression);
-        }
+        // if (
+        //     previous.type === TokenType.LEFT_CURLY_BRACKET
+        // ) {
+        //     // console.log('bracket LEFT_CURLY_BRACKET');
+        //     const expression: any = this.block(
+        //         TokenType.LEFT_CURLY_BRACKET,
+        //         false,
+        //     );
+        //     console.log('aaaaaDDD', expression);
+        //     this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expect '}' after expression.");
+        //     return new Expression.GroupingExpression(expression);
+        // }
 
         // if (
         //     previous.type === TokenType.LEFT_SQUARE_BRACKET
@@ -371,6 +376,8 @@ class Parser {
     }
 
     private advance() {
+        console.log('CURRENT TOKEN', this.tokens[this.current]);
+
         if (!this.isAtEnd()) {
             this.current += 1;
         }
@@ -390,14 +397,32 @@ class Parser {
         return this.tokens[this.current - 1];
     }
 
+    /**
+     * Reverse the tokens from the current position
+     * and check if there is an identifier for the block.
+     */
     private isRoot() {
-        const token = this.previous();
+        const tokens = this.tokens
+            .slice(0, this.current)
+            .reverse();
 
-        if (token.type === TokenType.IDENTIFIER) {
-            return true;
+        for (const [index, token] of tokens.entries()) {
+            if (
+                token.type === TokenType.LEFT_CURLY_BRACKET
+                || token.type === TokenType.LEFT_SQUARE_BRACKET
+            ) {
+                const previousToken = tokens[index + 1];
+
+                if (
+                    previousToken
+                    && previousToken.type === TokenType.IDENTIFIER
+                ) {
+                    return false;
+                }
+            }
         }
 
-        return false;
+        return true;
     }
 }
 // #endregion module
