@@ -406,13 +406,29 @@ class Scanner {
                     temp = [];
                 }
             } else {
-                lookup = true;
-                lineStart = token.line;
+                const inGroup = this.inGroup(index);
+                console.log('token', token, inGroup);
 
-                identifySignifier(
-                    index,
-                    token,
-                );
+                if (inGroup === 'MAP') {
+                    lookup = true;
+                    lineStart = token.line;
+
+                    identifySignifier(
+                        index,
+                        token,
+                    );
+                    continue;
+                }
+
+                if (inGroup === 'LIST') {
+                    const stringToken = this.stringFromSignifiers([
+                        token,
+                    ]);
+                    tokens.push(stringToken);
+                    continue;
+                }
+
+                tokens.push(token);
             }
         }
 
@@ -568,13 +584,17 @@ class Scanner {
             if (squareBrackets.left > squareBrackets.right) {
                 return 'LIST';
             }
+        }
 
-            if (
-                curlyBrackets.left === curlyBrackets.right
-                && squareBrackets.left === squareBrackets.right
-            ) {
-                return 'LEAFLINK';
-            }
+        /**
+         * TODO
+         * to find a less expensive way to check for leaflinks
+         */
+        if (
+            curlyBrackets.left === curlyBrackets.right
+            && squareBrackets.left === squareBrackets.right
+        ) {
+            return 'LEAFLINK';
         }
 
         return;

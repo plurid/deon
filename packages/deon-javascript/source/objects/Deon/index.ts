@@ -102,43 +102,44 @@ class Deon {
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
         console.log('tokens', tokens);
-        const parser = new Parser(
-            tokens,
-            this.error,
-        );
-        // console.log('parser', parser);
-        const statements = parser.parse();
-        // console.log('statements', statements);
+        // const parser = new Parser(
+        //     tokens,
+        //     this.error,
+        // );
+        // // console.log('parser', parser);
+        // const statements = parser.parse();
+        // // console.log('statements', statements);
 
         // // Stop if there was a syntax error.
         // if (this.hadError) {
         //     return;
         // }
 
-        // for (const statement of statements) {
-        //     console.log('statement', statement);
-        //     // for (const stmt of statement.statements) {
-        //     //     console.log('stmt', stmt);
-        //     // }
+        // // for (const statement of statements) {
+        // //     console.log('statement', statement);
+        // //     // for (const stmt of statement.statements) {
+        // //     //     console.log('stmt', stmt);
+        // //     // }
+        // // }
+
+        // const resolver = new Resolver(
+        //     this.interpreter,
+        //     this.error,
+        // );
+        // resolver.resolve(statements);
+
+        // // Stop if there was a resolution error.
+        // if (this.hadError) {
+        //     return;
         // }
 
-        const resolver = new Resolver(
-            this.interpreter,
-            this.error,
-        );
-        resolver.resolve(statements);
+        // const interpretedData = await this.interpreter.interpret(statements);
 
-        // Stop if there was a resolution error.
-        if (this.hadError) {
-            return;
-        }
+        // return interpretedData;
 
-        const interpretedData = await this.interpreter.interpret(statements);
-
-        return interpretedData;
-        // return {
-        //     key: 'value',
-        // };
+        return {
+            key: 'value',
+        };
     }
 
     stringify(
