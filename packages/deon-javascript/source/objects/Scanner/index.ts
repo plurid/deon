@@ -8,7 +8,7 @@
     // #endregion external
 // #endregion imports
 
-
+export type ScanMode = 'MAP' | 'LIST';
 
 // #region module
 class Scanner {
@@ -300,8 +300,10 @@ class Scanner {
 
     private identify() {
         const tokens: Token[] = [];
-        let lookup = false;
+        let mode = '';
+        let mapLookup = false;
         let lineStart = -1;
+        let listItemLine = -1;
         let temp: Token[] = [];
 
         const stringifyTemporary = () => {
@@ -332,6 +334,15 @@ class Scanner {
         }
 
         for (const [index, token] of this.tokens.entries()) {
+            switch (token.type) {
+                case TokenType.LEFT_CURLY_BRACKET:
+                    mode = 'MAP';
+                    break;
+                case TokenType.LEFT_SQUARE_BRACKET:
+                    mode = 'LIST';
+                    break;
+            }
+
             // console.log('token', token);
             // console.log('lookup', lookup);
             // console.log('lineStart', lineStart);
@@ -345,11 +356,15 @@ class Scanner {
                 stringifyTemporary();
 
                 tokens.push(token);
-                lookup = false;
+                mapLookup = false;
                 continue;
             }
 
             if (token.type === TokenType.STRING) {
+                if (mode === 'LIST') {
+                    stringifyTemporary();
+                }
+
                 tokens.push(token);
                 continue;
 
@@ -392,43 +407,40 @@ class Scanner {
                 // }
             }
 
-            if (lookup) {
-                if (lineStart === token.line) {
+            if (mode === 'MAP') {
+                if (mapLookup) {
+                    if (lineStart === token.line) {
+                        temp.push(token);
+                    } else {
+                        stringifyTemporary();
+
+                        identifySignifier(
+                            index,
+                            token,
+                        );
+                        lineStart = token.line;
+                        temp = [];
+                    }
+                } else {
+                    mapLookup = true;
+                    lineStart = token.line;
+
+                    identifySignifier(
+                        index,
+                        token,
+                    );
+                }
+            }
+
+            if (mode === 'LIST') {
+                if (listItemLine === token.line) {
                     temp.push(token);
                 } else {
                     stringifyTemporary();
 
-                    identifySignifier(
-                        index,
-                        token,
-                    );
-                    lineStart = token.line;
-                    temp = [];
+                    listItemLine = token.line;
+                    temp.push(token);
                 }
-            } else {
-                const inGroup = this.inGroup(index);
-                console.log('token', token, inGroup);
-
-                if (inGroup === 'MAP') {
-                    lookup = true;
-                    lineStart = token.line;
-
-                    identifySignifier(
-                        index,
-                        token,
-                    );
-                    continue;
-                }
-
-                if (inGroup === 'LIST') {
-                    const stringToken = this.stringFromSignifiers([
-                        token,
-                    ]);
-                    tokens.push(stringToken);
-                    continue;
-                }
-
-                tokens.push(token);
             }
         }
 
