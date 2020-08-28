@@ -586,7 +586,7 @@ A `map` can be spreaded only in another `map`. A `list` can be spreaded only in 
 ``` deon
 {
     entity {
-        ...spread
+        ...#spread
     }
 }
 
@@ -608,7 +608,7 @@ whereas
 ``` deon
 {
     entity [
-        ...spread
+        ...#spread
     ]
 }
 
