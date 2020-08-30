@@ -560,6 +560,45 @@ or dot-accessed with shortened link
 in which case, the `key` will be the last key of the dot-access string.
 
 
+### Name-access
+
+A `leaflink` can be name-accessed:
+
+``` deon
+{
+    entities [
+        {
+            name #entity1[name]
+        }
+    ]
+}
+
+#entity1 {
+    name The Entity
+}
+```
+
+or from a `list`:
+
+``` deon
+{
+    entities [
+        {
+            name #names[0]
+        }
+    ]
+}
+
+#names [
+    one
+    two
+    three
+]
+```
+
+The `list` has a zero-based indexation.
+
+
 ### Spreading
 
 A `leaflink` can be spreaded by tripledots `...`:
