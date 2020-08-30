@@ -76,14 +76,14 @@ export class RootStatement extends Statement {
     /**
      * The `statement` is either a `MapStatement` or a `ListStatement`.
      */
-    public statement: Statement;
+    public statements: Statement[];
 
     constructor(
-        statement: Statement,
+        statements: Statement[],
     ) {
         super();
 
-        this.statement = statement;
+        this.statements = statements;
     }
 
     accept<T>(

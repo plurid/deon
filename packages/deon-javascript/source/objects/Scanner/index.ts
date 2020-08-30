@@ -338,9 +338,23 @@ class Scanner {
                 case TokenType.LEFT_CURLY_BRACKET:
                     mode = 'MAP';
                     break;
+                case TokenType.RIGHT_CURLY_BRACKET: {
+                    const inGroup = this.inGroup(index + 1);
+                    if (inGroup === 'MAP' || inGroup === 'LIST') {
+                        mode = inGroup;
+                    }
+                    break;
+                }
                 case TokenType.LEFT_SQUARE_BRACKET:
                     mode = 'LIST';
                     break;
+                case TokenType.RIGHT_SQUARE_BRACKET: {
+                    const inGroup = this.inGroup(index + 1);
+                    if (inGroup === 'MAP' || inGroup === 'LIST') {
+                        mode = inGroup;
+                    }
+                    break;
+                }
             }
 
             if (
