@@ -190,20 +190,19 @@ describe.only('Deon values', () => {
     it('complex root map', async () => {
         const dataValues = `
 {
-    // key1 value1
-    key1 {
+    key1 value1
+    key2 {
         aa bb
         cc dd
     }
-    // key2 value2
-    // key3 value3
+    key3 value3
+    key4 value4
     one [
         two four five six
         three seven
         two
-        // 'nine ten    '
+        'nine ten    '
     ]
-    key4 value4
     // key5 value5
     // key6 value6
     // key7 value7
@@ -231,11 +230,14 @@ describe.only('Deon values', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        console.log(data);
+        const end = Date.now();
+        console.log('data', data);
+        console.log('time', end - start);
 
         // expect(data.key).toEqual('value');
     });

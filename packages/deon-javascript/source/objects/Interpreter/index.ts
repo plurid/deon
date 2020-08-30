@@ -13,6 +13,10 @@
     import {
         fetcher,
     } from '../../utilities/fetcher';
+
+    import {
+        mapToObject,
+    } from '../../utilities/general';
     // #endregion external
 // #endregion imports
 
@@ -31,9 +35,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     ) {
         try {
             for (const statement of statements) {
-                console.log('A rootEnvironment rootEnvironment', this.rootEnvironment);
+                // console.log('A rootEnvironment rootEnvironment', this.rootEnvironment);
                 await this.execute(statement);
-                console.log('B rootEnvironment rootEnvironment', this.rootEnvironment);
+                // console.log('B rootEnvironment rootEnvironment', this.rootEnvironment);
             }
 
             return this.extract();
@@ -46,8 +50,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async execute(
         statement: Statement.Statement,
     ) {
-        console.log('execute', statement);
-        await statement.accept(this);
+        // console.log('execute', statement);
+        const value: any = await statement.accept(this);
+        return value;
     }
 
     public resolve(
@@ -61,16 +66,17 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
     public extract() {
-        console.log('this.environment', this.environment);
-        console.log('this.rootEnvironment', this.rootEnvironment);
-
         const obj: any = {};
 
         const values = this.rootEnvironment.getAll();
-        console.log('extract values', values);
 
         for (const [key, value] of values) {
-            obj[key] = value;
+            if (value instanceof Environment) {
+                const envValues = value.getAll();
+                obj[key] = mapToObject(envValues);
+            } else {
+                obj[key] = value;
+            }
         }
 
         return obj;
@@ -99,10 +105,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitBlockStatement(
+    public async visitBlockStatement(
         statement: Statement.BlockStatement,
     ) {
-        this.executeBlock(
+        await this.executeBlock(
             statement.statements,
             new Environment(this.environment),
         );
@@ -110,19 +116,19 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitRootStatement(
+    public async visitRootStatement(
         statement: Statement.RootStatement,
     ) {
-        // this.executeBlock(
-        //     statement.statements,
-        //     new Environment(this.environment),
-        //     'root',
-        // );
+        await this.executeBlock(
+            statement.statements,
+            new Environment(),
+            'root',
+        );
 
         return null;
     }
 
-    public visitMapStatement(
+    public async visitMapStatement(
         statement: Statement.MapStatement,
     ) {
         const name = statement.name.lexeme;
@@ -148,7 +154,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitListStatement(
+    public async visitListStatement(
         statement: Statement.ListStatement,
     ) {
         const name = statement.name.lexeme;
@@ -164,20 +170,20 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitExpressionStatement(
+    public async visitExpressionStatement(
         statement: Statement.ExpressionStatement,
     ) {
-        this.evaluate(statement.expression);
+        await this.evaluate(statement.expression);
         return null;
     }
 
-    public visitVariableStatement(
+    public async visitVariableStatement(
         statement: Statement.VariableStatement,
     ) {
         let value = null;
 
         if (statement.initializer !== null) {
-            value = this.evaluate(statement.initializer);
+            value = await this.evaluate(statement.initializer);
         }
 
         this.environment.define(statement.name.lexeme, value);
@@ -206,22 +212,44 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
     }
 
-    public visitMapExpression(
+    public async visitMapExpression(
         expression: Expression.MapExpression,
     ) {
+        const environment = await this.executeBlock(
+            expression.keys,
+            new Environment(this.environment),
+        );
+        // console.log('environment visitMapExpression', environment);
 
+        return environment;
     }
 
-    public visitListExpression(
+    public async visitListExpression(
         expression: Expression.ListExpression,
     ) {
+        const environment = await this.executeBlock(
+            expression.items,
+            new Environment(),
+        );
 
+        if (environment) {
+            const data: any = [];
+            const values = environment.getAll();
+
+            for (const [index, value] of values.entries()) {
+                data[index] = value;
+            }
+
+            return data;
+        }
+
+        return;
     }
 
-    public visitGroupingExpression(
+    public async visitGroupingExpression(
         groupingExpression: Expression.GroupingExpression,
     ) {
-        return this.evaluate(groupingExpression.expression);
+        return await this.evaluate(groupingExpression.expression);
     }
 
     public visitVariableExpression(
@@ -233,10 +261,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         );
     }
 
-    public visitAssignExpression(
+    public async visitAssignExpression(
         expression: Expression.AssignExpression,
     ) {
-        const value = this.evaluate(expression.value);
+        const value = await this.evaluate(expression.value);
 
         const distance = this.locals.get(expression);
         if (distance) {
@@ -257,7 +285,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
 
-    public executeBlock(
+    public async executeBlock(
         statements: Statement.Statement[],
         environment: Environment,
         type?: string,
@@ -268,12 +296,22 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         try {
             this.environment = environment;
 
-            for (const statement of statements) {
-                this.execute(statement);
+            for (const [index, statement] of statements.entries()) {
+                const value: any = await this.execute(statement);
+                // console.log('DDD', value);
+
+                if (value) {
+                    this.environment.define(
+                        index + '',
+                        value,
+                    );
+                }
             }
 
+            // console.log('this.aaaa', this.environment);
+
             if (type === 'root') {
-                // this.rootEnvironment = this.environment;
+                this.rootEnvironment = this.environment;
             } else {
                 local = this.environment;
             }
@@ -286,10 +324,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    public evaluate(
+    public async evaluate(
         expression: Expression.Expression,
-    ): any {
-        return expression.accept(this);
+    ): Promise<any> {
+        return await expression.accept(this);
     }
 
     public isTruthy(

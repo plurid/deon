@@ -1,7 +1,5 @@
 {
-    aList [
-        one
-        two
-        three four
-    ]
+    aMap {
+        aKey aValue
+    }
 }

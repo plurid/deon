@@ -4,7 +4,6 @@
 
     import {
         Expression,
-        VariableExpression,
     } from '../Expression';
     // #endregion external
 // #endregion imports

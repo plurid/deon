@@ -1,6 +1,10 @@
 // #region imports
     // #region external
     import Token from '../Token';
+
+    import {
+        Statement,
+    } from '../Statement';
     // #endregion external
 // #endregion imports
 
@@ -109,10 +113,10 @@ export class RootExpression extends Expression {
 
 
 export class MapExpression extends Expression {
-    public keys: Expression[];
+    public keys: Statement[];
 
     constructor(
-        keys: Expression[],
+        keys: Statement[],
     ) {
         super();
 
@@ -129,10 +133,10 @@ export class MapExpression extends Expression {
 
 
 export class ListExpression extends Expression {
-    public items: Expression[];
+    public items: Statement[];
 
     constructor(
-        items: Expression[],
+        items: Statement[],
     ) {
         super();
 
