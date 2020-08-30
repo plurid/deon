@@ -8,7 +8,8 @@
 
 // #region module
 const cli = () => {
-    Deon.main(process.argv);
+    const deon = new Deon();
+    deon.demand(process.argv);
 }
 // #endregion module
 

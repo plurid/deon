@@ -14,15 +14,13 @@
     import Parser from '../Parser';
     import Interpreter from '../Interpreter';
     import Resolver from '../Resolver';
-    import {
-        RuntimeError,
-    } from '../Errors';
 
     import {
         TokenType,
     } from '../../data/enumerations';
 
     import {
+        DeonParseOptions,
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
     } from '../../data/interfaces';
@@ -33,13 +31,15 @@
 
 // #region module
 class Deon {
-    private interpreter: Interpreter = new Interpreter(
-        this.runtimeError,
-    );
+    private interpreter: Interpreter = new Interpreter();
     private hadError = false;
-    private hadRuntimeError = false;
 
-    async main(
+    /**
+     * Parse based on arguments passed as command line.
+     *
+     * @param args
+     */
+    async demand(
         args: string[],
     ) {
         const length = args.length;
@@ -64,6 +64,12 @@ class Deon {
         return;
     }
 
+    /**
+     * Parse from file
+     *
+     * @param file
+     * @param options
+     */
     async parseFile(
         file: string,
         options?: PartialDeonParseOptions,
@@ -80,20 +86,27 @@ class Deon {
             const parsed = this.parse(data);
 
             if (this.hadError) {
-                console.log(`Error parsing file: ${file}`);
+                console.log(`Deon :: Error parsing file: ${file}`);
                 return;
             }
 
             return parsed;
         } catch (error) {
-            console.log(`Error reading file: ${file}`);
+            console.log(`Deon :: Error reading file: ${file}`);
 
             return;
         }
     }
 
+    /**
+     * Parse deon string `data`.
+     *
+     * @param data
+     * @param options
+     */
     async parse(
         data: string,
+        options?: DeonParseOptions,
     ) {
         const scanner = new Scanner(
             data,
@@ -126,7 +139,7 @@ class Deon {
         //     this.interpreter,
         //     this.error,
         // );
-        // resolver.resolve(statements);
+        // await resolver.resolve(statements);
 
         // // Stop if there was a resolution error.
         // if (this.hadError) {
@@ -142,6 +155,12 @@ class Deon {
         };
     }
 
+    /**
+     * Transform in-memory `data` into a deon string.
+     *
+     * @param data
+     * @param options
+     */
     stringify(
         data: any,
         options?: PartialDeonStringifyOptions,
@@ -150,6 +169,12 @@ class Deon {
         return '';
     }
 
+    /**
+     * Log error.
+     *
+     * @param entity
+     * @param message
+     */
     error(
         entity: number | Token,
         message: string,
@@ -168,21 +193,19 @@ class Deon {
         }
     }
 
-    runtimeError(
-        error: RuntimeError,
-    ) {
-        console.log(
-            error.message + '\n[line ' + error.token?.line + ']'
-        );
-        this.hadRuntimeError = true;
-    }
-
+    /**
+     * Logs to console a static error.
+     *
+     * @param line
+     * @param where
+     * @param message
+     */
     report(
         line: number,
         where: string,
         message: string,
     ) {
-        const value = '[line ' + line + '] Error' + where + ': ' + message;
+        const value = 'Deon :: [line ' + line + '] Error' + where + ': ' + message;
         console.log(value);
 
         this.hadError = true;

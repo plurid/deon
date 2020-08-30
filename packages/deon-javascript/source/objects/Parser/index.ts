@@ -215,11 +215,11 @@ class Parser {
                 // );
             }
 
-            return new Statement.RootStatement(
-                this.block(
-                    TokenType.LEFT_CURLY_BRACKET,
-                ),
-            );
+            // return new Statement.RootStatement(
+            //     this.block(
+            //         TokenType.LEFT_CURLY_BRACKET,
+            //     ),
+            // );
         }
 
         if (
@@ -242,11 +242,11 @@ class Parser {
                 // );
             }
 
-            return new Statement.RootStatement(
-                this.block(
-                    TokenType.LEFT_SQUARE_BRACKET,
-                ),
-            );
+            // return new Statement.RootStatement(
+            //     this.block(
+            //         TokenType.LEFT_SQUARE_BRACKET,
+            //     ),
+            // );
         }
 
         if (

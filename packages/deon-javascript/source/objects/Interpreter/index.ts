@@ -9,9 +9,6 @@
     import * as Statement from '../Statement';
     import Environment from '../Environment';
     import Token from '../Token';
-    import {
-        RuntimeError,
-    } from '../Errors';
 
     import {
         fetcher,
@@ -27,14 +24,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
     private rootEnvironment: Environment = new Environment();
-    private runtimeError: any;
-
-
-    constructor(
-        runtimeError: any,
-    ) {
-        this.runtimeError = runtimeError;
-    }
 
 
     public async interpret(
@@ -49,7 +38,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             return this.extract();
         } catch (error) {
-            this.runtimeError(error);
 
             return;
         }
@@ -125,11 +113,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public visitRootStatement(
         statement: Statement.RootStatement,
     ) {
-        this.executeBlock(
-            statement.statements,
-            new Environment(this.environment),
-            'root',
-        );
+        // this.executeBlock(
+        //     statement.statements,
+        //     new Environment(this.environment),
+        //     'root',
+        // );
 
         return null;
     }
@@ -139,23 +127,23 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     ) {
         const name = statement.name.lexeme;
 
-        const environment = this.executeBlock(
-            statement.statements,
-            new Environment(this.environment),
-        );
+        // const environment = this.executeBlock(
+        //     statement.statements,
+        //     new Environment(this.environment),
+        // );
 
-        if (environment) {
-            const values = environment.getAll();
-            console.log('aaa', values);
+        // if (environment) {
+        //     const values = environment.getAll();
+        //     console.log('aaa', values);
 
-            this.rootEnvironment.define(
-                name,
-                values,
-            );
-            console.log('CC this.rootEnvironment', this.rootEnvironment);
-        }
-        console.log('statement', name, statement);
-        console.log('environment', environment);
+        //     this.rootEnvironment.define(
+        //         name,
+        //         values,
+        //     );
+        //     console.log('CC this.rootEnvironment', this.rootEnvironment);
+        // }
+        // console.log('statement', name, statement);
+        // console.log('environment', environment);
 
         return null;
     }
@@ -165,12 +153,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     ) {
         const name = statement.name.lexeme;
 
-        const environment = this.executeBlock(
-            statement.statements,
-            new Environment(this.environment),
-        );
+        // const environment = this.executeBlock(
+        //     statement.statements,
+        //     new Environment(this.environment),
+        // );
 
-        console.log('environment', environment);
+        // console.log('environment', environment);
 
 
         return null;
@@ -204,6 +192,30 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         literalExpression: Expression.LiteralExpression,
     ) {
         return literalExpression.value;
+    }
+
+    public visitKeyExpression(
+        expression: Expression.KeyExpression,
+    ) {
+
+    }
+
+    public visitRootExpression(
+        expression: Expression.RootExpression,
+    ) {
+
+    }
+
+    public visitMapExpression(
+        expression: Expression.MapExpression,
+    ) {
+
+    }
+
+    public visitListExpression(
+        expression: Expression.ListExpression,
+    ) {
+
     }
 
     public visitGroupingExpression(
@@ -322,7 +334,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             return;
         }
 
-        throw new RuntimeError(operator, 'Operand must be a number.');
+        // throw new RuntimeError(operator, 'Operand must be a number.');
     }
 
     public checkNumberOperands(
@@ -334,7 +346,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             return;
         }
 
-        throw new RuntimeError(operator, 'Operands must be numbers.');
+        // throw new RuntimeError(operator, 'Operands must be numbers.');
     }
 
     public stringify(

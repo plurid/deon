@@ -1,9 +1,6 @@
 // #region imports
     // #region external
     import Token from '../Token';
-    import {
-        RuntimeError,
-    } from '../Errors';
     // #endregion external
 // #endregion imports
 
@@ -38,10 +35,10 @@ class Environment {
             return this.enclosing.get(name);
         }
 
-        throw new RuntimeError(
-            name,
-            `Undefined variable '${name.lexeme}'`,
-        );
+        // throw new RuntimeError(
+        //     name,
+        //     `Undefined variable '${name.lexeme}'`,
+        // );
     }
 
     public assign(
@@ -58,10 +55,10 @@ class Environment {
             return;
         }
 
-        throw new RuntimeError(
-            name,
-            `Undefined variable '${name.lexeme}'`,
-        );
+        // throw new RuntimeError(
+        //     name,
+        //     `Undefined variable '${name.lexeme}'`,
+        // );
     }
 
     public getAt(
