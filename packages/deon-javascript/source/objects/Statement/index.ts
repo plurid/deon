@@ -73,14 +73,17 @@ export class BlockStatement extends Statement {
 
 
 export class RootStatement extends Statement {
-    public statements: Statement[];
+    /**
+     * The `statement` is either a `MapStatement` or a `ListStatement`.
+     */
+    public statement: Statement;
 
     constructor(
-        statements: Statement[],
+        statement: Statement,
     ) {
         super();
 
-        this.statements = statements;
+        this.statement = statement;
     }
 
     accept<T>(
@@ -93,16 +96,16 @@ export class RootStatement extends Statement {
 
 export class MapStatement extends Statement {
     public name: Token;
-    public statements: Statement[];
+    public value: Expression;
 
     constructor(
         name: Token,
-        statements: Statement[],
+        value: Expression,
     ) {
         super();
 
         this.name = name;
-        this.statements = statements;
+        this.value = value;
     }
 
     accept<T>(
@@ -115,16 +118,16 @@ export class MapStatement extends Statement {
 
 export class ListStatement extends Statement {
     public name: Token;
-    public statements: Statement[];
+    public value: Expression;
 
     constructor(
         name: Token,
-        statements: Statement[],
+        value: Expression,
     ) {
         super();
 
         this.name = name;
-        this.statements = statements;
+        this.value = value;
     }
 
     accept<T>(

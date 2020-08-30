@@ -191,12 +191,12 @@ describe.only('Deon values', () => {
         const dataValues = `
 {
     key1 value1
-    one [
-        two four five six
-        three seven
-        two
-        'nine ten    '
-    ]
+    // one [
+    //     two four five six
+    //     three seven
+    //     two
+    //     'nine ten    '
+    // ]
     // key2 value2
     // key3 value3
     // key4 value4
