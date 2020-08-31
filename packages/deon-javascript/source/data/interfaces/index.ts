@@ -20,4 +20,7 @@ export interface DeonStringifyOptions {
 }
 
 export type PartialDeonStringifyOptions = Partial<DeonStringifyOptions>;
+
+
+export type RootKind = 'map' | 'list';
 // #endregion module

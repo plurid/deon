@@ -1,5 +1,9 @@
 // #region imports
     // #region external
+    import {
+        RootKind,
+    } from '../../data/interfaces';
+
     import Token from '../Token';
 
     import {
@@ -72,16 +76,16 @@ export class BlockStatement extends Statement {
 
 
 export class RootStatement extends Statement {
-    /**
-     * The `statement` is either a `MapStatement` or a `ListStatement`.
-     */
+    public kind: RootKind;
     public statements: Statement[];
 
     constructor(
+        kind: RootKind,
         statements: Statement[],
     ) {
         super();
 
+        this.kind = kind;
         this.statements = statements;
     }
 

@@ -566,20 +566,26 @@ describe.only('Deon nested', () => {
 
     it('simple nest - list level 3', async () => {
         const dataValues = `
-// [
-//     a
-//     b
-//     c
-// ]
-
-aMap {
-    key value
-}
-
-aList [
-    one
-    two
+[
+    a
+    b
+    c
+    d
 ]
+
+// {
+//     a b
+//     c d
+// }
+
+// aMap {
+//     key value
+// }
+
+// aList [
+//     one
+//     two
+// ]
 
 // {
 //     map1 {

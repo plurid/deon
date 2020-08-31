@@ -83,7 +83,7 @@ class Parser {
             // return this.statement();
             return;
         } catch (error) {
-            console.log('declaration error', error);
+            // console.log('declaration error', error);
             this.synchronize();
             return null;
         }
@@ -94,8 +94,8 @@ class Parser {
         this.advance();
         const value = this.peek();
 
-        console.log('handleIdentifier name', name);
-        console.log('handleIdentifier value', value);
+        // console.log('handleIdentifier name', name);
+        // console.log('handleIdentifier value', value);
 
         switch (value.type) {
             case TokenType.STRING: {
@@ -133,6 +133,7 @@ class Parser {
         }
 
         return new Statement.RootStatement(
+            'map',
             this.block(
                 TokenType.LEFT_CURLY_BRACKET,
             ),
@@ -151,6 +152,7 @@ class Parser {
         }
 
         return new Statement.RootStatement(
+            'list',
             this.block(
                 TokenType.LEFT_SQUARE_BRACKET,
             ),
