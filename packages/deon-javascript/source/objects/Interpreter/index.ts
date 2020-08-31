@@ -27,6 +27,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public globals: Environment = new Environment();
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
+    private leaflinks: Environment = new Environment();
     private rootEnvironment: Environment = new Environment();
     private rootKind = 'map';
 
@@ -202,6 +203,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitVariableStatement(
         statement: Statement.VariableStatement,
     ) {
+        console.log('visitVariableStatement statement', statement);
+
         let value = null;
 
         if (statement.initializer !== null) {

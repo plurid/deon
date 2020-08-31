@@ -613,4 +613,27 @@ describe('Deon nested', () => {
 
     });
 });
+
+
+describe.only('Deon lealinks', () => {
+    it('simple', async () => {
+        const dataValues = `
+{
+    key value
+}
+
+map {
+    key1 value1
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        console.log(data);
+
+        // expect(data.map1.map2.map3.key).toEqual('value');
+    });
+});
 // #endregion module
