@@ -238,6 +238,34 @@ key value
         expect(data.list[1]).toEqual('two');
     });
 
+    it('multiple values - key-value, map, list', async () => {
+        const dataValues = `
+{
+    key value
+    map {
+        one two
+        three four
+    }
+    list [
+        one
+        two
+    ]
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        console.log(data);
+
+        expect(data.key).toEqual('value');
+        expect(data.map.one).toEqual('two');
+        expect(data.map.three).toEqual('four');
+        expect(data.list[0]).toEqual('one');
+        expect(data.list[1]).toEqual('two');
+    });
+
 
 //     it('multiple key value', async () => {
 //         const dataValues = `
