@@ -28,6 +28,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
     private rootEnvironment: Environment = new Environment();
+    private rootKind = 'map';
 
 
     public async interpret(
@@ -84,7 +85,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
     public extract() {
-        const obj: any = {};
+        const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
         console.log('extract', values);
@@ -138,6 +139,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitRootStatement(
         statement: Statement.RootStatement,
     ) {
+        this.rootKind = statement.kind;
+
         await this.executeBlock(
             statement.statements,
             new Environment(),
