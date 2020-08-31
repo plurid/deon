@@ -1,0 +1,50 @@
+$schema: 'https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json'
+name: deon
+scopeName: source.deon
+patterns:
+  - include: '#core'
+repository:
+  core:
+    patterns:
+      - include: '#keywords'
+      - include: '#data-dividers'
+  keywords:
+    patterns:
+      - match: '^\s*?(\w+):'
+        captures:
+          1:
+            name: constant.other.object.key.deon
+      - match: '\b(\w+)\s*{'
+        captures:
+          1:
+            name: variable.other.constant.deon
+      - match: '\b([a-z]\w+);'
+        captures:
+          1:
+            name: support.type.primitive.deon
+      - match: '\b([A-Z]\w+);'
+        captures:
+          1:
+            name: variable.other.constant.deon
+      - name: storage.type.deon
+        match: '^\b(data)\b'
+      - match: '^\s*@(sign|graphql|protobuf|typescript):'
+        captures:
+          1:
+            name: entity.name.function.deon
+      - name: comment.deon
+        match: '\/\/.+'
+      - name: comment.deon
+        match: '^(\/\*\*(.+)?)|((\s+)?\*(.+)?\/?)'
+  data-dividers:
+    begin: '{'
+    end: '}'
+    beginCaptures:
+      0:
+        name: punctuation.paren.open
+    endCaptures:
+      0:
+        name: punctuation.paren.close
+    name: expression.group
+    patterns:
+      - include: '#keywords'
