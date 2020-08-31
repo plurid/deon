@@ -5,6 +5,8 @@
     } from 'fs';
 
     import path from 'path';
+
+    import utilities from 'util';
     // #endregion libraries
 
 
@@ -55,7 +57,15 @@ class Deon {
             );
 
             if (data) {
-                console.log(data);
+                console.log(
+                    utilities.inspect(
+                        data,
+                        {
+                            showHidden: false,
+                            depth: null,
+                        },
+                    ),
+                );
             }
 
             return;

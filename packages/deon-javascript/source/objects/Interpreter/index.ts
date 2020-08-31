@@ -65,15 +65,34 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         );
     }
 
-    public extract() {
-        const obj: any = {};
-
-        const values = this.rootEnvironment.getAll();
+    private extractFromValues(
+        values: any,
+    ) {
+        let obj: any = {}
 
         for (const [key, value] of values) {
             if (value instanceof Environment) {
                 const envValues = value.getAll();
-                obj[key] = mapToObject(envValues);
+                const keyValue = this.extractFromValues(envValues);
+                obj[key] = keyValue;
+            } else {
+                obj[key] = value;
+            }
+        }
+
+        return obj;
+    }
+
+    public extract() {
+        const obj: any = {};
+
+        const values = this.rootEnvironment.getAll();
+        console.log('extract', values);
+
+        for (const [key, value] of values) {
+            if (value instanceof Environment) {
+                const envValues = value.getAll();
+                obj[key] = this.extractFromValues(envValues);
             } else {
                 obj[key] = value;
             }

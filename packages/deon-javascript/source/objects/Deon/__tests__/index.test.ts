@@ -138,7 +138,7 @@ import deonFile2 from ./deonPath2
 });
 
 
-describe.only('Deon values', () => {
+describe('Deon simple', () => {
     it('pure empty - new lines', async () => {
         const dataValues = `
 {
@@ -424,5 +424,136 @@ key value
 
 //         expect(data.key).toEqual('value');
 //     });
+});
+
+
+describe.only('Deon nested', () => {
+    it('simple nest - map level 3', async () => {
+        const dataValues = `
+{
+    map1 {
+        map2 {
+            map3 {
+                key value
+            }
+        }
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        console.log(data);
+
+        expect(data.map1.map2.map3.key).toEqual('value');
+    });
+
+
+
+    xit('simple nest - map level 7', async () => {
+        const dataValues = `
+{
+    map1 {
+        map2 {
+            map3 {
+                map4 {
+                    map5 {
+                        map6 {
+                            map7 {
+                                key value
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.map1.map2.map3.map4.map5.map6.map7.key).toEqual('value');
+    });
+
+
+
+    xit('simple nest - map level 14', async () => {
+        const dataValues = `
+{
+    map1 {
+        map2 {
+            map3 {
+                map4 {
+                    map5 {
+                        map6 {
+                            map7 {
+                                map8 {
+                                    map9 {
+                                        map10 {
+                                            map11 {
+                                                map12 {
+                                                    map13 {
+                                                        map14 {
+                                                            key value
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.map1.map2.map3.map4.map5.map6.map7.map8.map9.map10.map11.map12.map13.map14.key).toEqual('value');
+    });
+
+
+
+    it('simple nest - list level 3', async () => {
+        const dataValues = `
+{
+    list1 [
+        {
+            list2 [
+                {
+                    list3 [
+                        itemOne
+                    ]
+                }
+            ]
+        }
+    ]
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        console.log(data);
+
+        expect(data.list1[0].list2[0].list3[0]).toEqual('itemOne');
+    });
 });
 // #endregion module
