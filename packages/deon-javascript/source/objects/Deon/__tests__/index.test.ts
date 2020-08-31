@@ -1,5 +1,11 @@
 // #region imports
-import Deon from '../';
+    // #region external
+    import Deon from '../';
+
+    import {
+        log,
+    } from '../../../utilities/log';
+    // #endregion external
 // #endregion imports
 
 
@@ -428,7 +434,7 @@ key value
 
 
 describe.only('Deon nested', () => {
-    it('simple nest - map level 3', async () => {
+    xit('simple nest - map level 3', async () => {
         const dataValues = `
 {
     map1 {
@@ -530,7 +536,7 @@ describe.only('Deon nested', () => {
 
 
 
-    it('simple nest - list level 3', async () => {
+    xit('simple nest - list level 3', async () => {
         const dataValues = `
 {
     list1 [
@@ -554,6 +560,38 @@ describe.only('Deon nested', () => {
         console.log(data);
 
         expect(data.list1[0].list2[0].list3[0]).toEqual('itemOne');
+    });
+
+
+
+    it('simple nest - list level 3', async () => {
+        const dataValues = `
+{
+    map1 {
+        map2 {
+            list [
+                {
+                    one {
+                        two [
+                            three
+                            four
+                        ]
+                    }
+                }
+                two
+                three
+            ]
+        }
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        log(data);
+
     });
 });
 // #endregion module

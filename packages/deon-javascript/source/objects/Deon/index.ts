@@ -5,8 +5,6 @@
     } from 'fs';
 
     import path from 'path';
-
-    import utilities from 'util';
     // #endregion libraries
 
 
@@ -26,6 +24,10 @@
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
     } from '../../data/interfaces';
+
+    import {
+        log,
+    } from '../../utilities/log';
     // #endregion external
 // #endregion imports
 
@@ -57,15 +59,7 @@ class Deon {
             );
 
             if (data) {
-                console.log(
-                    utilities.inspect(
-                        data,
-                        {
-                            showHidden: false,
-                            depth: null,
-                        },
-                    ),
-                );
+                log(data);
             }
 
             return;
