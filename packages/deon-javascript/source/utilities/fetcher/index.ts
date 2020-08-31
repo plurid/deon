@@ -1,6 +1,6 @@
 // #region imports
     // #region libraries
-    import * as fetch from 'cross-fetch';
+    import fetch from 'cross-fetch';
     // #endregion libraries
 
     // #region external
@@ -26,7 +26,7 @@ const fetcher = async (
                 ...fetcherDefaultHeaders,
             };
 
-        const response = await fetch.default(
+        const response = await fetch(
             path,
             {
                 headers,

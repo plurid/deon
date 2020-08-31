@@ -1,6 +1,7 @@
-const resolve = require('@rollup/plugin-node-resolve').default;
-const sourceMaps = require('rollup-plugin-sourcemaps');
-const typescript = require('rollup-plugin-typescript2');
+import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import sourceMaps from 'rollup-plugin-sourcemaps';
+import typescript from 'rollup-plugin-typescript2';
 
 
 
@@ -22,13 +23,14 @@ export default {
         include: 'source/**',
     },
     plugins: [
-        typescript({
-            file: '../tsconfig.json',
-            useTsconfigDeclarationDir: true,
-        }),
+        commonjs(),
         resolve({
             preferBuiltins: true,
         }),
         sourceMaps(),
+        typescript({
+            file: '../tsconfig.json',
+            useTsconfigDeclarationDir: true,
+        }),
     ],
 }
