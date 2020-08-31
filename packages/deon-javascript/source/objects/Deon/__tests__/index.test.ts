@@ -619,7 +619,24 @@ describe.only('Deon lealinks', () => {
     it('simple', async () => {
         const dataValues = `
 {
-    key value
+    rootKey1 rootValue2
+    rootKey2 root Value 2
+    rootKey3 {
+        key value
+    }
+    rootKey4 'root Value 4'
+    rootKey5 [
+        one
+        two three
+
+        // buggy
+        // {
+        //     four five
+        // }
+    ]
+
+    // buggy
+    // 'root key 4' root Value 4
 }
 
 map {
@@ -631,7 +648,7 @@ map {
         const data = await deon.parse(
             dataValues,
         );
-        console.log(data);
+        log(data);
 
         // expect(data.map1.map2.map3.key).toEqual('value');
     });

@@ -36,11 +36,29 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statements: Statement.Statement[],
     ) {
         try {
+            const importStatements = [];
+            const leaflinkStatements = [];
+            let rootStatement;
+
             for (const statement of statements) {
-                // console.log('A rootEnvironment rootEnvironment', this.rootEnvironment);
-                await this.execute(statement);
-                // console.log('B rootEnvironment rootEnvironment', this.rootEnvironment);
+                if (statement instanceof Statement.ImportStatement) {
+                    importStatements.push(statement);
+                }
+
+                if (statement instanceof Statement.RootStatement) {
+                    leaflinkStatements.push(statement);
+                }
+
+                if (statement instanceof Statement.RootStatement) {
+                    rootStatement = statement;
+                }
             }
+
+            await this.resolveLeaflinks([
+                ...importStatements,
+                ...leaflinkStatements,
+            ]);
+            await this.resolveRoot(rootStatement);
 
             return this.extract();
         } catch (error) {
@@ -440,6 +458,25 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             return this.environment.getAt(distance, name.lexeme);
         } else {
             return this.globals.get(name);
+        }
+    }
+
+    private async resolveRoot(
+        statement: Statement.RootStatement | undefined,
+    ) {
+        if (!statement) {
+            return;
+        }
+
+        await this.execute(statement);
+    }
+
+    private async resolveLeaflinks(
+        statements: Statement.Statement[],
+    ) {
+        for (const statement of statements) {
+            const leaflink = await this.execute(statement);
+            console.log('leaflink', leaflink);
         }
     }
 }
