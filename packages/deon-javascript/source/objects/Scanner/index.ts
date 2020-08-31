@@ -400,6 +400,8 @@ class Scanner {
                         token,
                     );
                 }
+
+                continue;
             }
 
             if (mode === 'LIST') {
@@ -411,7 +413,14 @@ class Scanner {
                     listItemLine = token.line;
                     temporary.push(token);
                 }
+
+                continue;
             }
+
+            identifySignifier(
+                index,
+                token,
+            );
         }
 
         this.tokens = [

@@ -94,8 +94,8 @@ class Parser {
         this.advance();
         const value = this.peek();
 
-        // console.log('handleIdentifier name', name);
-        // console.log('handleIdentifier value', value);
+        console.log('handleIdentifier name', name);
+        console.log('handleIdentifier value', value);
 
         switch (value.type) {
             case TokenType.STRING: {
@@ -112,7 +112,9 @@ class Parser {
             }
             case TokenType.LEFT_SQUARE_BRACKET: {
                 const expression = this.handleList();
-                return new Statement.VariableStatement(name, expression);
+                if (expression instanceof Expression.ListExpression) {
+                    return new Statement.VariableStatement(name, expression);
+                }
             }
         }
 
@@ -148,11 +150,11 @@ class Parser {
             );
         }
 
-        return new Expression.RootExpression(
+        return new Statement.RootStatement(
             this.block(
                 TokenType.LEFT_SQUARE_BRACKET,
             ),
-        );
+        )
     }
 
 
