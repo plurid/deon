@@ -88,7 +88,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        console.log('extract', values);
+        // console.log('extract', values);
 
         for (const [key, value] of values) {
             if (value instanceof Environment) {

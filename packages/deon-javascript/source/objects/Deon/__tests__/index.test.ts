@@ -11,137 +11,137 @@
 
 
 // #region module
-describe('Deon', () => {
-    it('works', async () => {
-        const dataImport = `
-import deonFile from ./deonPath
-        `;
+// describe('Deon', () => {
+//     it('works', async () => {
+//         const dataImport = `
+// import deonFile from ./deonPath
+//         `;
 
 
-        const dataEmpty = `
-{
-    c [
-        20 44
-        30
-    ]
-    c {
-        20 30
-    }
-    c 20 30
-}
-        `;
-
-        const dataIdentify2 = `
-{
-    a b c d
-    'one two' three four
-    e fg h
-}
-
-a { a b, c d, e f}
-        `;
-
-        const dataIdentify = `
-{
-    one two three four
-    five six seven
-    eight nine
-}
-        `;
-
-//         const dataSimple = `
+//         const dataEmpty = `
 // {
-//     simpleKey simpleValue
-// }
-
-// link {
-//     aaa bbb
+//     c [
+//         20 44
+//         30
+//     ]
+//     c {
+//         20 30
+//     }
+//     c 20 30
 // }
 //         `;
 
-        const dataComplex = `
-{
-    mapKey {
-        // root comment
-        mapList [
-            listItem1, listItem2
-            listItem 3
-        ]
-        stringValue value // inline comment
-        longLink #arbitraryLink
-        #shortLink
-        'long name' A name with multiple Spaces
-        multiLine \`
-        example
-of multiline
-value
-        \`
-    }
-}
+//         const dataIdentify2 = `
+// {
+//     a b c d
+//     'one two' three four
+//     e fg h
+// }
 
-/*
-    multiline
-    comment
-*/
+// a { a b, c d, e f}
+//         `;
 
-arbitraryLink data
+//         const dataIdentify = `
+// {
+//     one two three four
+//     five six seven
+//     eight nine
+// }
+//         `;
 
-shortLink [
-    linkValue
-]
-        `;
+// //         const dataSimple = `
+// // {
+// //     simpleKey simpleValue
+// // }
 
-        const expectedDataSimple = {
-            name: 'data',
-        };
+// // link {
+// //     aaa bbb
+// // }
+// //         `;
 
-        const expectedDataComplex = {
-            mapKey: {
-                mapList: [
-                    'listItem1',
-                    'listItem2',
-                ],
-                strinValue: 'value',
-                longLink: 'data',
-                shortLink: [
-                    'linkValue',
-                ],
-                'long name': 'A name with multiple Spaces',
-            },
-        };
+//         const dataComplex = `
+// {
+//     mapKey {
+//         // root comment
+//         mapList [
+//             listItem1, listItem2
+//             listItem 3
+//         ]
+//         stringValue value // inline comment
+//         longLink #arbitraryLink
+//         #shortLink
+//         'long name' A name with multiple Spaces
+//         multiLine \`
+//         example
+// of multiline
+// value
+//         \`
+//     }
+// }
 
-        const deon = new Deon();
-        const data = await deon.parse(
-            dataImport,
-            // dataEmpty,
-            // dataSimple,
-            // dataComplex,
-        );
-    });
-});
+// /*
+//     multiline
+//     comment
+// */
+
+// arbitraryLink data
+
+// shortLink [
+//     linkValue
+// ]
+//         `;
+
+//         const expectedDataSimple = {
+//             name: 'data',
+//         };
+
+//         const expectedDataComplex = {
+//             mapKey: {
+//                 mapList: [
+//                     'listItem1',
+//                     'listItem2',
+//                 ],
+//                 strinValue: 'value',
+//                 longLink: 'data',
+//                 shortLink: [
+//                     'linkValue',
+//                 ],
+//                 'long name': 'A name with multiple Spaces',
+//             },
+//         };
+
+//         const deon = new Deon();
+//         const data = await deon.parse(
+//             dataImport,
+//             // dataEmpty,
+//             // dataSimple,
+//             // dataComplex,
+//         );
+//     });
+// });
 
 
-describe('Deon imports', () => {
-    it('works', async () => {
-        const dataImport = `
-import deonFile from ./deonPath
+// describe('Deon imports', () => {
+//     it('works', async () => {
+//         const dataImport = `
+// import deonFile from ./deonPath
 
-{
-    field #deonFile.field
-    import import
-    ...#deonFile
-}
+// {
+//     field #deonFile.field
+//     import import
+//     ...#deonFile
+// }
 
-import deonFile2 from ./deonPath2
+// import deonFile2 from ./deonPath2
 
-        `;
+//         `;
 
-        const deon = new Deon();
-        const data = await deon.parse(
-            dataImport,
-        );
-    });
-});
+//         const deon = new Deon();
+//         const data = await deon.parse(
+//             dataImport,
+//         );
+//     });
+// });
 
 
 describe('Deon simple', () => {
@@ -251,6 +251,25 @@ key value
         expect(data.map.key2).toEqual('value2');
     });
 
+
+
+    it('simple list - as root', async () => {
+        const dataValues = `
+[
+    one
+    two
+]
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data[0]).toEqual('one');
+        expect(data[1]).toEqual('two');
+    });
 
 
     it('simple list - new lines', async () => {
@@ -433,8 +452,8 @@ key value
 });
 
 
-describe.only('Deon nested', () => {
-    xit('simple nest - map level 3', async () => {
+describe('Deon nested', () => {
+    it('simple nest - map level 3', async () => {
         const dataValues = `
 {
     map1 {
@@ -451,14 +470,14 @@ describe.only('Deon nested', () => {
         const data = await deon.parse(
             dataValues,
         );
-        console.log(data);
+        // console.log(data);
 
         expect(data.map1.map2.map3.key).toEqual('value');
     });
 
 
 
-    xit('simple nest - map level 7', async () => {
+    it('simple nest - map level 7', async () => {
         const dataValues = `
 {
     map1 {
@@ -490,7 +509,7 @@ describe.only('Deon nested', () => {
 
 
 
-    xit('simple nest - map level 14', async () => {
+    it('simple nest - map level 14', async () => {
         const dataValues = `
 {
     map1 {
@@ -536,7 +555,7 @@ describe.only('Deon nested', () => {
 
 
 
-    xit('simple nest - list level 3', async () => {
+    it('simple nest - list level 3', async () => {
         const dataValues = `
 {
     list1 [
@@ -557,7 +576,7 @@ describe.only('Deon nested', () => {
         const data = await deon.parse(
             dataValues,
         );
-        console.log(data);
+        // console.log(data);
 
         expect(data.list1[0].list2[0].list3[0]).toEqual('itemOne');
     });
@@ -566,45 +585,24 @@ describe.only('Deon nested', () => {
 
     it('simple nest - list level 3', async () => {
         const dataValues = `
-[
-    a
-    b
-    c
-    d
-]
-
-// {
-//     a b
-//     c d
-// }
-
-// aMap {
-//     key value
-// }
-
-// aList [
-//     one
-//     two
-// ]
-
-// {
-//     map1 {
-//         map2 {
-//             list [
-//                 {
-//                     one {
-//                         two [
-//                             three
-//                             four
-//                         ]
-//                     }
-//                 }
-//                 two
-//                 three
-//             ]
-//         }
-//     }
-// }
+{
+    map1 {
+        map2 {
+            list [
+                {
+                    one {
+                        two [
+                            three
+                            four
+                        ]
+                    }
+                }
+                two
+                three
+            ]
+        }
+    }
+}
         `;
 
         const deon = new Deon();
