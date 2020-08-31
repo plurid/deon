@@ -154,6 +154,8 @@ describe.only('Deon values', () => {
         expect(Object.keys(data).length).toEqual(0);
     });
 
+
+
     it('pure empty - same line', async () => {
         const dataValues = `
 {}
@@ -184,6 +186,8 @@ key value
         expect(Object.keys(data).length).toEqual(0);
     });
 
+
+
     it('simple key value', async () => {
         const dataValues = `
 {
@@ -199,6 +203,8 @@ key value
 
         expect(data.key).toEqual('value');
     });
+
+
 
     it('simple map', async () => {
         const dataValues = `
@@ -217,6 +223,29 @@ key value
 
         expect(data.map.key).toEqual('value');
     });
+
+
+
+    it('simple map - multiple values, comma separated', async () => {
+        const dataValues = `
+{
+    map {
+        key1 value1, key2 value2
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.map.key1).toEqual('value1');
+        expect(data.map.key2).toEqual('value2');
+    });
+
+
 
     it('simple list - new lines', async () => {
         const dataValues = `
@@ -238,6 +267,29 @@ key value
         expect(data.list[1]).toEqual('two');
     });
 
+
+
+    it('simple list - comma separated', async () => {
+        const dataValues = `
+{
+    list [
+        one, two
+    ]
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.list[0]).toEqual('one');
+        expect(data.list[1]).toEqual('two');
+    });
+
+
+
     it('multiple values - key-value, map, list', async () => {
         const dataValues = `
 {
@@ -257,7 +309,7 @@ key value
         const data = await deon.parse(
             dataValues,
         );
-        console.log(data);
+        // console.log(data);
 
         expect(data.key).toEqual('value');
         expect(data.map.one).toEqual('two');
@@ -265,6 +317,7 @@ key value
         expect(data.list[0]).toEqual('one');
         expect(data.list[1]).toEqual('two');
     });
+
 
 
 //     it('multiple key value', async () => {
