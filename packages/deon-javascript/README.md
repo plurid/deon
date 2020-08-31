@@ -675,6 +675,8 @@ import <name> from <path>
 
 Where the `name` is an arbitrary string, and the `path` is the path of the targeted `.deon` file.
 
+The `path` does not have to have the `.deon` filename extension specified.
+
 The import imports the `root` from the targeted `.deon` file in order to be used as a regular, locally-defined `leaflink`.
 
 The import statement order in file is not important. Imports will be resolved primarily, before any other action. The import `name` must be unique among all the other imports and among the locally-defined `leaflink`s, given that there is no discernible conceptual difference between them.
