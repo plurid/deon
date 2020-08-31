@@ -139,18 +139,105 @@ import deonFile2 from ./deonPath2
 
 
 describe.only('Deon values', () => {
-//     it('simple key value', async () => {
-//         const dataValues = `
-// key value
-//         `;
+    it('pure empty - new lines', async () => {
+        const dataValues = `
+{
+}
+        `;
 
-        // const deon = new Deon();
-//         const data = await deon.parse(
-//             dataValues,
-//         );
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
 
-//         expect(data.key).toEqual('value');
-//     });
+        expect(Object.keys(data).length).toEqual(0);
+    });
+
+    it('pure empty - same line', async () => {
+        const dataValues = `
+{}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(Object.keys(data).length).toEqual(0);
+    });
+
+    it('empty - with leaflinks', async () => {
+        const dataValues = `
+{}
+
+key value
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(Object.keys(data).length).toEqual(0);
+    });
+
+    it('simple key value', async () => {
+        const dataValues = `
+{
+    key value
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key).toEqual('value');
+    });
+
+    it('simple map', async () => {
+        const dataValues = `
+{
+    map {
+        key value
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.map.key).toEqual('value');
+    });
+
+    it('simple list - new lines', async () => {
+        const dataValues = `
+{
+    list [
+        one
+        two
+    ]
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.list[0]).toEqual('one');
+        expect(data.list[1]).toEqual('two');
+    });
+
 
 //     it('multiple key value', async () => {
 //         const dataValues = `
@@ -187,60 +274,60 @@ describe.only('Deon values', () => {
 //         expect(data.key).toEqual('value');
 //     });
 
-    it('complex root map', async () => {
-        const dataValues = `
-{
-    key1 value1
-    key2 {
-        aa bb
-        cc dd
-    }
-    key3 value3
-    key4 value4
-    one [
-        two four five six
-        three seven
-        two
-        'nine ten    '
-    ]
-    // key5 value5
-    // key6 value6
-    // key7 value7
-    // key8 value8
-    // key9 value9
-    // key3 {
-    //     one two
-    // //     three four
-    //     three {
-    //         four five six seven
-    //         nine [
-    //             foo
-    //             boo too coo
-    //         ]
-    // //     //     eight {
-    // //     //         nine foo
-    // //     //         ten {
-    // //     //             asd fff
-    // //     //             hhh jjj
-    // //     //             zz nm
-    // //     //         }
-    // //     //     }
-    //     }
-    // }
-}
-        `;
+//     it('complex root map', async () => {
+//         const dataValues = `
+// {
+//     key1 value1
+//     key2 {
+//         aa bb
+//         cc dd
+//     }
+//     key3 value3
+//     key4 value4
+//     one [
+//         two four five six
+//         three seven
+//         two
+//         'nine ten    '
+//     ]
+//     // key5 value5
+//     // key6 value6
+//     // key7 value7
+//     // key8 value8
+//     // key9 value9
+//     // key3 {
+//     //     one two
+//     // //     three four
+//     //     three {
+//     //         four five six seven
+//     //         nine [
+//     //             foo
+//     //             boo too coo
+//     //         ]
+//     // //     //     eight {
+//     // //     //         nine foo
+//     // //     //         ten {
+//     // //     //             asd fff
+//     // //     //             hhh jjj
+//     // //     //             zz nm
+//     // //     //         }
+//     // //     //     }
+//     //     }
+//     // }
+// }
+//         `;
 
-        const start = Date.now();
-        const deon = new Deon();
-        const data = await deon.parse(
-            dataValues,
-        );
-        const end = Date.now();
-        console.log('data', data);
-        console.log('time', end - start);
+//         const start = Date.now();
+//         const deon = new Deon();
+//         const data = await deon.parse(
+//             dataValues,
+//         );
+//         const end = Date.now();
+//         console.log('data', data);
+//         console.log('time', end - start);
 
-        // expect(data.key).toEqual('value');
-    });
+//         // expect(data.key).toEqual('value');
+//     });
 
 //     it('simple root list', async () => {
 //         const dataValues = `
