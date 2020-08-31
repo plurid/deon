@@ -12,7 +12,7 @@
 
 // #region module
 describe('Deon simple', () => {
-    it('pure empty - new lines', async () => {
+    it('pure empty map - new lines', async () => {
         const dataValues = `
 {
 }
@@ -29,7 +29,25 @@ describe('Deon simple', () => {
 
 
 
-    it('pure empty - same line', async () => {
+    it('pure empty list - new lines', async () => {
+        const dataValues = `
+[
+
+]
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.length).toEqual(0);
+    });
+
+
+
+    it('pure empty map - same line', async () => {
         const dataValues = `
 {}
         `;
@@ -42,6 +60,24 @@ describe('Deon simple', () => {
 
         expect(Object.keys(data).length).toEqual(0);
     });
+
+
+
+    it('pure empty list - same line', async () => {
+        const dataValues = `
+[]
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.length).toEqual(0);
+    });
+
+
 
     it('empty - with leaflinks', async () => {
         const dataValues = `
