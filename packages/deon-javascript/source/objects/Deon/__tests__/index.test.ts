@@ -389,7 +389,6 @@ value
 
         expect(data.key).toEqual('value');
     });
-
 });
 
 
@@ -707,6 +706,155 @@ list [
         expect(data[0]).toEqual('aValue');
         expect(data[1]).toEqual('anotherValue');
     });
+
+
+
+    it('simple - map spread', async () => {
+        const dataValues = `
+{
+    ...#map
+}
+
+map {
+    one two
+    three four
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.one).toEqual('two');
+        expect(data.three).toEqual('four');
+    });
+
+
+
+    it('simple - list spread', async () => {
+        const dataValues = `
+[
+    ...#list
+]
+
+list [
+    one two
+    three four
+]
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.length).toEqual(2);
+        expect(data[0]).toEqual('one two');
+        expect(data[1]).toEqual('three four');
+    });
+
+
+
+    it('simple - map spread dot-accessed', async () => {
+        const dataValues = `
+{
+    ...#map.entities
+}
+
+map {
+    entities {
+        one two
+        three four
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.one).toEqual('two');
+        expect(data.three).toEqual('four');
+    });
+
+
+
+    it('simple - map spread name-accessed', async () => {
+        const dataValues = `
+{
+    ...#map[entities]
+}
+
+map {
+    entities {
+        one two
+        three four
+    }
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.one).toEqual('two');
+        expect(data.three).toEqual('four');
+    });
+
+
+
+    it('simple - string spread in map', async () => {
+        const dataValues = `
+{
+    entity {
+        ...#spread
+    }
+}
+
+spread abc
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.entity.a).toEqual('a');
+        expect(data.entity.b).toEqual('b');
+        expect(data.entity.c).toEqual('c');
+    });
+
+
+
+    it('simple - string spread in list', async () => {
+        const dataValues = `
+{
+    entity [
+        ...#spread
+    ]
+}
+
+spread abc
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+
+        expect(data.entity[0]).toEqual('a');
+        expect(data.entity[1]).toEqual('b');
+        expect(data.entity[2]).toEqual('c');
+    });
 });
 
 
@@ -726,6 +874,22 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
         );
 
         expect(data.key).toEqual('aValue');
+    });
+});
+
+
+describe('Deon stringify', () => {
+    it('simple stringify', async () => {
+        const dataValues = {
+            key: 'value',
+        };
+
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+        expect(data.key).toEqual('value');
     });
 });
 
