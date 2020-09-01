@@ -111,7 +111,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const values = this.rootEnvironment.getAll();
         // console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
-        // console.log('leaflinks', this.leaflinks.getAll());
+        console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
         for (const [key, value] of values) {

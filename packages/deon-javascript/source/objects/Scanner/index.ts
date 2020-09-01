@@ -333,6 +333,31 @@ class Scanner {
             tokens.push(token);
         }
 
+        const identifyLeaflink = (
+            token: Token,
+        ) => {
+            const lastToken = tokens[tokens.length - 1];
+
+            if (!lastToken) {
+                const identifierToken = this.identifierFromSignifier(token);
+                tokens.push(identifierToken);
+                return;
+            }
+
+            if (
+                lastToken.line === token.line
+                && lastToken.type === TokenType.IDENTIFIER
+                && token.type === TokenType.SIGNIFIER
+            ) {
+                const stringToken = this.stringFromSignifiers([token]);
+                tokens.push(stringToken);
+                return;
+            }
+
+            const identifierToken = this.identifierFromSignifier(token);
+            tokens.push(identifierToken);
+        }
+
         for (const [index, token] of this.tokens.entries()) {
             switch (token.type) {
                 case TokenType.LEFT_CURLY_BRACKET:
@@ -342,6 +367,8 @@ class Scanner {
                     const inGroup = this.inGroup(index + 1);
                     if (inGroup === 'MAP' || inGroup === 'LIST') {
                         mode = inGroup;
+                    } else {
+                        mode = '';
                     }
                     break;
                 }
@@ -352,6 +379,8 @@ class Scanner {
                     const inGroup = this.inGroup(index + 1);
                     if (inGroup === 'MAP' || inGroup === 'LIST') {
                         mode = inGroup;
+                    } else {
+                        mode = '';
                     }
                     break;
                 }
@@ -414,6 +443,15 @@ class Scanner {
                     temporary.push(token);
                 }
 
+                continue;
+            }
+
+            const inGroup = this.inGroup(index);
+
+            if (inGroup === 'LEAFLINK') {
+                identifyLeaflink(
+                    token,
+                );
                 continue;
             }
 

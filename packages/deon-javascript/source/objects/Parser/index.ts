@@ -66,6 +66,12 @@ class Parser {
             }
 
             if (
+                current.type === TokenType.LINK
+            ) {
+                return this.handleLink();
+            }
+
+            if (
                 current.type === TokenType.LEFT_CURLY_BRACKET
             ) {
                 return this.handleMap();
@@ -78,9 +84,6 @@ class Parser {
             }
 
             this.advance();
-            // return TokenType[current.type];
-            // return this.statement();
-            // return this.statement();
             return;
         } catch (error) {
             // console.log('declaration error', error);
@@ -124,6 +127,17 @@ class Parser {
         }
 
         return new Statement.VariableStatement(name, null);
+    }
+
+    public handleLink() {
+        // TODO
+        // resolve the name of the link
+
+        const link = this.peek();
+
+        const expression = new Expression.LiteralExpression(link.literal);
+        this.advance();
+        return new Statement.LinkStatement(link, expression);
     }
 
     public handleMap() {
