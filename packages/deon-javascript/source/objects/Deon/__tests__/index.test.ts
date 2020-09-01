@@ -902,20 +902,21 @@ describe.only('Deon testings', () => {
     it('simple', async () => {
         const dataValues = `
 {
-    key #map
+    // key #map
+    key #list
 
     // buggy
     // 'root key 4' root Value 4
 }
 
-map {
-    key1 value1
-}
+// map {
+//     key1 value1
+// }
 
-// list [
-//     one
-//     two
-// ]
+list [
+    one
+    two
+]
         `;
 
         const deon = new Deon();

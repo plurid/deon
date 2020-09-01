@@ -251,8 +251,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const leaflink = values.get(leaflinkName);
         if (leaflink) {
             console.log('leaflink', leaflink);
-            const values = leaflink.getAll();
-            value = mapToObject(values);
+            // is array
+            value = leaflink;
+
+            // is environment
+            // const values = leaflink.getAll();
+            // value = mapToObject(values);
         }
 
         this.environment.define(statement.name.lexeme, value);
