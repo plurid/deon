@@ -41,6 +41,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Linking](#linking)
 + [Importing](#importing)
 + [Stringifying](#stringifying)
++ [Parsing](#parsing)
 + [Advanced Usage](#advanced-usage)
 + [In Use](#in-use)
 
@@ -722,7 +723,7 @@ with the `token` being passed into the `Authorization: Bearer <token>` header of
 
 ## Stringifying
 
-A `stringify` method is implemented in order to convert an in-memory data representation to string. An `options` object can be passed.
+A `stringify` method is implemented in order to convert an in-memory data representation to string. A partial `options` object can be passed.
 
 ``` typescript
 interface DeonStringifyOptions {
@@ -733,6 +734,21 @@ interface DeonStringifyOptions {
     leaflinkShortening: boolean;
     generatedHeader: boolean;
     generatedComments: boolean;
+}
+```
+
+
+
+## Parsing
+
+The `parse` method can receive the following partial options:
+
+``` typescript
+interface DeonParseOptions {
+    absolutePaths: Record<string, string>,
+    authorization: Record<string, string>,
+    datasignFiles: string[];
+    datasignMap: Record<string, string>;
 }
 ```
 
