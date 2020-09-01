@@ -253,10 +253,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             leaflinkName = await this.evaluate(statement.initializer);
         }
 
+        console.log('visitLinkStatement', name, leaflinkName);
+
         if (name === leaflinkName) {
             const values = this.leaflinks.getAll();
             const leaflinkValue = values.get(name);
-            // console.log('leaflinkValue', leaflinkValue);
+            console.log('leaflinkValue', leaflinkValue);
 
             if (!leaflinkValue) {
                 // if looking for leaflinks
@@ -264,6 +266,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 return;
             }
 
+            // if it is shortened defined
+            this.environment.define(name, leaflinkValue);
+
+            // if it is in array
             return leaflinkValue;
         } else {
             // console.log('leaflinkName', leaflinkName);

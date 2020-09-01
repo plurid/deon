@@ -899,7 +899,7 @@ describe('Deon stringify', () => {
 
 
 describe.only('Deon testings', () => {
-    it('simple', async () => {
+    xit('simple', async () => {
         const dataValues = `
 // {
 //     key value
@@ -957,6 +957,30 @@ listItem2 [
 ]
 
 one #two
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        log(data);
+
+        // expect(data.map1.map2.map3.key).toEqual('value');
+    });
+
+
+
+    it('simple', async () => {
+        const dataValues = `
+{
+    one {
+        two {
+            #key
+        }
+    }
+}
+
+key value
         `;
 
         const deon = new Deon();
