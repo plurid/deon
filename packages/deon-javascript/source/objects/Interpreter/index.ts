@@ -107,7 +107,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        // console.log('extract', values);
+        console.log('rootEnvironment', this.rootEnvironment);
+        console.log('extract', values);
+        console.log('------------');
 
         for (const [key, value] of values) {
             if (value instanceof Environment) {
@@ -274,13 +276,20 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             expression.items,
             new Environment(),
         );
+        console.log('visitListExpression environment', environment);
 
         if (environment) {
             const data: any = [];
             const values = environment.getAll();
 
             for (const [index, value] of values.entries()) {
-                data[index] = value;
+                if (value instanceof Environment) {
+                    const values = value.getAll();
+                    const environmentValue = this.extractFromValues(values);
+                    data[index] = environmentValue;
+                } else {
+                    data[index] = value;
+                }
             }
 
             return data;

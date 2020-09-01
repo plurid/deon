@@ -912,6 +912,15 @@ describe.only('Deon testings', () => {
         {
             four five
         }
+        [
+            one two
+            [
+                three four
+                {
+                    five six
+                }
+            ]
+        ]
     ]
 
     // buggy
