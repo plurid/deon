@@ -124,6 +124,24 @@ list [
 
 
 
+    it('simple key value special characters', async () => {
+        const dataValues = `
+{
+    key 'value with 4 trailing spaces    '
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key).toEqual('value with 4 trailing spaces    ');
+    });
+
+
+
     it('simple key value multi-string', async () => {
         const dataValues = `
 {
@@ -653,5 +671,5 @@ map {
 
         // expect(data.map1.map2.map3.key).toEqual('value');
     });
-})
+});
 // #endregion module
