@@ -285,6 +285,31 @@ value
 
 
 
+    it('simple list - spaced words', async () => {
+        const dataValues = `
+{
+    list [
+        one two three
+        four five six
+        seven
+    ]
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.list.length).toEqual(3);
+        expect(data.list[0]).toEqual('one two three');
+        expect(data.list[1]).toEqual('four five six');
+        expect(data.list[2]).toEqual('seven');
+    });
+
+
+
     it('multiple values - key-value, map, list', async () => {
         const dataValues = `
 {
