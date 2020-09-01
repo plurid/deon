@@ -17,7 +17,12 @@ export default {
     external: [
         'fs',
         'path',
-        'readline',
+        'util',
+        'http',
+        'stream',
+        'https',
+        'url',
+        'zlib',
     ],
     watch: {
         include: 'source/**',
