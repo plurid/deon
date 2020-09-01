@@ -337,6 +337,59 @@ value
         expect(data.list[0]).toEqual('one');
         expect(data.list[1]).toEqual('two');
     });
+
+
+
+    it('simple comments', async () => {
+        const dataValues = `
+// comment outside root
+{
+    // comment inside root
+    key value // comment inline
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key).toEqual('value');
+    });
+
+
+
+    it('simple comments - multi-line', async () => {
+        const dataValues = `
+/*
+    multi
+    line
+    comment outside root
+*/
+{
+    /*
+        multi
+        line
+        comment inside root
+    */
+    key value /*
+        multi
+        line
+        comment starting inline
+    */
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key).toEqual('value');
+    });
+
 });
 
 
