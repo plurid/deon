@@ -24,7 +24,7 @@
 
 + light on syntax — friendly for human read/write, should feel more like note-taking than data entry;
 + moderately fast — with a general use case for configuration-like files, loaded once at build/runtime;
-+ programming-lite - although not a programming language, the in-file imports and the linking (in-file variables) give `deon` a programmatic feel.
++ programming-lite — although not a programming language, the in-file imports and the linking (in-file variables) give `deon` a programmatic feel.
 
 The `deon` filename extension is `.deon`, and the media type is `application/deon`.
 
