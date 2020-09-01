@@ -84,6 +84,15 @@ describe('Deon simple', () => {
 {}
 
 key value
+
+map {
+    key value
+}
+
+list [
+    one
+    two
+]
         `;
 
         const deon = new Deon();
@@ -111,6 +120,28 @@ key value
         // console.log(data);
 
         expect(data.key).toEqual('value');
+    });
+
+
+
+    it('simple key value multi-string', async () => {
+        const dataValues = `
+{
+    key \`
+a
+   multi-line
+value
+\`
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key.split('\n').length).toEqual(3);
     });
 
 
@@ -585,24 +616,24 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
 });
 
 
-describe('Deon testings', () => {
+describe.only('Deon testings', () => {
     it('simple', async () => {
         const dataValues = `
 {
-    rootKey1 rootValue2
-    rootKey2 root Value 2
-    rootKey3 {
-        key value
-    }
-    rootKey4 'root Value 4'
+    // rootKey1 rootValue2
+    // rootKey2 root Value 2
+    // rootKey3 {
+    //     key value
+    // }
+    // rootKey4 'root Value 4'
     rootKey5 [
         one
         two three
 
-        // buggy
-        // {
-        //     four five
-        // }
+        buggy
+        {
+            four five
+        }
     ]
 
     // buggy
