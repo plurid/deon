@@ -41,12 +41,14 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             let rootStatement;
 
             for (const statement of statements) {
-                if (statement instanceof Statement.ImportStatement) {
-                    importStatements.push(statement);
+                if (
+                    statement instanceof Statement.VariableStatement
+                ) {
+                    leaflinkStatements.push(statement);
                 }
 
-                if (statement instanceof Statement.RootStatement) {
-                    leaflinkStatements.push(statement);
+                if (statement instanceof Statement.ImportStatement) {
+                    importStatements.push(statement);
                 }
 
                 if (statement instanceof Statement.RootStatement) {
@@ -109,6 +111,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const values = this.rootEnvironment.getAll();
         // console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
+        // console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
         for (const [key, value] of values) {
@@ -223,8 +226,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitVariableStatement(
         statement: Statement.VariableStatement,
     ) {
-        // console.log('visitVariableStatement statement', statement);
-
         let value = null;
 
         if (statement.initializer !== null) {
@@ -236,6 +237,28 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public async visitLinkStatement(
+        statement: Statement.LinkStatement,
+    ) {
+        let value = null;
+        let leaflinkName;
+
+        if (statement.initializer) {
+            leaflinkName = await this.evaluate(statement.initializer);
+        }
+
+        const values = this.leaflinks.getAll();
+        const leaflink = values.get(leaflinkName);
+        if (leaflink) {
+            console.log('leaflink', leaflink);
+            const values = leaflink.getAll();
+            value = mapToObject(values);
+        }
+
+        this.environment.define(statement.name.lexeme, value);
+
+        return null;
+    }
 
 
     /** EXPRESSIONS */
@@ -484,9 +507,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statements: Statement.Statement[],
     ) {
         for (const statement of statements) {
-            const leaflink = await this.execute(statement);
-            // console.log('leaflink', leaflink);
+            await this.execute(statement);
         }
+
+        this.leaflinks = this.environment;
     }
 }
 // #endregion module

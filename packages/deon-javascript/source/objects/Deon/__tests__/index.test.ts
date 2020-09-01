@@ -898,34 +898,11 @@ describe('Deon stringify', () => {
 });
 
 
-describe('Deon testings', () => {
+describe.only('Deon testings', () => {
     it('simple', async () => {
         const dataValues = `
 {
-    // rootKey1 rootValue2
-    // rootKey2 root Value 2
-    // rootKey3 {
-    //     key value
-    // }
-    // rootKey4 'root Value 4'
-    rootKey5 [
-        one
-        two three
-
-        buggy
-        {
-            four five
-        }
-        [
-            one two
-            [
-                three four
-                {
-                    five six
-                }
-            ]
-        ]
-    ]
+    key #map
 
     // buggy
     // 'root key 4' root Value 4
@@ -934,6 +911,11 @@ describe('Deon testings', () => {
 map {
     key1 value1
 }
+
+// list [
+//     one
+//     two
+// ]
         `;
 
         const deon = new Deon();

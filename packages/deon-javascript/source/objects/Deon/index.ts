@@ -132,12 +132,12 @@ class Deon {
         //     return;
         // }
 
-        // for (const statement of statements) {
-        //     // console.log('statement', statement);
-        //     for (const stmt of statement.statements) {
-        //         console.log('stmt', stmt);
-        //     }
-        // }
+        for (const statement of statements) {
+            console.log('statement', statement);
+            // for (const stmt of statement.statements) {
+            //     console.log('stmt', stmt);
+            // }
+        }
 
         // const resolver = new Resolver(
         //     this.interpreter,

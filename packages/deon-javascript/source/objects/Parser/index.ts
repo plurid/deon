@@ -103,6 +103,11 @@ class Parser {
                 this.advance();
                 return new Statement.VariableStatement(name, expression);
             }
+            case TokenType.LINK: {
+                const expression = new Expression.LiteralExpression(value.literal);
+                this.advance();
+                return new Statement.LinkStatement(name, expression);
+            }
             case TokenType.LEFT_CURLY_BRACKET: {
                 const expression = this.handleMap();
                 if (expression instanceof Expression.MapExpression) {
