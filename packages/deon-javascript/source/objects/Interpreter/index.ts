@@ -240,28 +240,44 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkStatement(
         statement: Statement.LinkStatement,
     ) {
-        let value = null;
-        let leaflinkName;
+        console.log('visitLinkStatement', statement);
+        console.log('this.leaflinks', this.leaflinks);
 
-        if (statement.initializer) {
-            leaflinkName = await this.evaluate(statement.initializer);
-        }
-
+        const name = statement.name.literal;
         const values = this.leaflinks.getAll();
-        const leaflink = values.get(leaflinkName);
-        if (leaflink) {
-            console.log('leaflink', leaflink);
-            // is array
-            value = leaflink;
+        const leaflinkValue = values.get(name);
+        console.log('leaflinkValue', leaflinkValue);
 
-            // is environment
-            // const values = leaflink.getAll();
-            // value = mapToObject(values);
+        if (!leaflinkValue) {
+            // if looking for leaflinks
+            // add to values that need research
+            return;
         }
 
-        this.environment.define(statement.name.lexeme, value);
+        return leaflinkValue;
 
-        return null;
+        // let value = null;
+        // let leaflinkName;
+
+        // if (statement.initializer) {
+        //     leaflinkName = await this.evaluate(statement.initializer);
+        // }
+
+        // const values = this.leaflinks.getAll();
+        // const leaflink = values.get(leaflinkName);
+        // if (leaflink) {
+        //     console.log('leaflink', leaflink);
+        //     // is array
+        //     value = leaflink;
+
+        //     // is environment
+        //     // const values = leaflink.getAll();
+        //     // value = mapToObject(values);
+        // }
+
+        // this.environment.define(statement.name.lexeme, value);
+
+        // return null;
     }
 
 
@@ -510,11 +526,18 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private async resolveLeaflinks(
         statements: Statement.Statement[],
     ) {
-        for (const statement of statements) {
-            await this.execute(statement);
-        }
+        let loop = 0;
 
-        this.leaflinks = this.environment;
+        // the index 3 is computed
+        // based on the maximum depth between all the leaflinks
+        while (loop < 3) {
+            for (const statement of statements) {
+                await this.execute(statement);
+                this.leaflinks = this.environment;
+            }
+
+            loop += 1;
+        }
     }
 }
 // #endregion module

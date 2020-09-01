@@ -911,34 +911,34 @@ describe.only('Deon testings', () => {
 //     // 'root key 4' root Value 4
 // }
 
-map {
-    key1 value1
-}
+// map {
+//     key1 value1
+// }
 
-list [
-    one
-    two
-]
+// list [
+//     one
+//     two
+// ]
 
-key value
+// key value
 
-nestedMap {
-    key {
-        one two
-    }
-}
+// nestedMap {
+//     key {
+//         one two
+//     }
+// }
 
-nestedList [
-    one
-    two
-    {
-        one two
-    }
-    [
-        one
-        two
-    ]
-]
+// nestedList [
+//     one
+//     two
+//     {
+//         one two
+//     }
+//     [
+//         one
+//         two
+//     ]
+// ]
 
 linkedList [
     #listItem1
@@ -946,7 +946,11 @@ linkedList [
 ]
 
 listItem1 one
-listItem2 one
+listItem2 [
+    #two
+]
+
+two three
         `;
 
         const deon = new Deon();

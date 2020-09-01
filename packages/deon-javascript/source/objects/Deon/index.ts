@@ -125,8 +125,8 @@ class Deon {
         );
         // console.log('parser', parser);
         const statements = parser.parse();
-        // console.log('statements', statements);
-        // console.log('---');
+        console.log('statements', statements);
+        console.log('---');
 
         // // Stop if there was a syntax error.
         // if (this.hadError) {
