@@ -124,6 +124,24 @@ list [
 
 
 
+    it('simple key value spaced words', async () => {
+        const dataValues = `
+{
+    key value with spaces in name
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // console.log(data);
+
+        expect(data.key).toEqual('value with spaces in name');
+    });
+
+
+
     it('simple key value special characters', async () => {
         const dataValues = `
 {
