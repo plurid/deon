@@ -203,7 +203,7 @@ class Scanner {
         if (this.match('.')) {
             if (this.match('.')) {
                 if (this.match('#')) {
-                    this.tripleDot();
+                    this.spread();
                 } else {
                     this.deonError(this.line, 'Can only spread leaflinks.');
                 }
@@ -215,8 +215,13 @@ class Scanner {
         }
     }
 
-    private tripleDot() {
-        this.addToken(TokenType.TRIPLE_DOT);
+    private spread() {
+        while (this.isAlphaNumeric(this.peek())) {
+            this.advance();
+        }
+
+        const text = this.source.substring(this.start, this.current);
+        this.addTokenLiteral(TokenType.SPREAD, text);
     }
 
     private slash() {

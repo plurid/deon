@@ -31,6 +31,7 @@ export interface Visitor<T> {
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitVariableStatement: (variableStatement: VariableStatement) => T;
     visitLinkStatement: (linkStatement: LinkStatement) => T;
+    visitSpreadStatement: (spreadStatement: SpreadStatement) => T;
 }
 
 
@@ -201,6 +202,25 @@ export class LinkStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitLinkStatement(this);
+    }
+}
+
+
+export class SpreadStatement extends Statement {
+    public name: Token;
+
+    constructor(
+        name: Token,
+    ) {
+        super();
+
+        this.name = name;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitSpreadStatement(this);
     }
 }
 // #endregion module

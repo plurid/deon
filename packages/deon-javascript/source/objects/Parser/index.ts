@@ -72,6 +72,12 @@ class Parser {
             }
 
             if (
+                current.type == TokenType.SPREAD
+            ) {
+                return this.handleSpread();
+            }
+
+            if (
                 current.type === TokenType.LEFT_CURLY_BRACKET
             ) {
                 return this.handleMap();
@@ -138,6 +144,13 @@ class Parser {
         const expression = new Expression.LiteralExpression(link.literal);
         this.advance();
         return new Statement.LinkStatement(link, expression);
+    }
+
+    public handleSpread() {
+        const spread = this.peek();
+        this.advance();
+
+        return new Statement.SpreadStatement(spread);
     }
 
     public handleMap() {

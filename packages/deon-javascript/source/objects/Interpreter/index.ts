@@ -294,6 +294,22 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public visitSpreadStatement(
+        statement: Statement.SpreadStatement,
+    ) {
+        const name = statement.name.lexeme.replace('...#', '');
+        console.log(statement, name);
+
+        const values = this.leaflinks.getAll();
+        // console.log('values', values);
+        const leaflink = values.get(name);
+        if (leaflink) {
+            this.environment.define(name, leaflink);
+        }
+
+        return null;
+    }
+
 
     /** EXPRESSIONS */
     public visitLiteralExpression(

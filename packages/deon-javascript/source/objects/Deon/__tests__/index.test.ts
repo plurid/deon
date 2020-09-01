@@ -975,7 +975,7 @@ one #two
 {
     one {
         two {
-            #key
+            ...#key
         }
     }
 }

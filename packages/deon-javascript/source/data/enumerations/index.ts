@@ -6,7 +6,7 @@ export enum TokenType {
     COMMA, DOT,
 
     // Multi-character tokens.
-    TRIPLE_DOT,
+    SPREAD,
     IMPORT, FROM,
 
     // Literals.
