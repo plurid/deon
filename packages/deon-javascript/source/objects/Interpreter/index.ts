@@ -107,9 +107,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        console.log('rootEnvironment', this.rootEnvironment);
-        console.log('extract', values);
-        console.log('------------');
+        // console.log('rootEnvironment', this.rootEnvironment);
+        // console.log('extract', values);
+        // console.log('------------');
 
         for (const [key, value] of values) {
             if (value instanceof Environment) {
@@ -223,7 +223,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitVariableStatement(
         statement: Statement.VariableStatement,
     ) {
-        console.log('visitVariableStatement statement', statement);
+        // console.log('visitVariableStatement statement', statement);
 
         let value = null;
 
@@ -276,7 +276,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             expression.items,
             new Environment(),
         );
-        console.log('visitListExpression environment', environment);
+        // console.log('visitListExpression environment', environment);
 
         if (environment) {
             const data: any = [];
@@ -485,7 +485,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     ) {
         for (const statement of statements) {
             const leaflink = await this.execute(statement);
-            console.log('leaflink', leaflink);
+            // console.log('leaflink', leaflink);
         }
     }
 }

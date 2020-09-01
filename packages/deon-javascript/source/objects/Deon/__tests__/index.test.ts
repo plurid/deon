@@ -549,8 +549,12 @@ describe('Deon nested', () => {
         const data = await deon.parse(
             dataValues,
         );
-        log(data);
+        // log(data);
 
+        expect(data.map1.map2.list[0].one.two[0]).toEqual('three');
+        expect(data.map1.map2.list[0].one.two[1]).toEqual('four');
+        expect(data.map1.map2.list[1]).toEqual('two');
+        expect(data.map1.map2.list[2]).toEqual('three');
     });
 });
 
@@ -894,7 +898,7 @@ describe('Deon stringify', () => {
 });
 
 
-describe.only('Deon testings', () => {
+describe('Deon testings', () => {
     it('simple', async () => {
         const dataValues = `
 {
