@@ -43,6 +43,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             for (const statement of statements) {
                 if (
                     statement instanceof Statement.VariableStatement
+                    || statement instanceof Statement.LinkStatement
                 ) {
                     leaflinkStatements.push(statement);
                 }
@@ -111,7 +112,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const values = this.rootEnvironment.getAll();
         // console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
-        console.log('leaflinks', this.leaflinks.getAll());
+        // console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
         for (const [key, value] of values) {
@@ -240,44 +241,51 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkStatement(
         statement: Statement.LinkStatement,
     ) {
-        console.log('visitLinkStatement', statement);
-        console.log('this.leaflinks', this.leaflinks);
+        // console.log('visitLinkStatement', statement);
+        // console.log('this.leaflinks', this.leaflinks);
 
         const name = statement.name.literal;
-        const values = this.leaflinks.getAll();
-        const leaflinkValue = values.get(name);
-        console.log('leaflinkValue', leaflinkValue);
 
-        if (!leaflinkValue) {
-            // if looking for leaflinks
-            // add to values that need research
-            return;
+        let value = null;
+        let leaflinkName;
+
+        if (statement.initializer) {
+            leaflinkName = await this.evaluate(statement.initializer);
         }
 
-        return leaflinkValue;
+        if (name === leaflinkName) {
+            const values = this.leaflinks.getAll();
+            const leaflinkValue = values.get(name);
+            // console.log('leaflinkValue', leaflinkValue);
 
-        // let value = null;
-        // let leaflinkName;
+            if (!leaflinkValue) {
+                // if looking for leaflinks
+                // add to values that need research
+                return;
+            }
 
-        // if (statement.initializer) {
-        //     leaflinkName = await this.evaluate(statement.initializer);
-        // }
+            return leaflinkValue;
+        } else {
+            // console.log('leaflinkName', leaflinkName);
 
-        // const values = this.leaflinks.getAll();
-        // const leaflink = values.get(leaflinkName);
-        // if (leaflink) {
-        //     console.log('leaflink', leaflink);
-        //     // is array
-        //     value = leaflink;
+            const values = this.leaflinks.getAll();
+            // console.log('values', values);
+            const leaflink = values.get(leaflinkName);
+            // console.log('leaflink', leaflink);
+            if (leaflink) {
+                // console.log('leaflink', leaflink);
+                // is array
+                value = leaflink;
 
-        //     // is environment
-        //     // const values = leaflink.getAll();
-        //     // value = mapToObject(values);
-        // }
+                // is environment
+                // const values = leaflink.getAll();
+                // value = mapToObject(values);
+            }
 
-        // this.environment.define(statement.name.lexeme, value);
+            this.environment.define(statement.name.lexeme, value);
+        }
 
-        // return null;
+        return null;
     }
 
 
@@ -531,7 +539,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         // the index 3 is computed
         // based on the maximum depth between all the leaflinks
         while (loop < 3) {
+            // console.log('resolveLeaflinks loop', loop);
+
             for (const statement of statements) {
+                // console.log('statement', statement);
+
                 await this.execute(statement);
                 this.leaflinks = this.environment;
             }
