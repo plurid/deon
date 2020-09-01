@@ -975,12 +975,52 @@ one #two
 {
     one {
         two {
-            ...#key
+            // three #key
+            // three #'key with spaces'
+
+            // #key
+            // #'key with spaces'
+
+            // ...#key
+            // ...#'key with spaces'
+
+            // three #key.one
+            // three #'key with spaces'.one
+            // #'key with spaces'.one
+            // #key.one
+
+            // three #key[one]
+            // three #'key with spaces'[one]
+            // #'key with spaces'[one]
+            // #key[one]
         }
+        // three [
+        //     ...#list
+        // ]
+        // four #list[0]
+        // five {
+        //     ...#spread
+        // }
+        // six [
+        //     ...#spread
+        // ]
     }
 }
 
-key value
+key {
+    one two
+}
+
+'key with spaces' {
+    one two
+}
+
+list [
+    one
+    two
+]
+
+spread abc
         `;
 
         const deon = new Deon();
