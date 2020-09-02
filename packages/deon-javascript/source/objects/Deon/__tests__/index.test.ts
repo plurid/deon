@@ -1074,7 +1074,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 
 describe.only('Deon testings', () => {
-    xit('simple', async () => {
+    xit('various', async () => {
         const dataValues = `
 // {
 //     key value
@@ -1138,64 +1138,126 @@ one #two
         const data = await deon.parse(
             dataValues,
         );
-        log(data);
-
-        // expect(data.map1.map2.map3.key).toEqual('value');
+        // log(data);
     });
 
 
 
-    it('simple', async () => {
+    xit('deep nesting', async () => {
         const dataValues = `
 {
-    one {
-        two {
-            // three #key
-            // three #'key with spaces'
-
-            // #key
-            // #'key with spaces'
-
-            // ...#key
-            // ...#'key with spaces'
-
-            // three #key.one
-            // three #'key with spaces'.one
-            // #'key with spaces'.one
-            // #key.one
-
-            // three #key[one]
-            // three #'key with spaces'[one]
-            // #'key with spaces'[one]
-            // #key[one]
+    key value
+    map {
+        one two
+        two two
+        three four
+        five {
+            seven eight
+            six {
+                seven eight
+                nine [
+                    six
+                    seven
+                ]
+            }
+            nine eight
         }
-        // three [
-        //     ...#list
-        // ]
-        // four #list[0]
-        // five {
-        //     ...#spread
-        // }
-        // six [
-        //     ...#spread
-        // ]
     }
+    list [
+        one
+        two
+        {
+            two [
+                three
+                four
+            ]
+        }
+    ]
 }
 
-key {
-    one two
-}
-
-'key with spaces' {
-    one two
+one {
+    two three
+    four {
+        five six
+    }
 }
 
 list [
     one
     two
+    {
+        three [
+            four five
+            six
+        ]
+    }
 ]
+        `;
 
-spread abc
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+    });
+
+
+
+    it('linkings', async () => {
+        const dataValues = `
+{
+    key value
+}
+
+// {
+//     one {
+//         two {
+//             // three #key
+//             // three #'key with spaces'
+
+//             // #key
+//             // #'key with spaces'
+
+//             // ...#key
+//             // ...#'key with spaces'
+
+//             // three #key.one
+//             // three #'key with spaces'.one
+//             // #'key with spaces'.one
+//             // #key.one
+
+//             // three #key[one]
+//             // three #'key with spaces'[one]
+//             // #'key with spaces'[one]
+//             // #key[one]
+//         }
+//         // three [
+//         //     ...#list
+//         // ]
+//         // four #list[0]
+//         // five {
+//         //     ...#spread
+//         // }
+//         // six [
+//         //     ...#spread
+//         // ]
+//     }
+// }
+
+// key {
+//     one two
+// }
+
+// 'key with spaces' {
+//     one two
+// }
+
+// list [
+//     one
+//     two
+// ]
+
+// spread abc
         `;
 
         const deon = new Deon();
@@ -1203,8 +1265,6 @@ spread abc
             dataValues,
         );
         log(data);
-
-        // expect(data.map1.map2.map3.key).toEqual('value');
     });
 });
 // #endregion module

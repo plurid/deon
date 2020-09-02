@@ -24,12 +24,10 @@ export abstract class Statement {
 
 export interface Visitor<T> {
     visitImportStatement: (importStatement: ImportStatement) => T;
-    visitBlockStatement: (blockStatement: BlockStatement) => T;
     visitRootStatement: (rootStatement: RootStatement) => T;
-    visitMapStatement: (mapStatement: MapStatement) => T;
-    visitListStatement: (listStatement: ListStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
-    visitVariableStatement: (variableStatement: VariableStatement) => T;
+    visitKeyStatement: (keyStatement: KeyStatement) => T;
+    visitLeaflinkStatement: (leaflinkStatement: LeaflinkStatement) => T;
     visitLinkStatement: (linkStatement: LinkStatement) => T;
     visitSpreadStatement: (spreadStatement: SpreadStatement) => T;
 }
@@ -58,25 +56,6 @@ export class ImportStatement extends Statement {
 }
 
 
-export class BlockStatement extends Statement {
-    public statements: Statement[];
-
-    constructor(
-        statements: Statement[],
-    ) {
-        super();
-
-        this.statements = statements;
-    }
-
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitBlockStatement(this);
-    }
-}
-
-
 export class RootStatement extends Statement {
     public kind: RootKind;
     public statements: Statement[];
@@ -95,50 +74,6 @@ export class RootStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitRootStatement(this);
-    }
-}
-
-
-export class MapStatement extends Statement {
-    public name: Token;
-    public value: Expression;
-
-    constructor(
-        name: Token,
-        value: Expression,
-    ) {
-        super();
-
-        this.name = name;
-        this.value = value;
-    }
-
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitMapStatement(this);
-    }
-}
-
-
-export class ListStatement extends Statement {
-    public name: Token;
-    public value: Expression;
-
-    constructor(
-        name: Token,
-        value: Expression,
-    ) {
-        super();
-
-        this.name = name;
-        this.value = value;
-    }
-
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitListStatement(this);
     }
 }
 
@@ -162,7 +97,7 @@ export class ExpressionStatement extends Statement {
 }
 
 
-export class VariableStatement extends Statement {
+export class KeyStatement extends Statement {
     public name: Token;
     public initializer: Expression | null;
 
@@ -179,7 +114,29 @@ export class VariableStatement extends Statement {
     accept<T>(
         visitor: Visitor<T>,
     ) {
-        return visitor.visitVariableStatement(this);
+        return visitor.visitKeyStatement(this);
+    }
+}
+
+
+export class LeaflinkStatement extends Statement {
+    public name: Token;
+    public initializer: Expression | null;
+
+    constructor(
+        name: Token,
+        initializer: Expression | null,
+    ) {
+        super();
+
+        this.name = name;
+        this.initializer = initializer;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitLeaflinkStatement(this);
     }
 }
 

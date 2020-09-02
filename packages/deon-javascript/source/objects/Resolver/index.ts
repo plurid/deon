@@ -32,19 +32,19 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitBlockStatement(
-        statement: Statement.BlockStatement,
-    ) {
-        this.beginScope();
+    // public visitBlockStatement(
+    //     statement: Statement.BlockStatement,
+    // ) {
+    //     this.beginScope();
 
-        this.resolve(
-            statement.statements,
-        );
+    //     this.resolve(
+    //         statement.statements,
+    //     );
 
-        this.endScope();
+    //     this.endScope();
 
-        return null;
-    }
+    //     return null;
+    // }
 
     public visitRootStatement(
         statement: Statement.RootStatement,
@@ -60,36 +60,36 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitMapStatement(
-        statement: Statement.MapStatement,
-    ) {
-        this.beginScope();
+    // public visitMapStatement(
+    //     statement: Statement.MapStatement,
+    // ) {
+    //     this.beginScope();
 
-        // this.resolve(
-        //     statement.statements,
-        // );
+    //     // this.resolve(
+    //     //     statement.statements,
+    //     // );
 
-        this.endScope();
+    //     this.endScope();
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    public visitListStatement(
-        statement: Statement.ListStatement,
-    ) {
-        this.beginScope();
+    // public visitListStatement(
+    //     statement: Statement.ListStatement,
+    // ) {
+    //     this.beginScope();
 
-        // this.resolve(
-        //     statement.statements,
-        // );
+    //     // this.resolve(
+    //     //     statement.statements,
+    //     // );
 
-        this.endScope();
+    //     this.endScope();
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    public visitVariableStatement(
-        statement: Statement.VariableStatement,
+    public visitKeyStatement(
+        statement: Statement.KeyStatement,
     ) {
         this.declare(statement.name);
 
@@ -99,6 +99,12 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
 
         this.define(statement.name);
 
+        return null;
+    }
+
+    public visitLeaflinkStatement(
+        statement: Statement.LeaflinkStatement,
+    ) {
         return null;
     }
 
@@ -301,18 +307,18 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         const rootStatement: Statement.Statement[] = [];
 
         for (const statement of statements) {
-            if (statement instanceof Statement.ImportStatement) {
-                importStatements.push(statement);
-                continue;
-            }
-
-            if (statement instanceof Statement.VariableStatement) {
+            if (statement instanceof Statement.LeaflinkStatement) {
                 leaflinkStatements.push(statement);
                 continue;
             }
 
             if (statement instanceof Statement.RootStatement) {
                 rootStatement.push(statement);
+            }
+
+            if (statement instanceof Statement.ImportStatement) {
+                importStatements.push(statement);
+                continue;
             }
         }
 

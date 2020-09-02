@@ -42,18 +42,17 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             for (const statement of statements) {
                 if (
-                    statement instanceof Statement.VariableStatement
-                    || statement instanceof Statement.LinkStatement
+                    statement instanceof Statement.LeaflinkStatement
                 ) {
                     leaflinkStatements.push(statement);
                 }
 
-                if (statement instanceof Statement.ImportStatement) {
-                    importStatements.push(statement);
-                }
-
                 if (statement instanceof Statement.RootStatement) {
                     rootStatement = statement;
+                }
+
+                if (statement instanceof Statement.ImportStatement) {
+                    importStatements.push(statement);
                 }
             }
 
@@ -150,17 +149,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public async visitBlockStatement(
-        statement: Statement.BlockStatement,
-    ) {
-        await this.executeBlock(
-            statement.statements,
-            new Environment(this.environment),
-        );
-
-        return null;
-    }
-
     public async visitRootStatement(
         statement: Statement.RootStatement,
     ) {
@@ -175,48 +163,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public async visitMapStatement(
-        statement: Statement.MapStatement,
-    ) {
-        const name = statement.name.lexeme;
-
-        // const environment = this.executeBlock(
-        //     statement.statements,
-        //     new Environment(this.environment),
-        // );
-
-        // if (environment) {
-        //     const values = environment.getAll();
-        //     console.log('aaa', values);
-
-        //     this.rootEnvironment.define(
-        //         name,
-        //         values,
-        //     );
-        //     console.log('CC this.rootEnvironment', this.rootEnvironment);
-        // }
-        // console.log('statement', name, statement);
-        // console.log('environment', environment);
-
-        return null;
-    }
-
-    public async visitListStatement(
-        statement: Statement.ListStatement,
-    ) {
-        const name = statement.name.lexeme;
-
-        // const environment = this.executeBlock(
-        //     statement.statements,
-        //     new Environment(this.environment),
-        // );
-
-        // console.log('environment', environment);
-
-
-        return null;
-    }
-
     public async visitExpressionStatement(
         statement: Statement.ExpressionStatement,
     ) {
@@ -224,8 +170,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public async visitVariableStatement(
-        statement: Statement.VariableStatement,
+    public async visitKeyStatement(
+        statement: Statement.KeyStatement,
     ) {
         let value = null;
 
@@ -236,6 +182,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         this.environment.define(statement.name.lexeme, value);
 
         return null;
+    }
+
+    public async visitLeaflinkStatement(
+        statement: Statement.LeaflinkStatement,
+    ) {
     }
 
     public async visitLinkStatement(
