@@ -1206,7 +1206,9 @@ list [
     it('linkings', async () => {
         const dataValues = `
 {
-    key #onetwo
+    key {
+        #onetwo
+    }
 }
 
 onetwo value

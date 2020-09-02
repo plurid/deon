@@ -45,7 +45,6 @@ class Parser {
     private declaration() {
         try {
             const current = this.peek();
-            // console.log('declaration current', current);
 
             if (
                 current.type === TokenType.IMPORT
@@ -92,7 +91,6 @@ class Parser {
             this.advance();
             return;
         } catch (error) {
-            // console.log('declaration error', error);
             this.synchronize();
             return null;
         }
@@ -151,14 +149,22 @@ class Parser {
     }
 
     private handleLink() {
-        // TODO
-        // resolve the name of the link
-
         const link = this.peek();
+
+        // TODO
+        // handle dot-access/name-access
+        const lexeme = link.lexeme.replace('#', '');
+
+        const linkName: Token = new Token(
+            TokenType.IDENTIFIER,
+            lexeme,
+            link.literal,
+            link.line,
+        );
 
         const expression = new Expression.LiteralExpression(link.literal);
         this.advance();
-        return new Statement.LinkStatement(link, expression);
+        return new Statement.LinkStatement(linkName, expression);
     }
 
     private handleSpread() {
