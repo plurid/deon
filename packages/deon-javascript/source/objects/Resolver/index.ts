@@ -102,6 +102,12 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public visitItemStatement(
+        statement: Statement.ItemStatement,
+    ) {
+        return null;
+    }
+
     public visitLeaflinkStatement(
         statement: Statement.LeaflinkStatement,
     ) {

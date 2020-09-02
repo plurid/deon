@@ -27,6 +27,7 @@ export interface Visitor<T> {
     visitRootStatement: (rootStatement: RootStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitKeyStatement: (keyStatement: KeyStatement) => T;
+    visitItemStatement: (itemStatement: ItemStatement) => T;
     visitLeaflinkStatement: (leaflinkStatement: LeaflinkStatement) => T;
     visitLinkStatement: (linkStatement: LinkStatement) => T;
     visitSpreadStatement: (spreadStatement: SpreadStatement) => T;
@@ -115,6 +116,28 @@ export class KeyStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitKeyStatement(this);
+    }
+}
+
+
+export class ItemStatement extends Statement {
+    public index: string;
+    public initializer: Expression | null;
+
+    constructor(
+        index: string,
+        initializer: Expression | null,
+    ) {
+        super();
+
+        this.index = index;
+        this.initializer = initializer;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitItemStatement(this);
     }
 }
 

@@ -102,12 +102,14 @@ class Parser {
         const value = this.peek();
 
         const nestLevel = this.nestLevel(this.current - 1);
+        const nested = nestLevel === 'NESTED_LIST'
+            || nestLevel === 'NESTED_MAP';
 
         switch (value.type) {
             case TokenType.STRING: {
                 const expression = new Expression.LiteralExpression(value.literal);
                 this.advance();
-                if (nestLevel === 'NESTED') {
+                if (nested) {
                     return new Statement.KeyStatement(name, expression);
                 } else {
                     return new Statement.LeaflinkStatement(name, expression);
@@ -121,7 +123,7 @@ class Parser {
             case TokenType.LEFT_CURLY_BRACKET: {
                 const expression = this.handleMap();
                 if (expression instanceof Expression.MapExpression) {
-                    if (nestLevel === 'NESTED') {
+                    if (nested) {
                         return new Statement.KeyStatement(name, expression);
                     } else {
                         return new Statement.LeaflinkStatement(name, expression);
@@ -132,7 +134,7 @@ class Parser {
             case TokenType.LEFT_SQUARE_BRACKET: {
                 const expression = this.handleList();
                 if (expression instanceof Expression.ListExpression) {
-                    if (nestLevel === 'NESTED') {
+                    if (nested) {
                         return new Statement.KeyStatement(name, expression);
                     } else {
                         return new Statement.LeaflinkStatement(name, expression);
@@ -141,7 +143,7 @@ class Parser {
             }
         }
 
-        if (nestLevel === 'NESTED') {
+        if (nested) {
             return new Statement.KeyStatement(name, null);
         } else {
             return new Statement.LeaflinkStatement(name, null);
@@ -183,7 +185,10 @@ class Parser {
             previous && previous.type === TokenType.IDENTIFIER
         );
 
-        if (nestLevel === 'NESTED') {
+        const nested = nestLevel === 'NESTED_LIST'
+            || nestLevel === 'NESTED_MAP';
+
+        if (nested) {
             return new Expression.MapExpression(
                 this.block(
                     TokenType.LEFT_CURLY_BRACKET,
@@ -216,7 +221,10 @@ class Parser {
             previous && previous.type === TokenType.IDENTIFIER
         );
 
-        if (nestLevel === 'NESTED') {
+        const nested = nestLevel === 'NESTED_LIST'
+            || nestLevel === 'NESTED_MAP';
+
+        if (nested) {
             return new Expression.ListExpression(
                 this.block(
                     TokenType.LEFT_SQUARE_BRACKET,
@@ -242,8 +250,21 @@ class Parser {
 
     private handleString() {
         const current = this.peek();
+        const nestLevel = this.nestLevel(this.current);
+
         this.advance();
-        return new Expression.LiteralExpression(current.literal);
+
+        const inList = nestLevel === 'NESTED_LIST';
+
+        const expression = new Expression.LiteralExpression(current.literal);
+
+        if (inList) {
+            const listIndex = this.listIndex();
+
+            return new Statement.ItemStatement(listIndex, expression);
+        }
+
+        return expression;
     }
 
     private importStatement() {
@@ -423,11 +444,11 @@ class Parser {
             }
 
             if (curlyBrackets.left > curlyBrackets.right) {
-                return 'NESTED';
+                return 'NESTED_MAP';
             }
 
             if (squareBrackets.left > squareBrackets.right) {
-                return 'NESTED';
+                return 'NESTED_LIST';
             }
         }
 
@@ -443,6 +464,32 @@ class Parser {
         }
 
         return;
+    }
+
+    private listIndex() {
+        const tokens = this.tokens
+            .slice(0, this.current)
+            .reverse();
+
+        if (tokens.length === 0) {
+            return '0';
+        }
+
+        let listIndex = 0;
+
+        console.log('listIndex tokens', tokens);
+
+        for (const token of tokens) {
+            if (token.type === TokenType.LEFT_CURLY_BRACKET) {
+                break;
+            } else {
+                listIndex += 1;
+            }
+        }
+
+        console.log('listIndex', listIndex);
+
+        return listIndex - 2 + '';
     }
 }
 // #endregion module

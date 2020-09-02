@@ -109,7 +109,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        // console.log('rootEnvironment', this.rootEnvironment);
+        console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
         console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
@@ -184,6 +184,20 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public async visitItemStatement(
+        statement: Statement.ItemStatement,
+    ) {
+        let value = null;
+
+        if (statement.initializer !== null) {
+            value = await this.evaluate(statement.initializer);
+        }
+
+        this.environment.define(statement.index, value);
+
+        return null;
+    }
+
     public async visitLeaflinkStatement(
         statement: Statement.LeaflinkStatement,
     ) {
@@ -211,15 +225,17 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         if (statement.initializer) {
             leaflinkName = await this.evaluate(statement.initializer);
         }
-        console.log('visitLinkStatement', name, leaflinkName);
+        // console.log('visitLinkStatement', name, leaflinkName);
 
         const values = this.leaflinks.getAll();
         const leaflinkValue = values.get(leaflinkName);
         console.log('leaflinkValue', leaflinkValue);
 
-        this.environment.define(name, leaflinkValue || '');
+        // to define at array position instead of name for lists
 
-        return null;
+        // this.environment.define(name, leaflinkValue || '');
+
+        return leaflinkValue;
     }
 
     public visitSpreadStatement(
