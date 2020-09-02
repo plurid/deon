@@ -109,9 +109,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        console.log('rootEnvironment', this.rootEnvironment);
+        // console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
-        console.log('leaflinks', this.leaflinks.getAll());
+        // console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
         for (const [key, value] of values) {
@@ -215,8 +215,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkStatement(
         statement: Statement.LinkStatement,
     ) {
-        console.log('visitLinkStatement', statement);
-        console.log('this.leaflinks', this.leaflinks);
+        // console.log('visitLinkStatement', statement);
+        // console.log('this.leaflinks', this.leaflinks);
 
         const name = statement.name.lexeme;
 
@@ -229,20 +229,24 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
         const values = this.leaflinks.getAll();
         const leaflinkValue = values.get(leaflinkName);
-        console.log('leaflinkValue', leaflinkValue);
+        // console.log('leaflinkValue', leaflinkValue);
 
         // to define at array position instead of name for lists
 
-        // this.environment.define(name, leaflinkValue || '');
+        if (name === leaflinkName) {
+            return leaflinkValue;
+        }
 
-        return leaflinkValue;
+        this.environment.define(name, leaflinkValue || '');
+
+        return null;
     }
 
     public visitSpreadStatement(
         statement: Statement.SpreadStatement,
     ) {
         const name = statement.name.lexeme.replace('...#', '');
-        console.log(statement, name);
+        // console.log(statement, name);
 
         const values = this.leaflinks.getAll();
         // console.log('values', values);

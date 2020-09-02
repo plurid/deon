@@ -559,7 +559,7 @@ describe('Deon nested', () => {
 });
 
 
-describe('Deon lealinks', () => {
+describe.only('Deon lealinks', () => {
     it('simple - named map', async () => {
         const dataValues = `
 {
@@ -1073,7 +1073,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe.only('Deon testings', () => {
+describe('Deon testings', () => {
     xit('various', async () => {
         const dataValues = `
 // {
@@ -1217,8 +1217,12 @@ list [
 [
     #one
     // one
-    two
-    three
+    // two
+    // three
+    {
+        a #one
+    }
+
     // {
     //     three four
     //     five [
