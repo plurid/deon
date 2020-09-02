@@ -111,7 +111,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const values = this.rootEnvironment.getAll();
         // console.log('rootEnvironment', this.rootEnvironment);
         // console.log('extract', values);
-        // console.log('leaflinks', this.leaflinks.getAll());
+        console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
         for (const [key, value] of values) {
@@ -187,60 +187,37 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLeaflinkStatement(
         statement: Statement.LeaflinkStatement,
     ) {
+        let value = null;
+
+        if (statement.initializer !== null) {
+            value = await this.evaluate(statement.initializer);
+        }
+
+        this.leaflinks.define(statement.name.lexeme, value);
+
+        return null;
     }
 
     public async visitLinkStatement(
         statement: Statement.LinkStatement,
     ) {
-        // console.log('visitLinkStatement', statement);
-        // console.log('this.leaflinks', this.leaflinks);
+        console.log('visitLinkStatement', statement);
+        console.log('this.leaflinks', this.leaflinks);
 
-        const name = statement.name.literal;
+        const name = statement.name.lexeme;
 
-        let value = null;
         let leaflinkName;
 
         if (statement.initializer) {
             leaflinkName = await this.evaluate(statement.initializer);
         }
-
         console.log('visitLinkStatement', name, leaflinkName);
 
-        if (name === leaflinkName) {
-            const values = this.leaflinks.getAll();
-            const leaflinkValue = values.get(name);
-            console.log('leaflinkValue', leaflinkValue);
+        const values = this.leaflinks.getAll();
+        const leaflinkValue = values.get(leaflinkName);
+        console.log('leaflinkValue', leaflinkValue);
 
-            if (!leaflinkValue) {
-                // if looking for leaflinks
-                // add to values that need research
-                return;
-            }
-
-            // if it is shortened defined
-            this.environment.define(name, leaflinkValue);
-
-            // if it is in array
-            return leaflinkValue;
-        } else {
-            // console.log('leaflinkName', leaflinkName);
-
-            const values = this.leaflinks.getAll();
-            // console.log('values', values);
-            const leaflink = values.get(leaflinkName);
-            // console.log('leaflink', leaflink);
-            if (leaflink) {
-                // console.log('leaflink', leaflink);
-                // is array
-                value = leaflink;
-
-                // is environment
-                // const values = leaflink.getAll();
-                // value = mapToObject(values);
-            }
-
-            this.environment.define(statement.name.lexeme, value);
-        }
+        this.environment.define(name, leaflinkValue || '');
 
         return null;
     }
@@ -361,7 +338,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
 
-    public async executeBlock(
+    private async executeBlock(
         statements: Statement.Statement[],
         environment: Environment,
         type?: string,
@@ -400,13 +377,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    public async evaluate(
+    private async evaluate(
         expression: Expression.Expression,
     ): Promise<any> {
         return await expression.accept(this);
     }
 
-    public isTruthy(
+    private isTruthy(
         object: any,
     ) {
         if (object === null) {
@@ -420,7 +397,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return true;
     }
 
-    public isEqual(
+    private isEqual(
         a: any,
         b: any,
     ) {
@@ -440,7 +417,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return a === b;
     }
 
-    public checkNumberOperand(
+    private checkNumberOperand(
         operator: Token,
         operand: any,
     ) {
@@ -451,7 +428,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         // throw new RuntimeError(operator, 'Operand must be a number.');
     }
 
-    public checkNumberOperands(
+    private checkNumberOperands(
         operator: Token,
         left: any,
         right: any,
@@ -463,7 +440,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         // throw new RuntimeError(operator, 'Operands must be numbers.');
     }
 
-    public stringify(
+    private stringify(
         object: any,
     ) {
         if (object === null) {
