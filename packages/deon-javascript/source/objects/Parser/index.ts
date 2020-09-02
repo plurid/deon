@@ -477,7 +477,7 @@ class Parser {
 
         let listIndex = 0;
 
-        // console.log('listIndex tokens', tokens);
+        console.log('listIndex tokens', tokens);
 
         for (const token of tokens) {
             if (token.type === TokenType.LEFT_CURLY_BRACKET) {
@@ -487,7 +487,7 @@ class Parser {
             }
         }
 
-        // console.log('listIndex', listIndex);
+        console.log('listIndex', listIndex);
 
         return listIndex - 2 + '';
     }

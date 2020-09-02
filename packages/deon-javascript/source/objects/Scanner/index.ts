@@ -178,13 +178,11 @@ class Scanner {
     }
 
     private link() {
-        while (this.peek() !== ' ' && !this.isAtEnd()) {
-            if (this.peek() === '\n') {
-                this.line += 1;
-
-                break;
-            }
-
+        while (
+            this.peek() !== ' '
+            && this.peek() !== '\n'
+            && !this.isAtEnd()
+        ) {
             this.advance();
         }
 

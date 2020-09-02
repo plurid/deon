@@ -559,7 +559,7 @@ describe('Deon nested', () => {
 });
 
 
-describe.only('Deon lealinks', () => {
+describe('Deon lealinks', () => {
     it('simple - named map', async () => {
         const dataValues = `
 {
@@ -1073,7 +1073,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe('Deon testings', () => {
+describe.only('Deon testings', () => {
     xit('various', async () => {
         const dataValues = `
 // {
@@ -1213,24 +1213,51 @@ list [
 
 // onetwo value
 
+// {
+//     a [
+//         one
+//         // two
+//         // three
+//         // four
+//         // five
+//         // six
+//         {
+//             one [
+//                 two
+//                 #one
+//                 three
+//             ]
+//         }
+
+//         // three four
+//     ]
+// }
 
 [
     #one
-    // one
-    // two
-    // three
-    {
-        a #one
-    }
-
-    // {
-    //     three four
-    //     five [
-    //         six
-    //         seven
-    //     ]
-    // }
+    two
+    three
 ]
+
+
+// [
+//     one
+//     #one
+//     two
+
+//     // three
+//     // {
+//     //     a #one
+//     // }
+
+//     // {
+//     //     three four
+//     //     five [
+//     //         six
+//     //         seven
+//     //     ]
+//     // }
+// ]
 
 one five
 
