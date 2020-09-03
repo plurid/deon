@@ -238,6 +238,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 return value;
             }
 
+            if (Array.isArray(previous)) {
+                return previous[current];
+            }
+
             return null;
         }, this.leaflinks);
 

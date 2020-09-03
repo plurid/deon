@@ -1603,7 +1603,7 @@ list [
             // three #key
             // three #'key with spaces'
 
-            #key
+            // #key
             // #'key with spaces'
 
             // ...#key
@@ -1620,10 +1620,10 @@ list [
             // #key[one]
         }
         // three [
-        //     // #key
-        //     // ...#list
+        //     #key
+        //     ...#list
         // ]
-        // four #list[0]
+        four #list[0]
         // five {
         //     ...#spread
         // }
