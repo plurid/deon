@@ -178,6 +178,36 @@ class Scanner {
     }
 
     private link() {
+        if (this.match('\'')) {
+            // Handle link string.
+            while (this.peek() !== '\'' && !this.isAtEnd()) {
+                if (this.peek() === '\n') {
+                    this.line += 1;
+
+                    this.deonError(this.line, 'Unterminated link string.');
+                    return;
+                }
+
+                this.advance();
+            }
+
+            // Unterminated link string.
+            if (this.isAtEnd()) {
+                this.deonError(this.line, 'Unterminated link string.');
+                return;
+            }
+
+            // The closing '.
+            this.advance();
+
+            // Extract the value without the initial hashstring (#')
+            // and without the last string mark.
+            const value = this.source.substring(this.start + 2, this.current - 1);
+            this.addTokenLiteral(TokenType.LINK, value);
+            return;
+        }
+
+        // Handle link.
         while (
             this.peek() !== ' '
             && this.peek() !== '\n'
@@ -401,6 +431,14 @@ class Scanner {
             }
 
             if (token.type === TokenType.STRING) {
+                const inGroup = this.inGroup(index + 1);
+
+                if (inGroup === 'LEAFLINK') {
+                    const identifierToken = this.identifierFromSignifier(token);
+                    tokens.push(identifierToken);
+                    continue;
+                }
+
                 if (mode === 'LIST') {
                     stringifyTemporary();
                 }

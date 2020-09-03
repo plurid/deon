@@ -118,7 +118,7 @@ class Deon {
         );
         // console.log('scanner', scanner);
         const tokens = scanner.scanTokens();
-        console.log('tokens', tokens);
+        // console.log('tokens', tokens);
         const parser = new Parser(
             tokens,
             this.error,
@@ -133,12 +133,12 @@ class Deon {
         //     return;
         // }
 
-        for (const statement of statements) {
-            console.log('statement', statement);
-            // for (const stmt of statement.statements) {
-            //     console.log('stmt', stmt);
-            // }
-        }
+        // for (const statement of statements) {
+        //     console.log('statement', statement);
+        //     // for (const stmt of statement.statements) {
+        //     //     console.log('stmt', stmt);
+        //     // }
+        // }
 
         // const resolver = new Resolver(
         //     this.interpreter,
@@ -156,7 +156,7 @@ class Deon {
         return interpretedData;
         // return {
         //     key: 'value',
-        // };
+        // } as any;
     }
 
     /**

@@ -1205,55 +1205,61 @@ list [
 
     it('linkings', async () => {
         const dataValues = `
+// {
+//     one {
+//         two {
+//             // three #key
+//             // three #'key with spaces'
+
+//             // #key
+//             // #'key with spaces'
+
+//             // ...#key
+//             // ...#'key with spaces'
+
+//             // three #key.one
+//             // three #'key with spaces'.one
+//             // #'key with spaces'.one
+//             // #key.one
+
+//             // three #key[one]
+//             // three #'key with spaces'[one]
+//             // #'key with spaces'[one]
+//             // #key[one]
+//         }
+//         // three [
+//         //     // #key
+//         //     // ...#list
+//         // ]
+//         // four #list[0]
+//         // five {
+//         //     ...#spread
+//         // }
+//         // six [
+//         //     ...#spread
+//         // ]
+//     }
+// }
+
+
 {
-    one {
-        two {
-            three #key
-            // three #'key with spaces'
-
-            // #key
-            // #'key with spaces'
-
-            // ...#key
-            // ...#'key with spaces'
-
-            // three #key.one
-            // three #'key with spaces'.one
-            // #'key with spaces'.one
-            // #key.one
-
-            // three #key[one]
-            // three #'key with spaces'[one]
-            // #'key with spaces'[one]
-            // #key[one]
-        }
-        // three [
-        //     ...#list
-        // ]
-        // four #list[0]
-        // five {
-        //     ...#spread
-        // }
-        // six [
-        //     ...#spread
-        // ]
-    }
+    #'key with spaces'
 }
 
-key {
-    one two
-}
+// key {
+//     one two
+// }
 
 'key with spaces' {
     one two
 }
 
-list [
-    one
-    two
-]
+// list [
+//     one
+//     two
+// ]
 
-spread abc
+// spread abc
         `;
 
         const deon = new Deon();
