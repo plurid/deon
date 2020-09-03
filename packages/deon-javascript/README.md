@@ -325,9 +325,9 @@ In `deon` every endleaf value is a `string`. It is up to the consumer to handle 
 
 `deon` supports two types of [`value`](#values) groupings, the [`map`](#maps) and the [`list`](#lists).
 
-The `root` can be a `map` or a `list`.
+The `root` can be `map` or `list`-like.
 
-The `leaflink`s can be `string` values, `map`s or `list`s.
+The `leaflink`s can be `string`s, `map`s, or `list`s.
 
 The `map`s and the `list`s can have `string`s, `list`s, and `map`s as values,
 
