@@ -215,7 +215,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.LinkStatement,
     ) {
         // console.log('visitLinkStatement', statement);
-        // console.log('this.leaflinks', this.leaflinks);
 
         const name = statement.name.lexeme;
 
@@ -227,8 +226,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const accessNames = this.resolveDeepAccess(leaflinkName);
         const keyName = accessNames[accessNames.length - 1];
         // console.log('visitLinkStatement', name, leaflinkName);
-
-        // const values = this.leaflinks.getAll();
 
         const leaflinkValue: any = accessNames.reduce((previous, current) => {
             if (previous instanceof Environment) {
@@ -244,11 +241,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             return null;
         }, this.leaflinks);
-
-        // console.log('values', values);
-        // console.log('accessNames', accessNames);
-        // console.log('keyName', keyName);
-        // console.log('leaflinkValue', leaflinkValue);
 
         if (statement.kind === 'list') {
             if (name === leaflinkName) {
@@ -271,10 +263,23 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const name = statement.name.lexeme.replace('...#', '').replace(/'/g, '');
         // console.log('visitSpreadStatement', statement, name);
 
-        const values = this.leaflinks.getAll();
-        // console.log('values', values);
-        const leaflink = values.get(name);
-        // console.log('leaflink', leaflink);
+        const accessNames = this.resolveDeepAccess(name);
+
+        const leaflink: any = accessNames.reduce((previous, current) => {
+            if (previous instanceof Environment) {
+                const value = previous.getValue(current);
+                // console.log('value', value);
+
+                return value;
+            }
+
+            if (Array.isArray(previous)) {
+                return previous[current];
+            }
+
+            return null;
+        }, this.leaflinks);
+
         if (leaflink) {
             // to handle multi-array spreading
             if (Array.isArray(leaflink)) {

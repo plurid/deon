@@ -1597,59 +1597,84 @@ list [
 
     it('linkings', async () => {
         const dataValues = `
+// {
+//     one {
+//         two {
+//             // three #key
+//             // three #'key with spaces'
+
+//             // #key
+//             // #'key with spaces'
+
+//             // ...#key
+//             // ...#'key with spaces'
+
+//             // three #key.one
+//             // three #'key with spaces'.one
+//             // #'key with spaces'.one
+//             // #key.one
+
+//             // three #key[one]
+//             // three #'key with spaces'[one]
+//             // #'key with spaces'[one]
+//             // #key[one]
+//         }
+//         // three [
+//         //     #key
+//         //     ...#list
+//         // ]
+//         four #list[0]
+//         // five {
+//         //     ...#spread
+//         // }
+//         // six [
+//         //     ...#spread
+//         // ]
+//     }
+// }
+
+
 {
-    one {
-        two {
-            // three #key
-            // three #'key with spaces'
+    ...#map[entities]
+}
 
-            // #key
-            // #'key with spaces'
-
-            // ...#key
-            // ...#'key with spaces'
-
-            // three #key.one
-            // three #'key with spaces'.one
-            // #'key with spaces'.one
-            // #key.one
-
-            // three #key[one]
-            // three #'key with spaces'[one]
-            // #'key with spaces'[one]
-            // #key[one]
-        }
-        // three [
-        //     #key
-        //     ...#list
-        // ]
-        four #list[0]
-        // five {
-        //     ...#spread
-        // }
-        // six [
-        //     ...#spread
-        // ]
+map {
+    entities {
+        one two
+        three four
     }
 }
 
-key {
-    one two
-    three four
-}
 
-'key with spaces' {
-    one two
-    three four
-    five six
-}
+// {
+//     ...#map.entities
+// }
 
-list [
-    one
-    two
-]
+// map {
+//     entities {
+//         one two
+//         three four
+//     }
+// }
 
-spread abc
+
+// key {
+//     one two
+//     three four
+// }
+
+// 'key with spaces' {
+//     one two
+//     three four
+//     five six
+// }
+
+// list [
+//     one
+//     two
+// ]
+
+// spread abc
         `;
 
         const deon = new Deon();
