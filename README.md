@@ -148,7 +148,7 @@ stages:
     '.'
   ]
 
-- name: 'Push Container to Container Registry'
+- name: 'Push Imagene to Registry'
   directory: '/path/to/package'
   imagene: 'docker'
   command: [
@@ -190,7 +190,7 @@ timeout: 720
       ]
     },
     {
-      "name": "Push Container to Container Registry",
+      "name": "Push Imagene to Registry",
       "directory": "/path/to/package",
       "imagene": "docker",
       "command": [
