@@ -1603,13 +1603,13 @@ list [
             // three #key
             // three #'key with spaces'
 
-            // #key
+            #key
             // #'key with spaces'
 
             // ...#key
             // ...#'key with spaces'
 
-            three #key.one
+            // three #key.one
             // three #'key with spaces'.one
             // #'key with spaces'.one
             // #key.one

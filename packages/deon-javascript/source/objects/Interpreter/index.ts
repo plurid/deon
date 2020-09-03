@@ -252,7 +252,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             }
         }
 
-        this.environment.define(keyName, leaflinkValue || '');
+        const resolvedName = name === leaflinkName
+            ? keyName
+            : name
+
+        this.environment.define(resolvedName, leaflinkValue || '');
 
         return null;
     }
