@@ -804,8 +804,14 @@ const loadData = async () => {
     return data;
 }
 
-const data = loadData();
-// { name: 'The Name' };
+const main = async () => {
+    const data = await loadData();
+    // { name: 'The Name' };
+
+    // use data
+}
+
+main();
 ```
 
 
@@ -853,8 +859,14 @@ const loadData = async () => {
     return data;
 }
 
-const data = loadData();
-// { key: 'data from url file' };
+const main = async () => {
+    const data = await loadData();
+    // { key: 'data from url file' };
+
+    // use data
+}
+
+main();
 ```
 
 
