@@ -681,7 +681,7 @@ A `leaflink` can be spreaded by tripledots `...`:
 
 Spreading overwrites the previously defined keys, if any, with the same name as the keys in the spreaded `map`.
 
-A `map` can be spreaded only in another `map`. A `list` can be spreaded only in another `list`. A `string` can be spreaded in a `map` and will result in a `map` where each key equals a character of the `string`, or can be spreaded into a `list` and will result in a `list` where each list item is a character of the `string`.
+A `map` can be spreaded only in another `map`. A `list` can be spreaded only in another `list`. A `string` can be spreaded in a `map` and will result in a `map` where each key equals the index of the character of the `string`, or can be spreaded into a `list` and will result in a `list` where each list item is a character of the `string`.
 
 ``` deon
 {
@@ -697,9 +697,9 @@ wil result in `entity` having the `value`:
 
 ```
 entity {
-    a a
-    b b
-    c c
+    0 a
+    1 b
+    2 c
 }
 ```
 
