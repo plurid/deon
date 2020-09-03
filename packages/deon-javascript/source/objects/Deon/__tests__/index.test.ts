@@ -29,16 +29,22 @@ const compareTimeBenchmark = (
     const maximum = benchmark + timeTolerance;
 
     if (duration > maximum) {
-        console.log(`Execution time of '${id}' exceeded: (${duration} ms instead of ${maximum} ms).`);
+        log(`Execution time of '${id}' exceeded: (${duration} ms instead of ${maximum} ms).`);
     }
 }
 
 const suites = {
     simple: 'Deon simple',
+    nested: 'Deon nested',
+    leaflinks: 'Deon leaflinks',
+    imports: 'Deon imports',
+    stringify: 'Deon stringify',
+    examples: 'Deon examples',
+    testings: 'Deon testings',
 };
 
 
-describe.only(suites.simple, () => {
+describe(suites.simple, () => {
     it('pure empty map - new lines', async () => {
         const dataValues = `
 {
@@ -51,7 +57,7 @@ describe.only(suites.simple, () => {
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(Object.keys(data).length).toEqual(0);
@@ -79,7 +85,7 @@ describe.only(suites.simple, () => {
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
         expect(data.length).toEqual(0);
 
@@ -104,7 +110,7 @@ describe.only(suites.simple, () => {
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(Object.keys(data).length).toEqual(0);
@@ -130,7 +136,7 @@ describe.only(suites.simple, () => {
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.length).toEqual(0);
@@ -167,7 +173,7 @@ list [
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(Object.keys(data).length).toEqual(0);
@@ -195,7 +201,7 @@ list [
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value');
@@ -223,7 +229,7 @@ list [
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value with spaces in name');
@@ -251,7 +257,7 @@ list [
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value with 4 trailing spaces    ');
@@ -283,7 +289,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key.split('\n').length).toEqual(3);
@@ -313,7 +319,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.map.key).toEqual('value');
@@ -343,7 +349,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.map.key1).toEqual('value1');
@@ -373,7 +379,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data[0]).toEqual('one');
@@ -404,7 +410,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.list[0]).toEqual('one');
@@ -435,7 +441,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.list[0]).toEqual('one');
@@ -468,7 +474,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.list.length).toEqual(3);
@@ -507,7 +513,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value');
@@ -541,7 +547,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value');
@@ -583,7 +589,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        // console.log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('value');
@@ -598,7 +604,7 @@ value
 });
 
 
-describe('Deon nested', () => {
+describe(suites.nested, () => {
     it('simple nest - map level 3', async () => {
         const dataValues = `
 {
@@ -612,13 +618,23 @@ describe('Deon nested', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        // console.log(data);
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.map1.map2.map3.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.nested} - simple nest - map level 3`,
+        );
     });
 
 
@@ -644,13 +660,23 @@ describe('Deon nested', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        // console.log(data);
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.map1.map2.map3.map4.map5.map6.map7.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.nested} - simple nest - map level 7`,
+        );
     });
 
 
@@ -690,13 +716,23 @@ describe('Deon nested', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        // console.log(data);
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.map1.map2.map3.map4.map5.map6.map7.map8.map9.map10.map11.map12.map13.map14.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.nested} - simple nest - map level 14`,
+        );
     });
 
 
@@ -718,18 +754,28 @@ describe('Deon nested', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        // console.log(data);
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.list1[0].list2[0].list3[0]).toEqual('itemOne');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.nested} - simple nest - list level 3`,
+        );
     });
 
 
 
-    it('complex nest - list level 3', async () => {
+    it('simple nest - list level 3 with children', async () => {
         const dataValues = `
 {
     map1 {
@@ -751,21 +797,31 @@ describe('Deon nested', () => {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.map1.map2.list[0].one.two[0]).toEqual('three');
         expect(data.map1.map2.list[0].one.two[1]).toEqual('four');
         expect(data.map1.map2.list[1]).toEqual('two');
         expect(data.map1.map2.list[2]).toEqual('three');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.nested} - simple nest - list level 3 with children`,
+        );
     });
 });
 
 
-describe('Deon lealinks', () => {
+describe(suites.leaflinks, () => {
     it('simple - named map', async () => {
         const dataValues = `
 {
@@ -775,13 +831,23 @@ describe('Deon lealinks', () => {
 arbitraryName aValue
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data.key).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - named map`,
+        );
     });
 
 
@@ -795,13 +861,23 @@ arbitraryName aValue
 key aValue
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data.key).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - shortened map`,
+        );
     });
 
 
@@ -819,13 +895,23 @@ key aValue
 key aValue
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data.aKey.anotherKey.key).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - nested - shortened map`,
+        );
     });
 
 
@@ -839,13 +925,23 @@ key aValue
 arbitraryName aValue
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data[0]).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - named list`,
+        );
     });
 
 
@@ -861,13 +957,23 @@ keys {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data.name).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - shortened map dot-access`,
+        );
     });
 
 
@@ -883,13 +989,23 @@ keys {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
 
+
         expect(data.name).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - shortened map name-access`,
+        );
     });
 
 
@@ -907,14 +1023,24 @@ list [
 ]
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data[0]).toEqual('aValue');
         expect(data[1]).toEqual('anotherValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - list name-access`,
+        );
     });
 
 
@@ -931,14 +1057,24 @@ map {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.one).toEqual('two');
         expect(data.three).toEqual('four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - map spread`,
+        );
     });
 
 
@@ -955,15 +1091,25 @@ list [
 ]
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.length).toEqual(2);
         expect(data[0]).toEqual('one two');
         expect(data[1]).toEqual('three four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - list spread`,
+        );
     });
 
 
@@ -982,14 +1128,24 @@ map {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.one).toEqual('two');
         expect(data.three).toEqual('four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - map spread dot-accessed`,
+        );
     });
 
 
@@ -1008,14 +1164,24 @@ map {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.one).toEqual('two');
         expect(data.three).toEqual('four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - map spread name-accessed`,
+        );
     });
 
 
@@ -1031,15 +1197,25 @@ map {
 spread abc
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.entity.a).toEqual('a');
         expect(data.entity.b).toEqual('b');
         expect(data.entity.c).toEqual('c');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - string spread in map`,
+        );
     });
 
 
@@ -1055,20 +1231,30 @@ spread abc
 spread abc
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(data.entity[0]).toEqual('a');
         expect(data.entity[1]).toEqual('b');
         expect(data.entity[2]).toEqual('c');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - string spread in list`,
+        );
     });
 });
 
 
-describe('Deon imports', () => {
+describe(suites.imports, () => {
     it('simple import', async () => {
         const dataValues = `
 import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
@@ -1088,7 +1274,7 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
 });
 
 
-describe('Deon stringify', () => {
+describe(suites.stringify, () => {
     it('simple stringify', async () => {
         const dataValues = {
             key: 'value',
@@ -1104,7 +1290,7 @@ describe('Deon stringify', () => {
 });
 
 
-describe('Deon examples', () => {
+describe(suites.examples, () => {
     it('initial', async () => {
         const dataValues = `
 {
@@ -1279,7 +1465,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe('Deon testings', () => {
+describe(suites.testings, () => {
     xit('various', async () => {
         const dataValues = `
 // {
