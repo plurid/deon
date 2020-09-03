@@ -1324,11 +1324,14 @@ describe(suites.examples, () => {
 time 1598439736
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(Object.keys(data).length).toEqual(2);
         expect(data.time).toEqual('1598439736');
@@ -1337,6 +1340,13 @@ time 1598439736
         expect(data.entities[0].name).toEqual('One');
         expect(data.entities[0].active).toEqual('true');
         expect(data.entities[1].id).toEqual('02');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.examples} - initial`,
+        );
     });
 
 
@@ -1384,16 +1394,26 @@ time 1598439736
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(Object.keys(data).length).toEqual(2);
         expect(data.timeout).toEqual('720');
         expect(data.stages.length).toEqual(3);
         expect(data.stages[1].command[3]).toEqual('-t');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.examples} - performer`,
+        );
     });
 
 
@@ -1463,16 +1483,26 @@ secretsEnvironment [
 imageneName hypod.cloud/package-name:$SHORT_SHA
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // log(data);
+
 
         expect(Object.keys(data).length).toEqual(2);
         expect(data.timeout).toEqual('720');
         expect(data.stages.length).toEqual(3);
         expect(data.stages[1].command[3]).toEqual('-t');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.examples} - linked performer`,
+        );
     });
 });
 

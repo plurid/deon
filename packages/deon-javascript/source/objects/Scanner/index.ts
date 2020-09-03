@@ -97,11 +97,13 @@ class Scanner {
                 break;
 
             default:
-                if (this.isAlphaNumeric(character)) {
-                    this.signifier();
-                } else {
-                    this.deonError(this.line, 'Unexpected character.');
-                }
+                this.signifier();
+
+                // if (this.isAlphaNumeric(character)) {
+                //     this.signifier();
+                // } else {
+                //     this.deonError(this.line, 'Unexpected character.');
+                // }
                 break;
         }
     }
@@ -602,6 +604,7 @@ class Scanner {
             || c === '/'
             || c === '['
             || c === ']'
+            || c === '$'
             || c === ':';
     }
 
