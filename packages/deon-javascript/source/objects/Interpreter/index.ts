@@ -244,14 +244,34 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public visitSpreadStatement(
         statement: Statement.SpreadStatement,
     ) {
-        const name = statement.name.lexeme.replace('...#', '');
-        // console.log(statement, name);
+        const name = statement.name.lexeme.replace('...#', '').replace(/'/g, '');
+        console.log('visitSpreadStatement', statement, name);
 
         const values = this.leaflinks.getAll();
         // console.log('values', values);
         const leaflink = values.get(name);
+        console.log('leaflink', leaflink);
         if (leaflink) {
-            this.environment.define(name, leaflink);
+            // to handle multi-array spreading
+            if (Array.isArray(leaflink)) {
+                for (const [index, value] of leaflink.entries()) {
+                    this.environment.define(index + '', value);
+                }
+            }
+
+            // to handle recursivity
+            if (leaflink instanceof Environment) {
+                const leaflinkValues = leaflink.getAll();
+                for (const [name, value] of leaflinkValues) {
+                    this.environment.define(name, value);
+                }
+            }
+
+            if (typeof leaflink === 'string') {
+                for (const char of leaflink) {
+                    this.environment.define(char, char);
+                }
+            }
         }
 
         return null;

@@ -244,6 +244,36 @@ class Scanner {
     }
 
     private spread() {
+        if (this.match('\'')) {
+            // Handle link string spread.
+            while (this.peek() !== '\'' && !this.isAtEnd()) {
+                if (this.peek() === '\n') {
+                    this.line += 1;
+
+                    this.deonError(this.line, 'Unterminated link string spread.');
+                    return;
+                }
+
+                this.advance();
+            }
+
+            // Unterminated link string spread.
+            if (this.isAtEnd()) {
+                this.deonError(this.line, 'Unterminated link string spread.');
+                return;
+            }
+
+            // The closing '.
+            this.advance();
+
+            // Extract the value without the initial hashstring (#')
+            // and without the last string mark.
+            const value = this.source.substring(this.start + 5, this.current - 1);
+            this.addTokenLiteral(TokenType.SPREAD, value);
+            return;
+        }
+
+
         while (this.isAlphaNumeric(this.peek())) {
             this.advance();
         }
