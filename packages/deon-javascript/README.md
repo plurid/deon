@@ -335,6 +335,8 @@ The order of the `root` or of any of the `leaflink`s is not important.
 
 The per `map` `key` names and the `leaflink`s names are expected to be unique.
 
+When parsed or imported, a `.deon` file will allow access only to the `root`. The `leaflink`s are private as data-details at the file level. By convention, a `__leaflinks__` key can be manually added to the `root` to allow access to the `leaflink`s if absolutely needed.
+
 
 
 ## Values
