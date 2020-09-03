@@ -11,20 +11,57 @@
 
 
 // #region module
-describe('Deon simple', () => {
+const timeBenchmark = {
+    instant: 0,
+    fast: 10,
+};
+
+const timeTolerance = 5;
+
+const compareTimeBenchmark = (
+    start: number,
+    end: number,
+    kind: 'instant' | 'fast',
+    id: string,
+) => {
+    const duration = end - start;
+    const benchmark = timeBenchmark[kind] ?? timeBenchmark.instant;
+    const maximum = benchmark + timeTolerance;
+
+    if (duration > maximum) {
+        console.log(`Execution time of '${id}' exceeded: (${duration} ms instead of ${maximum} ms).`);
+    }
+}
+
+const suites = {
+    simple: 'Deon simple',
+};
+
+
+describe.only(suites.simple, () => {
     it('pure empty map - new lines', async () => {
         const dataValues = `
 {
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(Object.keys(data).length).toEqual(0);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - pure empty map - new lines`,
+        );
     });
 
 
@@ -36,13 +73,22 @@ describe('Deon simple', () => {
 ]
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
         expect(data.length).toEqual(0);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - pure empty list - new lines`,
+        );
     });
 
 
@@ -52,13 +98,23 @@ describe('Deon simple', () => {
 {}
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(Object.keys(data).length).toEqual(0);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - pure empty map - same line`,
+        );
     });
 
 
@@ -68,13 +124,23 @@ describe('Deon simple', () => {
 []
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.length).toEqual(0);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - pure empty list - same line`,
+        );
     });
 
 
@@ -95,13 +161,23 @@ list [
 ]
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(Object.keys(data).length).toEqual(0);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - empty - with leaflinks`,
+        );
     });
 
 
@@ -113,13 +189,23 @@ list [
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value`,
+        );
     });
 
 
@@ -131,13 +217,23 @@ list [
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key).toEqual('value with spaces in name');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value spaced words`,
+        );
     });
 
 
@@ -149,13 +245,23 @@ list [
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key).toEqual('value with 4 trailing spaces    ');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value special characters`,
+        );
     });
 
 
@@ -171,18 +277,28 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key.split('\n').length).toEqual(3);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value multi-string`,
+        );
     });
 
 
 
-    it('simple map', async () => {
+    it('simple map as key', async () => {
         const dataValues = `
 {
     map {
@@ -191,18 +307,28 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.map.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple map as key`,
+        );
     });
 
 
 
-    it('simple map - multiple values, comma separated', async () => {
+    it('simple map as key - multiple values, comma separated', async () => {
         const dataValues = `
 {
     map {
@@ -211,14 +337,24 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data.map.key1).toEqual('value1');
         expect(data.map.key2).toEqual('value2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple map as key - multiple values, comma separated`,
+        );
     });
 
 
@@ -231,14 +367,24 @@ value
 ]
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data[0]).toEqual('one');
         expect(data[1]).toEqual('two');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple list - as root`,
+        );
     });
 
 
@@ -252,14 +398,24 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data.list[0]).toEqual('one');
         expect(data.list[1]).toEqual('two');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple list - new lines`,
+        );
     });
 
 
@@ -273,14 +429,24 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data.list[0]).toEqual('one');
         expect(data.list[1]).toEqual('two');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple list - comma separated`,
+        );
     });
 
 
@@ -296,16 +462,26 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data.list.length).toEqual(3);
         expect(data.list[0]).toEqual('one two three');
         expect(data.list[1]).toEqual('four five six');
         expect(data.list[2]).toEqual('seven');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple list - spaced words`,
+        );
     });
 
 
@@ -325,17 +501,27 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
+
 
         expect(data.key).toEqual('value');
         expect(data.map.one).toEqual('two');
         expect(data.map.three).toEqual('four');
         expect(data.list[0]).toEqual('one');
         expect(data.list[1]).toEqual('two');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - multiple values - key-value, map, list`,
+        );
     });
 
 
@@ -349,13 +535,23 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            'simple',
+        );
     });
 
 
@@ -381,13 +577,23 @@ value
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
         // console.log(data);
 
+
         expect(data.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            'simple',
+        );
     });
 });
 
@@ -1073,7 +1279,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe.only('Deon testings', () => {
+describe('Deon testings', () => {
     xit('various', async () => {
         const dataValues = `
 // {
