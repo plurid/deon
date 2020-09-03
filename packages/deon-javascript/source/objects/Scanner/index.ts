@@ -546,6 +546,12 @@ class Scanner {
         return this.source.charAt(this.current + 1);
     }
 
+    private isString(
+        c: string,
+    ) {
+        // to check if c is string-like
+    }
+
     private isAlpha(
         c: string,
     ) {
