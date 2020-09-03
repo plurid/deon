@@ -436,6 +436,23 @@ mapName {
 
 A `mapValue` can be a `string`, a `list`, or a `map`.
 
+A `mapValue` can be an empty `string`:
+
+``` deon
+mapName {
+    mapKey1
+    mapKey2 mapValue2
+}
+```
+
+or
+
+``` deon
+mapName {
+    mapKey1 '', mapKey2 mapValue2
+}
+```
+
 
 
 ## Lists
@@ -466,6 +483,23 @@ listName [list Value 1, listValue2]
 ```
 
 Each list item can be a `string`, a `list`, or a `map`.
+
+A list item can be an empty `string`:
+
+``` deon
+listName [
+    ''
+    listValue2
+]
+```
+
+or
+
+``` deon
+listName [
+    '', listValue2
+]
+```
 
 
 
