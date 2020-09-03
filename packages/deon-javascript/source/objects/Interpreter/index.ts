@@ -245,12 +245,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.SpreadStatement,
     ) {
         const name = statement.name.lexeme.replace('...#', '').replace(/'/g, '');
-        console.log('visitSpreadStatement', statement, name);
+        // console.log('visitSpreadStatement', statement, name);
 
         const values = this.leaflinks.getAll();
         // console.log('values', values);
         const leaflink = values.get(name);
-        console.log('leaflink', leaflink);
+        // console.log('leaflink', leaflink);
         if (leaflink) {
             // to handle multi-array spreading
             if (Array.isArray(leaflink)) {
@@ -268,8 +268,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             }
 
             if (typeof leaflink === 'string') {
-                for (const char of leaflink) {
-                    this.environment.define(char, char);
+                for (let i = 0; i < leaflink.length; i++) {
+                    const char = leaflink[i];
+                    this.environment.define(i + '', char);
                 }
             }
         }
