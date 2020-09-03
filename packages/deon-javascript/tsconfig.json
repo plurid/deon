@@ -17,6 +17,9 @@
         "resolveJsonModule": true,
 
         "target": "es6",
+        "lib": [
+            "ES2019"
+        ],
         "module": "esnext",
         "moduleResolution": "node",
         "declaration": true,
