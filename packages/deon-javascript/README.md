@@ -123,8 +123,9 @@ Consider the following commonly-used formats with an example file from [`perform
 
 
 ``` yaml
----
 # an .yaml file
+
+---
 stages:
 - name: 'Setup NPM Private Access'
   directory: '/path/to/package'
@@ -160,6 +161,7 @@ timeout: 720
 
 ``` json
 // a .json file
+
 {
   "stages": [
     {
@@ -205,6 +207,7 @@ Consider the `.deon` version:
 
 ``` deon
 // a .deon file
+
 {
     stages [
         {
@@ -678,7 +681,7 @@ A `leaflink` can be spreaded by tripledots `...`:
 
 Spreading overwrites the previously defined keys, if any, with the same name as the keys in the spreaded `map`.
 
-A `map` can be spreaded only in another `map`. A `list` can be spreaded only in another list. A `string` can be spreaded in a `map` and will result in a `map` where each key equals a character of the `string`, or can be spreaded into a `list` and will result in a `list` where each list item is a character of the `string`.
+A `map` can be spreaded only in another `map`. A `list` can be spreaded only in another `list`. A `string` can be spreaded in a `map` and will result in a `map` where each key equals a character of the `string`, or can be spreaded into a `list` and will result in a `list` where each list item is a character of the `string`.
 
 ``` deon
 {
@@ -735,13 +738,14 @@ Where the `name` is an arbitrary string, and the `path` is the path of the targe
 
 The `path` does not need to have the `.deon` filename extension specified.
 
-The import imports the `root` from the targeted `.deon` file in order to be used as a regular, locally-defined `leaflink`.
+The import imports the `root` from the targeted `.deon` file in order to be used as a regular, in-file locally-defined `leaflink`.
 
-The import statement order in file is not important. Imports will be resolved primarily, before any other action. The import `name` must be unique among all the other imports and among the locally-defined `leaflink`s, given that there is no discernible conceptual difference between them.
+The import statement order in file is not important, although, by convention, they sit at the top of file. Imports will be resolved primarily, before any other action. The import `name` must be unique among all the other imports and among the in-file locally-defined `leaflink`s, given that there is no discernible conceptual difference between them.
 
 
 ``` deon
 // file-1.deon
+
 {
     name The Name
 }
@@ -750,6 +754,7 @@ The import statement order in file is not important. Imports will be resolved pr
 
 ``` deon
 // file-2.deon
+
 import file1 from ./file-1
 
 {
@@ -757,13 +762,63 @@ import file1 from ./file-1
 }
 ```
 
-
 The `path`s of the imported files can be relative filesystem paths, and they will be automatically searched and imported if found, or absolute filesystem paths, if all the used absolute paths are passed to the parser at parse-time.
+
+``` deon
+// file-2.deon
+
+import file1 from absolute/path/file-1
+
+{
+    name #file1.name
+}
+```
+
+and parsed giving the absolute paths, specific to a file or general using the `/*` glob-like matcher:
+
+``` typescript
+// TypeScript example
+
+import Deon from '@plurid/deon';
+
+
+const deonFilePath = '/absolute/path/to/folder/file-1.deon';
+const deonFilesPath = '/absolute/path/to/folder/';
+
+const loadData = async () => {
+    const absolutePaths = [
+        // specific file
+        'absolute/path/file-1': deonFilePath,
+        // or file lookup at runtime
+        'absolute/path/*': deonFilesPath,
+    ];
+
+    const deon = new Deon();
+    const data = await deon.parseFile(
+        '/path/to/file-1.deon',
+        {
+            absolutePaths,
+        },
+    );
+
+    return data;
+}
+
+const data = loadData();
+// { name: 'The Name' };
+```
+
 
 A `path` can also be an `URL` such as
 
 ``` deon
+// file-url.deon
+
 import urlFile from https://example.com/url-file.deon
+
+{
+    #urlFile.key
+}
 ```
 
 In order to request `URL` files from protected routes, an `authorization` `map` of authorization `token`s can be passed at parse-time with all the domains required by the imports
@@ -774,7 +829,33 @@ authorization {
 }
 ```
 
-with the `token` being passed into the `Authorization: Bearer <token>` header of the adequate domain at request-time.
+with the `token` being automatically passed into the `Authorization: Bearer <token>` header of the adequate domain at request-time.
+
+``` typescript
+// TypeScript example
+
+import Deon from '@plurid/deon';
+
+
+const loadData = async () => {
+    const authorization = [
+        'example.com': 'token', // provide token securely using environment variables
+    ];
+
+    const deon = new Deon();
+    const data = await deon.parseFile(
+        '/path/to/file-url.deon',
+        {
+            authorization,
+        },
+    );
+
+    return data;
+}
+
+const data = loadData();
+// { key: 'data from url file' };
+```
 
 
 
