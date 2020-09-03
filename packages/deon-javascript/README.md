@@ -96,6 +96,26 @@ const data = {
 };
 ```
 
+``` python
+# Python
+
+data = {
+    "entities": [
+        {
+            "id": "01",
+            "name": "One",
+            "active": "true",
+        },
+        {
+            "id": "02",
+            "name": "Two",
+            "active": "false",
+        },
+    ],
+    "time": "1598439736",
+}
+```
+
 
 ### Comparisons
 
