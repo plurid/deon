@@ -519,7 +519,16 @@ class Scanner {
 
             const inGroup = this.inGroup(index);
 
+
             if (inGroup === 'LEAFLINK') {
+                const previous = this.tokens[index - 1];
+
+                if (previous && previous.type === TokenType.FROM) {
+                    tokens.push(token);
+
+                    continue;
+                }
+
                 identifyLeaflink(
                     token,
                 );

@@ -195,8 +195,10 @@ class Parser {
 
     private handleMap() {
         const nestLevel = this.nestLevel(this.current);
+        // console.log('nestLevel', nestLevel);
 
         const previous = this.tokens[this.current - 1];
+        // console.log('previous', previous);
 
         const isLeaflink = nestLevel === 'ROOT' && (
             previous && previous.type === TokenType.IDENTIFIER
@@ -285,9 +287,10 @@ class Parser {
     }
 
     private importStatement() {
+        this.advance();
         const importName = this.consume(TokenType.IDENTIFIER, "Expect name for import.");
         this.consume(TokenType.FROM, "Expect 'from' for import.");
-        const importPath = this.consume(TokenType.IDENTIFIER, "Expect path for import.");
+        const importPath = this.consume(TokenType.SIGNIFIER, "Expect path for import.");
 
         return new Statement.ImportStatement(
             importName,

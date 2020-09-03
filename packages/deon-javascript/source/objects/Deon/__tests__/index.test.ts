@@ -14,6 +14,7 @@
 const timeBenchmark = {
     instant: 0,
     fast: 10,
+    network: 500,
 };
 
 const timeTolerance = 5;
@@ -21,7 +22,7 @@ const timeTolerance = 5;
 const compareTimeBenchmark = (
     start: number,
     end: number,
-    kind: 'instant' | 'fast',
+    kind: 'instant' | 'fast' | 'network',
     id: string,
 ) => {
     const duration = end - start;
@@ -1264,12 +1265,23 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
 }
         `;
 
+        const start = Date.now();
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.key).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'network',
+            `${suites.imports} - simple import`,
+        );
     });
 });
 
@@ -1465,7 +1477,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe.only(suites.testings, () => {
+describe(suites.testings, () => {
     xit('various', async () => {
         const dataValues = `
 // {

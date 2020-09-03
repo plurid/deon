@@ -72,7 +72,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async execute(
         statement: Statement.Statement,
     ) {
-        // console.log('execute', statement);
         const value: any = await statement.accept(this);
         return value;
     }
@@ -109,9 +108,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const obj: any = this.rootKind === 'map' ? {} : [];
 
         const values = this.rootEnvironment.getAll();
-        // console.log('rootEnvironment', this.rootEnvironment);
-        // console.log('leaflinks', this.leaflinks.getAll());
-        // console.log('------------');
 
         for (const [key, value] of values) {
             if (value instanceof Environment) {
@@ -214,8 +210,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkStatement(
         statement: Statement.LinkStatement,
     ) {
-        // console.log('visitLinkStatement', statement);
-
         const name = statement.name.lexeme;
 
         let leaflinkName;
@@ -225,18 +219,24 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
         const accessNames = this.resolveDeepAccess(leaflinkName);
         const keyName = accessNames[accessNames.length - 1];
-        // console.log('visitLinkStatement', name, leaflinkName);
 
         const leaflinkValue: any = accessNames.reduce((previous, current) => {
             if (previous instanceof Environment) {
                 const value = previous.getValue(current);
-                // console.log('value', value);
 
                 return value;
             }
 
             if (Array.isArray(previous)) {
                 return previous[current];
+            }
+
+            if (typeof previous === 'object') {
+                return previous[current];
+            }
+
+            if (typeof previous === 'string') {
+                return previous;
             }
 
             return null;
@@ -261,20 +261,26 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.SpreadStatement,
     ) {
         const name = statement.name.lexeme.replace('...#', '').replace(/'/g, '');
-        // console.log('visitSpreadStatement', statement, name);
 
         const accessNames = this.resolveDeepAccess(name);
 
         const leaflink: any = accessNames.reduce((previous, current) => {
             if (previous instanceof Environment) {
                 const value = previous.getValue(current);
-                // console.log('value', value);
 
                 return value;
             }
 
             if (Array.isArray(previous)) {
                 return previous[current];
+            }
+
+            if (typeof previous === 'object') {
+                return previous[current];
+            }
+
+            if (typeof previous === 'string') {
+                return previous;
             }
 
             return null;
@@ -334,7 +340,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             expression.keys,
             new Environment(this.environment),
         );
-        // console.log('environment visitMapExpression', environment);
 
         return environment;
     }
@@ -346,7 +351,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             expression.items,
             new Environment(),
         );
-        // console.log('visitListExpression environment', environment);
 
         if (environment) {
             const data: any = [];
@@ -420,7 +424,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             for (const [index, statement] of statements.entries()) {
                 const value: any = await this.execute(statement);
-                // console.log('DDD', value);
 
                 if (value) {
                     this.environment.define(
@@ -429,8 +432,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                     );
                 }
             }
-
-            // console.log('this.aaaa', this.environment);
 
             if (type === 'root') {
                 this.rootEnvironment = this.environment;
@@ -581,12 +582,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         // the index 3 is computed
         // based on the maximum depth between all the leaflinks
         while (loop < 3) {
-            // console.log('resolveLeaflinks loop', loop);
-
             for (const statement of statements) {
-                // console.log('statement', statement);
+                if (loop > 1 && statement instanceof Statement.ImportStatement) {
+                    continue;
+                }
 
                 await this.execute(statement);
+
                 this.leaflinks = this.environment;
             }
 
