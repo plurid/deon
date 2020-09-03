@@ -503,6 +503,29 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private async resolveLeaflinks(
         statements: Statement.Statement[],
     ) {
+        // to loop once over the statements
+        // and create a dependency graph
+        // then loop again starting from the base of the graph
+        // and execute the statements
+
+        // const dependencyGraph = {
+            // example for performer file
+            // 'stage1': {
+            //     terminals: [
+            //         'directory',
+            //         'secretsEnvironment',
+            //     ],
+            //     nested: {
+            //         'commands': {
+            //             terminals: [
+            //                 'imageneName',
+            //             ],
+            //             nested: {},
+            //         },
+            //     },
+            // },
+        // };
+
         let loop = 0;
 
         // the index 3 is computed
