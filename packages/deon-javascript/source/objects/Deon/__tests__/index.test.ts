@@ -1206,133 +1206,54 @@ list [
     it('linkings', async () => {
         const dataValues = `
 {
-    map1 {
-        map2 {
-            list [
-                {
-                    one {
-                        two [
-                            three
-                            four
-                        ]
-                    }
-                }
-                two
-                three
-            ]
+    one {
+        two {
+            three #key
+            // three #'key with spaces'
+
+            // #key
+            // #'key with spaces'
+
+            // ...#key
+            // ...#'key with spaces'
+
+            // three #key.one
+            // three #'key with spaces'.one
+            // #'key with spaces'.one
+            // #key.one
+
+            // three #key[one]
+            // three #'key with spaces'[one]
+            // #'key with spaces'[one]
+            // #key[one]
         }
+        // three [
+        //     ...#list
+        // ]
+        // four #list[0]
+        // five {
+        //     ...#spread
+        // }
+        // six [
+        //     ...#spread
+        // ]
     }
 }
 
+key {
+    one two
+}
 
+'key with spaces' {
+    one two
+}
 
+list [
+    one
+    two
+]
 
-// {
-//     key {
-//         #onetwo
-//     }
-// }
-
-// onetwo value
-
-// {
-//     a [
-//         one
-//         // two
-//         // three
-//         // four
-//         // five
-//         // six
-//         {
-//             one [
-//                 two
-//                 #one
-//                 three
-//             ]
-//         }
-
-//         // three four
-//     ]
-// }
-
-// [
-//     #one
-//     two
-//     three
-// ]
-
-
-// [
-//     one
-//     #one
-//     two
-
-//     // three
-//     // {
-//     //     a #one
-//     // }
-
-//     // {
-//     //     three four
-//     //     five [
-//     //         six
-//     //         seven
-//     //     ]
-//     // }
-// ]
-
-// one five
-
-
-// {
-//     one {
-//         two {
-//             // three #key
-//             // three #'key with spaces'
-
-//             // #key
-//             // #'key with spaces'
-
-//             // ...#key
-//             // ...#'key with spaces'
-
-//             // three #key.one
-//             // three #'key with spaces'.one
-//             // #'key with spaces'.one
-//             // #key.one
-
-//             // three #key[one]
-//             // three #'key with spaces'[one]
-//             // #'key with spaces'[one]
-//             // #key[one]
-//         }
-//         // three [
-//         //     ...#list
-//         // ]
-//         // four #list[0]
-//         // five {
-//         //     ...#spread
-//         // }
-//         // six [
-//         //     ...#spread
-//         // ]
-//     }
-// }
-
-// key {
-//     one two
-// }
-
-// 'key with spaces' {
-//     one two
-// }
-
-// list [
-//     one
-//     two
-// ]
-
-// spread abc
+spread abc
         `;
 
         const deon = new Deon();

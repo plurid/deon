@@ -105,6 +105,10 @@ class Parser {
         const nested = nestLevel === 'NESTED_LIST'
             || nestLevel === 'NESTED_MAP';
 
+        const rootKind = nestLevel === 'NESTED_LIST'
+            ? 'list'
+            : 'map';
+
         switch (value.type) {
             case TokenType.STRING: {
                 const expression = new Expression.LiteralExpression(value.literal);
@@ -118,7 +122,11 @@ class Parser {
             case TokenType.LINK: {
                 const expression = new Expression.LiteralExpression(value.literal);
                 this.advance();
-                return new Statement.LinkStatement(name, expression);
+                return new Statement.LinkStatement(
+                    name,
+                    expression,
+                    rootKind,
+                );
             }
             case TokenType.LEFT_CURLY_BRACKET: {
                 const expression = this.handleMap();
@@ -153,6 +161,11 @@ class Parser {
     private handleLink() {
         const link = this.peek();
 
+        const nestLevel = this.nestLevel(this.current);
+        const rootKind = nestLevel === 'NESTED_LIST'
+            ? 'list'
+            : 'map';
+
         // TODO
         // handle dot-access/name-access
         const lexeme = link.lexeme.replace('#', '');
@@ -166,7 +179,11 @@ class Parser {
 
         const expression = new Expression.LiteralExpression(link.literal);
         this.advance();
-        return new Statement.LinkStatement(linkName, expression);
+        return new Statement.LinkStatement(
+            linkName,
+            expression,
+            rootKind,
+        );
     }
 
     private handleSpread() {

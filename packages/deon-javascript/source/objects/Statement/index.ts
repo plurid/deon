@@ -167,15 +167,18 @@ export class LeaflinkStatement extends Statement {
 export class LinkStatement extends Statement {
     public name: Token;
     public initializer: Expression | null;
+    public kind: RootKind;
 
     constructor(
         name: Token,
         initializer: Expression | null,
+        kind: RootKind,
     ) {
         super();
 
         this.name = name;
         this.initializer = initializer;
+        this.kind = kind;
     }
 
     accept<T>(

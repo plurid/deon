@@ -110,7 +110,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
         const values = this.rootEnvironment.getAll();
         // console.log('rootEnvironment', this.rootEnvironment);
-        // console.log('extract', values);
         // console.log('leaflinks', this.leaflinks.getAll());
         // console.log('------------');
 
@@ -231,10 +230,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         const leaflinkValue = values.get(leaflinkName);
         // console.log('leaflinkValue', leaflinkValue);
 
-        // to define at array position instead of name for lists
-
-        if (name === leaflinkName) {
-            return leaflinkValue;
+        if (statement.kind === 'list') {
+            if (name === leaflinkName) {
+                return leaflinkValue;
+            }
         }
 
         this.environment.define(name, leaflinkValue || '');
