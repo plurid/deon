@@ -786,12 +786,12 @@ const deonFilePath = '/absolute/path/to/folder/file-1.deon';
 const deonFilesPath = '/absolute/path/to/folder/';
 
 const loadData = async () => {
-    const absolutePaths = [
+    const absolutePaths = {
         // specific file
         'absolute/path/file-1': deonFilePath,
         // or file lookup at runtime
         'absolute/path/*': deonFilesPath,
-    ];
+    };
 
     const deon = new Deon();
     const data = await deon.parseFile(
