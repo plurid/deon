@@ -1292,12 +1292,82 @@ describe(suites.stringify, () => {
             key: 'value',
         };
 
+        const start = Date.now();
         const deon = new Deon();
         const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
         const data = await deon.parse(dataStringified);
         // log(data);
 
+
         expect(data.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify`,
+        );
+    });
+
+
+
+    it('simple stringify - nested map', async () => {
+        const dataValues = {
+            one: {
+                two: 'three',
+            },
+        };
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+
+        expect(data.one.two).toEqual('three');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - nested map`,
+        );
+    });
+
+
+
+    it('simple stringify - nested list', async () => {
+        const dataValues = [
+            [
+                [
+                    'one',
+                    'two',
+                ],
+            ],
+        ];
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+
+        expect(data[0][0][0]).toEqual('one');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - nested list`,
+        );
     });
 });
 

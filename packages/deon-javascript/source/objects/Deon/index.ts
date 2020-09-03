@@ -12,8 +12,9 @@
     import Scanner from '../Scanner';
     import Token from '../Token';
     import Parser from '../Parser';
-    import Interpreter from '../Interpreter';
     import Resolver from '../Resolver';
+    import Interpreter from '../Interpreter';
+    import Stringifier from '../Stringifier';
 
     import {
         TokenType,
@@ -179,8 +180,11 @@ class Deon {
         data: any,
         options?: PartialDeonStringifyOptions,
     ) {
+        const stringifier = new Stringifier(
+            options,
+        );
 
-        return '';
+        return stringifier.stringify(data);
     }
 
     /**
