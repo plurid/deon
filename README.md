@@ -323,7 +323,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 ## Implementations
 
-`deon` is implemented in:
+`deon` is implemented for:
 
 + [`JavaScript/TypeScript`](https://github.com/plurid/deon/tree/master/packages/deon-javascript)
 
