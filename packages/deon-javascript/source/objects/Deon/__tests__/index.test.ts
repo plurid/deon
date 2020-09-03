@@ -1206,9 +1206,9 @@ spread abc
         // log(data);
 
 
-        expect(data.entity.a).toEqual('a');
-        expect(data.entity.b).toEqual('b');
-        expect(data.entity.c).toEqual('c');
+        expect(data.entity['0']).toEqual('a');
+        expect(data.entity['1']).toEqual('b');
+        expect(data.entity['2']).toEqual('c');
 
         compareTimeBenchmark(
             start,
@@ -1599,47 +1599,39 @@ list [
         const dataValues = `
 {
     one {
-        // two {
-        //     // three #key
-        //     // three #'key with spaces'
+        two {
+            // three #key
+            // three #'key with spaces'
 
-        //     // #key
-        //     // #'key with spaces'
+            // #key
+            // #'key with spaces'
 
-        //     // ...#key
-        //     ...#'key with spaces'
+            // ...#key
+            // ...#'key with spaces'
 
-        //     // three #key.one
-        //     // three #'key with spaces'.one
-        //     // #'key with spaces'.one
-        //     // #key.one
+            // three #key.one
+            // three #'key with spaces'.one
+            // #'key with spaces'.one
+            // #key.one
 
-        //     // three #key[one]
-        //     // three #'key with spaces'[one]
-        //     // #'key with spaces'[one]
-        //     // #key[one]
-        // }
+            // three #key[one]
+            // three #'key with spaces'[one]
+            // #'key with spaces'[one]
+            // #key[one]
+        }
         // three [
         //     // #key
         //     // ...#list
         // ]
         // four #list[0]
-        five {
-            ...#spread
-        }
-        six [
-            ...#spread
-        ]
+        // five {
+        //     ...#spread
+        // }
+        // six [
+        //     ...#spread
+        // ]
     }
 }
-
-// {
-//     boo {
-//         coo {
-//             ...#key
-//         }
-//     }
-// }
 
 key {
     one two

@@ -224,11 +224,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         if (statement.initializer) {
             leaflinkName = await this.evaluate(statement.initializer);
         }
-        // console.log('visitLinkStatement', name, leaflinkName);
+        const accessNames = this.resolveDeepAccess(leaflinkName);
+        const keyName = accessNames[accessNames.length - 1];
+
+        console.log('visitLinkStatement', name, leaflinkName);
 
         const values = this.leaflinks.getAll();
         const leaflinkValue = values.get(leaflinkName);
-        // console.log('leaflinkValue', leaflinkValue);
+        console.log('accessNames', accessNames);
+        console.log('keyName', keyName);
+        console.log('leaflinkValue', leaflinkValue);
 
         if (statement.kind === 'list') {
             if (name === leaflinkName) {
@@ -236,7 +241,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             }
         }
 
-        this.environment.define(name, leaflinkValue || '');
+        this.environment.define(keyName, leaflinkValue || '');
 
         return null;
     }
@@ -563,6 +568,20 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             loop += 1;
         }
+    }
+
+    private resolveDeepAccess (
+        key: string
+    ) {
+        const dotSplit = key.split('.');
+
+        const nameAccess = dotSplit.map(name => {
+            const values = name.replace(/]/g, '').split('[');
+
+            return values;
+        });
+
+        return nameAccess.flat();
     }
 }
 // #endregion module
