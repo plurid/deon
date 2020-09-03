@@ -272,7 +272,7 @@ stage1 {
     name Setup NPM Private Access
     #directory
     imagene ubuntu
-    command #stage1Command
+    command #commands.stage1
     #secretsEnvironment
 }
 
@@ -280,36 +280,36 @@ stage2 {
     name Generate the Imagene
     #directory
     imagene docker
-    command #stage2Command
+    command #commands.stage2
 }
 
 stage3 {
     name Push Imagene to Registry
     #directory
     imagene docker
-    command #stage3Command
+    command #commands.stage3
 }
 
 directory /path/to/package
 
-stage1Command [
-    /bin/bash
-    ./configurations/.npmrc.sh
-]
-
-stage2Command [
-    build
-    -f
-    ./configurations/docker.development.dockerfile
-    -t
-    #imageneName
-    .
-]
-
-stage3Command [
-    push
-    #imageneName
-]
+commands {
+    stage1 [
+        /bin/bash
+        ./configurations/.npmrc.sh
+    ]
+    stage2 [
+        build
+        -f
+        ./configurations/docker.development.dockerfile
+        -t
+        #imageneName
+        .
+    ]
+    stage3 [
+        push
+        #imageneName
+    ]
+}
 
 secretsEnvironment [
     NPM_TOKEN
