@@ -23,4 +23,9 @@ export type PartialDeonStringifyOptions = Partial<DeonStringifyOptions>;
 
 
 export type RootKind = 'map' | 'list';
+
+
+export interface DeonInterpreterOptions {
+    file: string | undefined;
+}
 // #endregion module

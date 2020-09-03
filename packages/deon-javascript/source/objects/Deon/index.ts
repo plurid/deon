@@ -23,6 +23,7 @@
         DeonParseOptions,
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
+        DeonInterpreterOptions,
     } from '../../data/interfaces';
 
     import {
@@ -37,6 +38,7 @@
 class Deon {
     private interpreter: Interpreter = new Interpreter();
     private hadError = false;
+    private parsedFile = '';
 
     /**
      * Parse based on arguments passed as command line.
@@ -79,6 +81,7 @@ class Deon {
         options?: PartialDeonParseOptions,
     ) {
         try {
+            this.parsedFile = file;
             const absolutePath = path.isAbsolute(file);
 
             const filepath = absolutePath
@@ -151,7 +154,14 @@ class Deon {
         //     return;
         // }
 
-        const interpretedData = await this.interpreter.interpret(statements);
+        const interpretOptions: DeonInterpreterOptions = {
+            file: this.parsedFile,
+        };
+
+        const interpretedData = await this.interpreter.interpret(
+            statements,
+            interpretOptions,
+        );
 
         return interpretedData;
         // return {

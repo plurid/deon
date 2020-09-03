@@ -1,8 +1,8 @@
 // #region imports
     // #region external
-    // import {
-    //     TokenType,
-    // } from '../../data/enumerations';
+    import {
+        DeonInterpreterOptions,
+    } from '../../data/interfaces';
 
     import Deon from '../Deon';
     import * as Expression from '../Expression';
@@ -13,10 +13,6 @@
     import {
         fetcher,
     } from '../../utilities/fetcher';
-
-    import {
-        mapToObject,
-    } from '../../utilities/general';
     // #endregion external
 // #endregion imports
 
@@ -30,12 +26,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private leaflinks: Environment = new Environment();
     private rootEnvironment: Environment = new Environment();
     private rootKind = 'map';
+    private options: DeonInterpreterOptions = { file: undefined };
 
 
     public async interpret(
         statements: Statement.Statement[],
+        options: DeonInterpreterOptions,
     ) {
         try {
+            this.options = options;
+
             const importStatements = [];
             const leaflinkStatements = [];
             let rootStatement;
@@ -127,7 +127,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
-        const data = await fetcher(statement.path.lexeme);
+        const data = await fetcher(
+            statement.path.lexeme,
+            this.options,
+        );
 
         if (!data) {
             return;
