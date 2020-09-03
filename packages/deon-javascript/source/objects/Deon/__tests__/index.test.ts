@@ -523,7 +523,7 @@ describe('Deon nested', () => {
 
 
 
-    it('simple nest - list level 3', async () => {
+    it('complex nest - list level 3', async () => {
         const dataValues = `
 {
     map1 {
@@ -1205,6 +1205,28 @@ list [
 
     it('linkings', async () => {
         const dataValues = `
+{
+    map1 {
+        map2 {
+            list [
+                {
+                    one {
+                        two [
+                            three
+                            four
+                        ]
+                    }
+                }
+                two
+                three
+            ]
+        }
+    }
+}
+
+
+
+
 // {
 //     key {
 //         #onetwo
@@ -1233,11 +1255,11 @@ list [
 //     ]
 // }
 
-[
-    #one
-    two
-    three
-]
+// [
+//     #one
+//     two
+//     three
+// ]
 
 
 // [
@@ -1259,7 +1281,7 @@ list [
 //     // }
 // ]
 
-one five
+// one five
 
 
 // {

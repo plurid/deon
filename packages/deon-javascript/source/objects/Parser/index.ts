@@ -475,21 +475,66 @@ class Parser {
             return '0';
         }
 
-        let listIndex = 0;
+        const curlyBrackets = {
+            left: 0,
+            right: 0,
+        };
+        const squareBrackets = {
+            left: 0,
+            right: 0,
+        };
 
-        console.log('listIndex tokens', tokens);
+        const atListRoot = () => {
+            if (
+                curlyBrackets.left === curlyBrackets.right
+                && squareBrackets.left === squareBrackets.right
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
+        let listIndex = -1;
+
+        // console.log('listIndex tokens', tokens);
+        // console.log('listIndex', listIndex);
 
         for (const token of tokens) {
-            if (token.type === TokenType.LEFT_CURLY_BRACKET) {
+            if (token.type === TokenType.COMMA) {
+                continue;
+            }
+
+            if (
+                token.type === TokenType.LEFT_SQUARE_BRACKET
+                && atListRoot()
+            ) {
                 break;
-            } else {
+            }
+
+            switch (token.type) {
+                case TokenType.LEFT_CURLY_BRACKET:
+                    curlyBrackets.left += 1;
+                    break;
+                case TokenType.RIGHT_CURLY_BRACKET:
+                    curlyBrackets.right += 1;
+                    break;
+                case TokenType.LEFT_SQUARE_BRACKET:
+                    squareBrackets.left += 1;
+                    break;
+                case TokenType.RIGHT_SQUARE_BRACKET:
+                    squareBrackets.right += 1;
+                    break;
+            }
+
+            if (atListRoot()) {
                 listIndex += 1;
             }
         }
 
-        console.log('listIndex', listIndex);
+        // console.log('listIndex', listIndex);
 
-        return listIndex - 2 + '';
+        return listIndex + '';
     }
 }
 // #endregion module
