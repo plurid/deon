@@ -226,14 +226,25 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
         const accessNames = this.resolveDeepAccess(leaflinkName);
         const keyName = accessNames[accessNames.length - 1];
+        // console.log('visitLinkStatement', name, leaflinkName);
 
-        console.log('visitLinkStatement', name, leaflinkName);
+        // const values = this.leaflinks.getAll();
 
-        const values = this.leaflinks.getAll();
-        const leaflinkValue = values.get(leaflinkName);
-        console.log('accessNames', accessNames);
-        console.log('keyName', keyName);
-        console.log('leaflinkValue', leaflinkValue);
+        const leaflinkValue: any = accessNames.reduce((previous, current) => {
+            if (previous instanceof Environment) {
+                const value = previous.getValue(current);
+                // console.log('value', value);
+
+                return value;
+            }
+
+            return null;
+        }, this.leaflinks);
+
+        // console.log('values', values);
+        // console.log('accessNames', accessNames);
+        // console.log('keyName', keyName);
+        // console.log('leaflinkValue', leaflinkValue);
 
         if (statement.kind === 'list') {
             if (name === leaflinkName) {

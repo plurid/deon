@@ -41,6 +41,21 @@ class Environment {
         // );
     }
 
+    public getValue(
+        name: string,
+    ): any {
+        if (this.values.has(name)) {
+            return this.values.get(name);
+        }
+
+        return;
+
+        // throw new RuntimeError(
+        //     name,
+        //     `Undefined variable '${name.lexeme}'`,
+        // );
+    }
+
     public assign(
         name: Token,
         value: any,
