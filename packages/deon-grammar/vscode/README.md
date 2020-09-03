@@ -34,6 +34,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 ### Contents
 
 + [Example](#example)
++ [Implementations](#implementations)
 + [General](#general)
 + [Values](#values)
 + [Maps](#maps)
@@ -317,6 +318,14 @@ secretsEnvironment [
 
 imageneName hypod.cloud/package-name:$SHORT_SHA
 ```
+
+
+
+## Implementations
+
+`deon` is implemented in:
+
++ [`JavaScript/TypeScript`](https://github.com/plurid/deon/tree/master/packages/deon-javascript)
 
 
 
