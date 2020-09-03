@@ -406,7 +406,7 @@ mapName {
 }
 ```
 
-A `map` is comprised of key-value pairs. The `deon` `root` is the single `map` without a `mapName`.
+A `map` is comprised of key-value pairs. The `deon` `root` is the single base-level `map` without a `mapName`.
 
 A `mapKey` is an `A-Za-z0-9_-` string of characters. To support special characters (such as space), the `mapKey` must be surrounded by single quotes, such as
 
@@ -464,7 +464,7 @@ listName [
 ]
 ```
 
-A `list` is comprised of a `listName` and the list items. The `deon` `root` is the single `list` without a `listName`.
+A `list` is comprised of a `listName` and the list items. The `deon` `root` is the single base-level `list` without a `listName`.
 
 A `list` item value starts at the first non-space character after the left square bracket `[`, or after the previous list item, and ends at the end of the line or at the comma.
 
