@@ -12,6 +12,7 @@ export default {
             file: './distribution/index.js',
             format: 'cjs',
             sourcemap: true,
+            exports: 'named',
         },
     ],
     external: [
