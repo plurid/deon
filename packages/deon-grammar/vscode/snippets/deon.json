@@ -1,0 +1,16 @@
+{
+	"import": {
+		"prefix": "import",
+		"body": [
+            "import"
+		],
+		"description": "import"
+	},
+	"from": {
+		"prefix": "from",
+		"body": [
+            "from"
+		],
+		"description": "from"
+	}
+}
