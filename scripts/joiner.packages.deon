@@ -1,14 +1,12 @@
 {
     packages [
-        ./packages/*
+        ./packages/deon-grammar/vscode
+        ./packages/deon-javascript
     ]
 
     package {
         manager yarn
         publisher npm
-        ignore [
-            packages/plurid-specification
-        ]
     }
 
     yarnWorkspace false
