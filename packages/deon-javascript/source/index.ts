@@ -14,6 +14,7 @@ export * from './data/interfaces';
 
 export {
     cli,
-    Deon,
 };
+
+export default Deon;
 // #endregion exports
