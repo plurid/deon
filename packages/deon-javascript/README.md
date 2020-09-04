@@ -50,6 +50,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Parsing](#parsing)
 + [Advanced Usage](#advanced-usage)
 + [In Use](#in-use)
++ [Packages](#packages)
 
 
 
@@ -986,3 +987,26 @@ const data = Deon.parse(
 + [`joiner`](https://github.com/plurid/joiner) - configuration file
 + [`performer`](https://github.com/plurid/performer) - configuration file
 + [`pluridoc`](https://github.com/plurid/pluridoc) - plurid plane configuration
+
+
+
+## Packages
+
+
+<a target="_blank" href="https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode">
+    <img src="https://img.shields.io/badge/vscode-v.0.0.1-1380C3?style=for-the-badge" alt="Version">
+</a>
+
+[@plurid/deon][deon-grammar] • `Visual Studio Code` syntax highlighting
+
+[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode
+
+
+
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon">
+    <img src="https://img.shields.io/npm/v/@plurid/deon.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
+</a>
+
+[@plurid/deon][deon-javascript] • `JavaScript` / `TypeScript` implementation
+
+[deon-javascript]: https://github.com/plurid/plurid/tree/master/packages/deon-javascript
