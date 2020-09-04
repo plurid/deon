@@ -1,6 +1,6 @@
 {
     "name": "@plurid/deon",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "DeObject Notation Format of Structured Strings",
     "keywords": [
         "deon"
@@ -37,7 +37,8 @@
         "test": "jest -c ./configurations/jest.config.js ./source",
         "watch": "rollup -c ./scripts/rollup.config.js -w",
         "build": "rollup -c ./scripts/rollup.config.js",
-        "prepublishOnly": "yarn build"
+        "cleanup": "find ./distribution -type d -name '*__tests__' -exec rm -rf {} + && find ./distribution -type f -name '*.DS_Store' -exec rm -rf {} +",
+        "prepublishOnly": "yarn build && yarn cleanup"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^15.0.0",

@@ -23,6 +23,7 @@
         "module": "esnext",
         "moduleResolution": "node",
         "declaration": true,
+        "declarationDir": "distribution",
 
         "rootDir": "source",
         "outDir": "distribution"
