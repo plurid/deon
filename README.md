@@ -1,6 +1,7 @@
 <p align="center">
     <img src="https://raw.githubusercontent.com/plurid/deon/master/about/identity/deon-logo.png" height="250px">
     <br />
+    <br />
     <a target="_blank" href="https://github.com/plurid/deon/blob/master/LICENSE">
         <img src="https://img.shields.io/badge/license-MIT-blue.svg?colorB=1380C3&style=for-the-badge" alt="License: MIT">
     </a>
@@ -16,6 +17,9 @@
 <h3 align="center">
     DeObject Notation Format
 </h1>
+
+
+<br />
 
 
 `deon` is a notation format for structured strings.
