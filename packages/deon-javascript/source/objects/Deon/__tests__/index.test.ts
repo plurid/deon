@@ -1609,7 +1609,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe(suites.testings, () => {
+describe.only(suites.testings, () => {
     it('various', async () => {
         const dataValues = `
 // {

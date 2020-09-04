@@ -591,9 +591,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
         let loop = 0;
 
-        // the index 3 is computed
+        // the index 4 is computed
         // based on the maximum depth between all the leaflinks
-        while (loop < 3) {
+        while (loop < 4) {
             for (const statement of statements) {
                 if (loop > 1 && statement instanceof Statement.ImportStatement) {
                     continue;
