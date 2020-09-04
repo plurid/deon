@@ -120,13 +120,22 @@ class Parser {
                 }
             }
             case TokenType.LINK: {
-                const expression = new Expression.LiteralExpression(value.literal);
-                this.advance();
-                return new Statement.LinkStatement(
-                    name,
-                    expression,
-                    rootKind,
-                );
+                if (nested) {
+                    const expression = new Expression.LiteralExpression(value.literal);
+                    this.advance();
+                    return new Statement.LinkStatement(
+                        name,
+                        expression,
+                        rootKind,
+                    );
+                } else {
+                    const expression = new Expression.LinkExpression(value.literal);
+                    this.advance();
+                    return new Statement.LeaflinkStatement(
+                        name,
+                        expression,
+                    );
+                }
             }
             case TokenType.LEFT_CURLY_BRACKET: {
                 const expression = this.handleMap();
@@ -521,6 +530,9 @@ class Parser {
         // console.log('listIndex', listIndex);
 
         for (const token of tokens) {
+            // console.log('token', token);
+            // console.log('atListRoot()', atListRoot());
+
             if (token.type === TokenType.COMMA) {
                 continue;
             }

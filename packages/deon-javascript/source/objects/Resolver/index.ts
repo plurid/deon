@@ -175,6 +175,11 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
 
     }
 
+    public visitLinkExpression(
+        expression: Expression.LinkExpression,
+    ) {
+    }
+
     public visitAssignExpression(
         expression: Expression.AssignExpression,
     ) {

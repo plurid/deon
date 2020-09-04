@@ -917,6 +917,38 @@ key aValue
 
 
 
+    it('simple - chained strings', async () => {
+        const dataValues = `
+{
+    #one
+}
+
+one #two
+
+two three
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.one).toEqual('three');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - chained strings`,
+        );
+    });
+
+
+
     it('simple - named list', async () => {
         const dataValues = `
 [
@@ -1507,7 +1539,7 @@ stage1 {
     name Setup NPM Private Access
     #directory
     imagene ubuntu
-    command #stage1Command
+    command #commands.stage1
     #secretsEnvironment
 }
 
@@ -1515,36 +1547,36 @@ stage2 {
     name Generate the Imagene
     #directory
     imagene docker
-    command #stage2Command
+    command #commands.stage2
 }
 
 stage3 {
     name Push Imagene to Registry
     #directory
     imagene docker
-    command #stage3Command
+    command #commands.stage3
 }
 
 directory /path/to/package
 
-stage1Command [
-    /bin/bash
-    ./configurations/.npmrc.sh
-]
-
-stage2Command [
-    build
-    -f
-    ./configurations/docker.development.dockerfile
-    -t
-    #imageneName
-    .
-]
-
-stage3Command [
-    push
-    #imageneName
-]
+commands {
+    stage1 [
+        /bin/bash
+        ./configurations/.npmrc.sh
+    ]
+    stage2 [
+        build
+        -f
+        ./configurations/docker.development.dockerfile
+        -t
+        #imageneName
+        .
+    ]
+    stage3 [
+        push
+        #imageneName
+    ]
+}
 
 secretsEnvironment [
     NPM_TOKEN
@@ -1578,7 +1610,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 
 describe(suites.testings, () => {
-    xit('various', async () => {
+    it('various', async () => {
         const dataValues = `
 // {
 //     key value
@@ -1619,6 +1651,8 @@ describe(suites.testings, () => {
 //     ]
 // ]
 
+
+
 {
     key #linkedList
 }
@@ -1636,13 +1670,23 @@ listItem2 [
 ]
 
 one #two
+
+
+
+// {
+//     #one
+// }
+
+// one #two
+
+// two three
         `;
 
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
         );
-        // log(data);
+        log(data);
     });
 
 
@@ -1702,12 +1746,12 @@ list [
         const data = await deon.parse(
             dataValues,
         );
-        // log(data);
+        log(data);
     });
 
 
 
-    it('linkings', async () => {
+    xit('linkings', async () => {
         const dataValues = `
 // {
 //     one {

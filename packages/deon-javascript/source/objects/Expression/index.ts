@@ -25,6 +25,7 @@ export interface Visitor<T> {
     visitRootExpression: (rootExpression: RootExpression) => T;
     visitMapExpression: (mapExpression: MapExpression) => T;
     visitListExpression: (listExpression: ListExpression) => T;
+    visitLinkExpression: (linkExpression: LinkExpression) => T;
     visitLiteralExpression: (literalExpression: LiteralExpression) => T;
     visitVariableExpression: (variableExpression: VariableExpression) => T;
 }
@@ -151,6 +152,25 @@ export class ListExpression extends Expression {
 }
 
 
+export class LinkExpression extends Expression {
+    public value: any;
+
+    constructor(
+        value: any,
+    ) {
+        super();
+
+        this.value = value;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitLinkExpression(this);
+    }
+}
+
+
 export class LiteralExpression extends Expression {
     public value: any;
 
@@ -234,7 +254,17 @@ export class ASTPrinter implements Visitor<string> {
     }
 
     public visitListExpression(
-        groupingExpression: ListExpression,
+        listExpression: ListExpression,
+    ) {
+        return '';
+        // return this.parenthesize(
+        //     'group',
+        //     groupingExpression.expression,
+        // );
+    }
+
+    public visitLinkExpression(
+        linkExpression: LinkExpression,
     ) {
         return '';
         // return this.parenthesize(

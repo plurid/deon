@@ -375,6 +375,15 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return;
     }
 
+    public async visitLinkExpression(
+        expression: Expression.LinkExpression,
+    ) {
+        const all = this.leaflinks.getAll();
+        const value = all.get(expression.value);
+
+        return value;
+    }
+
     public async visitGroupingExpression(
         groupingExpression: Expression.GroupingExpression,
     ) {
