@@ -1078,6 +1078,74 @@ list [
 
 
 
+    it('simple - leaflink dot-access', async () => {
+        const dataValues = `
+{
+    #one
+}
+
+one #two.three
+
+two {
+    three four
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.one).toEqual('four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - leaflink dot-access`,
+        );
+    });
+
+
+
+    it('simple - leaflink name-access', async () => {
+        const dataValues = `
+{
+    #one
+}
+
+one #two[three]
+
+two {
+    three four
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.one).toEqual('four');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - leaflink name-access`,
+        );
+    });
+
+
+
     it('simple - map spread', async () => {
         const dataValues = `
 {
@@ -1609,7 +1677,7 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 });
 
 
-describe.only(suites.testings, () => {
+describe(suites.testings, () => {
     it('various', async () => {
         const dataValues = `
 // {

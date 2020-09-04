@@ -378,8 +378,29 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkExpression(
         expression: Expression.LinkExpression,
     ) {
-        const all = this.leaflinks.getAll();
-        const value = all.get(expression.value);
+        const accessNames = this.resolveDeepAccess(expression.value);
+
+        const value: any = accessNames.reduce((previous, current) => {
+            if (previous instanceof Environment) {
+                const value = previous.getValue(current);
+
+                return value;
+            }
+
+            if (Array.isArray(previous)) {
+                return previous[current];
+            }
+
+            if (typeof previous === 'object') {
+                return previous[current];
+            }
+
+            if (typeof previous === 'string') {
+                return previous;
+            }
+
+            return null;
+        }, this.leaflinks);
 
         return value;
     }
