@@ -1754,12 +1754,12 @@ one #two
         const data = await deon.parse(
             dataValues,
         );
-        log(data);
+        // log(data);
     });
 
 
 
-    xit('deep nesting', async () => {
+    it('deep nesting', async () => {
         const dataValues = `
 {
     key value
@@ -1814,12 +1814,12 @@ list [
         const data = await deon.parse(
             dataValues,
         );
-        log(data);
+        // log(data);
     });
 
 
 
-    xit('linkings', async () => {
+    it('linkings', async () => {
         const dataValues = `
 // {
 //     one {
@@ -1905,7 +1905,7 @@ map {
         const data = await deon.parse(
             dataValues,
         );
-        log(data);
+        // log(data);
     });
 });
 // #endregion module
