@@ -188,6 +188,20 @@ class Deon {
     }
 
     /**
+     * Formats deon data to the canonical shape.
+     *
+     * @param data
+     */
+    canonical(
+        data: string,
+    ) {
+        const parsed = this.parse(data);
+        const stringified = this.stringify(parsed);
+
+        return stringified;
+    }
+
+    /**
      * Log error.
      *
      * @param entity
