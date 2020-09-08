@@ -7,11 +7,44 @@ const {
 
 
 
-
 const handleKubernetesConfiguration = (
     data,
 ) => {
-    // loop over the fields and convert number to number, boolean to booleans
+    if (!isNaN(data)) {
+        if (Number.isInteger(data)) {
+            return parseeInt(data);
+        }
+
+        return parseFloat(data);
+    }
+
+    if (data === 'true') {
+        return true;
+    }
+
+    if (data === 'false') {
+        return false;
+    }
+
+    if (typeof data === 'string') {
+        return data;
+    }
+
+    if (Array.isArray(data)) {
+        const newArray = [];
+        for (const element of data) {
+            const newElement = handleKubernetesConfiguration(element);
+            newArray.push(newElement);
+        }
+        return newArray;
+    }
+
+    if (typeof data === 'object') {
+        for (const [key, value] of Object.entries(data)) {
+            data[key] = handleKubernetesConfiguration(value);
+        }
+    }
+
     return data;
 }
 
@@ -67,9 +100,13 @@ const main = async () => {
         }
 
         for (const data of parsedData) {
-            const kubectlApply = `${data} | kubectl apply -f -`;
-            console.log(kubectlApply);
-            // execSync(kubectlApply);
+            const kubectlApply = `echo '${data}' | kubectl apply -f -`;
+            execSync(
+                kubectlApply,
+                {
+                    stdio: 'inherit',
+                },
+            );
         }
 
         return;
