@@ -50,6 +50,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Parsing](#parsing)
 + [Advanced Usage](#advanced-usage)
 + [In Use](#in-use)
++ [Usages](#usages)
 + [Packages](#packages)
 
 
@@ -987,6 +988,14 @@ const data = Deon.parse(
 + [`joiner`](https://github.com/plurid/joiner) - configuration file
 + [`performer`](https://github.com/plurid/performer) - configuration file
 + [`pluridoc`](https://github.com/plurid/pluridoc) - plurid plane configuration
+
+
+
+### Usages
+
+`deon` can be plugged in into:
+
++ [`kubectl`](https://github.com/plurid/deon/tree/master/usages/kubectl)
 
 
 
