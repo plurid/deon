@@ -23,13 +23,13 @@ The name `kubectl-deonly` is a play on `deon` + `apply` and can be changed to an
 Commands can be issued with
 
 ``` bash
-kubectly deonly file.deon
+kubectl deonly file.deon
 ```
 
 Multiple files can be applied at the same time by chaining with space the filenames
 
 ``` bash
-kubectly deonly ./relative/file1.deon /absolute/file.deon
+kubectl deonly ./relative/file1.deon /absolute/file.deon
 ```
 
 The `.deon` extension can be omitted from the filename.
