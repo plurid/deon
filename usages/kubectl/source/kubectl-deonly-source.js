@@ -7,55 +7,29 @@ const {
 
 
 
-const handleKubernetesConfiguration = (
+const typeData = (
     data,
+    Deon,
 ) => {
-    if (!isNaN(data)) {
-        if (Number.isInteger(data)) {
-            return parseeInt(data);
-        }
+    const {
+        typer,
+    } = Deon;
 
-        return parseFloat(data);
-    }
-
-    if (data === 'true') {
-        return true;
-    }
-
-    if (data === 'false') {
-        return false;
-    }
-
-    if (typeof data === 'string') {
-        return data;
-    }
-
-    if (Array.isArray(data)) {
-        const newArray = [];
-        for (const element of data) {
-            const newElement = handleKubernetesConfiguration(element);
-            newArray.push(newElement);
-        }
-        return newArray;
-    }
-
-    if (typeof data === 'object') {
-        for (const [key, value] of Object.entries(data)) {
-            data[key] = handleKubernetesConfiguration(value);
-        }
-    }
-
-    return data;
+    return typer(data);
 }
 
 
 const handleFile = async (
     file,
-    deon,
+    Deon,
 ) => {
     try {
+        const deon = new Deon.default();
         const parsedData = await deon.parseFile(file);
-        const typedData = handleKubernetesConfiguration(parsedData);
+        const typedData = typeData(
+            parsedData,
+            Deon,
+        );
 
         return JSON.stringify(typedData);
     } catch (error) {
@@ -75,9 +49,7 @@ const main = async () => {
             .trim();
 
 
-        const Deon = require(`${root}/@plurid/deon`).default;
-
-        const deon = new Deon();
+        const Deon = require(`${root}/@plurid/deon`);
 
         const files = process.argv.slice(2);
 
@@ -92,7 +64,7 @@ const main = async () => {
         for (const file of files) {
             const data = await handleFile(
                 file,
-                deon,
+                Deon,
             );
             if (data) {
                 parsedData.push(data);
