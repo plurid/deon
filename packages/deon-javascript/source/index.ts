@@ -3,6 +3,10 @@
     import cli from './cli';
 
     import Deon from './objects/Deon';
+
+    import {
+        typer,
+    } from './utilities/typer';
     // #endregion internal
 // #endregion imports
 
@@ -14,6 +18,7 @@ export * from './data/interfaces';
 
 export {
     cli,
+    typer,
 };
 
 export default Deon;
