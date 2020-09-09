@@ -1003,7 +1003,7 @@ const data = Deon.parse(
 
 
 <a target="_blank" href="https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode">
-    <img src="https://img.shields.io/badge/vscode-v.0.0.1-1380C3?style=for-the-badge" alt="Version">
+    <img src="https://img.shields.io/badge/vscode-v.0.0.2-1380C3?style=for-the-badge" alt="Version">
 </a>
 
 [@plurid/deon-grammar][deon-grammar] • `Visual Studio Code` syntax highlighting
