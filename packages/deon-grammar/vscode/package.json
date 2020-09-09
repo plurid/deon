@@ -1,6 +1,6 @@
 {
     "name": "deon-grammar",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "displayName": "deon",
     "publisher": "plurid",
     "icon": "assets/icon.png",
@@ -28,6 +28,10 @@
                 "extensions": [
                     ".deon"
                 ],
+                "aliases": [
+                    "deon",
+                    "Deon"
+                ],
                 "configuration": "./language-configuration.json"
             }
         ],
@@ -48,11 +52,11 @@
     "scripts": {
         "compile": "js-yaml syntaxes/deon.tmLanguage.yaml > syntaxes/deon.tmLanguage.json",
         "package": "yarn compile && vsce package --yarn",
-        "install.local": "code --install-extension deon-grammar-0.0.0.vsix",
+        "install.local": "code --install-extension deon-grammar-0.0.2.vsix",
         "run.local": "yarn package && yarn install.local",
         "publish": "yarn package && vsce publish -m \"\""
     },
     "devDependencies": {
-        "js-yaml": "^3.13.1"
+        "js-yaml": "^3.14.0"
     }
 }

@@ -24,27 +24,23 @@ repository:
         captures:
           1:
             name: variable.other.property.deon
-      - match: (\'(.+)\')\s(\[|\{|\w+|\') # string key
-        captures:
-          1:
-            name: variable.other.property.deon
       - match: '(#.+)\b' # link
         captures:
           1:
             name: storage.type.struct
       - match: '\/\/.+'
         name: comment.deon
-      - match: '^(\/\*\*(.+)?)|((\s+)?\*(.+)?\/?)'
+      - match: '^(\/\*(.+)?)|((\s+)?\*(.+)?\/?)'
         name: comment.deon
   'curly-keywords':
     patterns:
-      - match: '^\s+(\w+)' # key
+      - match: '^\s*?(\w+)' # key
         captures:
           1:
             name: variable.other.property.deon
   # 'square-keywords':
   #   patterns:
-  #     - match: '^(\.+)$' # value
+  #     - match: '^\s*?(\w+)' # value
   #       captures:
   #         1:
   #           name: variable.other.property.deon
@@ -53,24 +49,24 @@ repository:
     end: '}'
     beginCaptures:
       0:
-        name: punctuation.paren.open
+        name: punctuation.paren.open.curly
     endCaptures:
       0:
-        name: punctuation.paren.close
-    name: expression.group
+        name: punctuation.paren.close.curly
+    name: expression.group.curly
     patterns:
-      - include: '#general'
+      - include: '#core'
       - include: '#curly-keywords'
   # square:
   #   begin: '['
   #   end: ']'
   #   beginCaptures:
   #     0:
-  #       name: punctuation.paren.open
+  #       name: punctuation.paren.open.square
   #   endCaptures:
   #     0:
-  #       name: punctuation.paren.close
-  #   name: expression.group
+  #       name: punctuation.paren.close.square
+  #   name: expression.group.square
   #   patterns:
-  #     - include: '#general'
-  #     # - include: '#square-keywords'
+  #     - include: '#core'
+  #     - include: '#square-keywords'

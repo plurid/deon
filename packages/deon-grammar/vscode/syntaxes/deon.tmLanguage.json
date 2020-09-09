@@ -45,14 +45,6 @@
           }
         },
         {
-          "match": "(\\'(.+)\\')\\s(\\[|\\{|\\w+|\\')",
-          "captures": {
-            "1": {
-              "name": "variable.other.property.deon"
-            }
-          }
-        },
-        {
           "match": "(#.+)\\b",
           "captures": {
             "1": {
@@ -65,7 +57,7 @@
           "name": "comment.deon"
         },
         {
-          "match": "^(\\/\\*\\*(.+)?)|((\\s+)?\\*(.+)?\\/?)",
+          "match": "^(\\/\\*(.+)?)|((\\s+)?\\*(.+)?\\/?)",
           "name": "comment.deon"
         }
       ]
@@ -73,7 +65,7 @@
     "curly-keywords": {
       "patterns": [
         {
-          "match": "^\\s+(\\w+)",
+          "match": "^\\s*?(\\w+)",
           "captures": {
             "1": {
               "name": "variable.other.property.deon"
@@ -87,18 +79,18 @@
       "end": "}",
       "beginCaptures": {
         "0": {
-          "name": "punctuation.paren.open"
+          "name": "punctuation.paren.open.curly"
         }
       },
       "endCaptures": {
         "0": {
-          "name": "punctuation.paren.close"
+          "name": "punctuation.paren.close.curly"
         }
       },
-      "name": "expression.group",
+      "name": "expression.group.curly",
       "patterns": [
         {
-          "include": "#general"
+          "include": "#core"
         },
         {
           "include": "#curly-keywords"
