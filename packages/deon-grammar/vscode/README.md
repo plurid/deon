@@ -51,6 +51,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Advanced Usage](#advanced-usage)
 + [In Use](#in-use)
 + [Usages](#usages)
++ [Idiomaticity](#idiomaticity)
 + [Packages](#packages)
 
 
@@ -996,6 +997,54 @@ const data = Deon.parse(
 `deon` can be plugged in into:
 
 + [`kubectl`](https://github.com/plurid/deon/tree/master/usages/kubectl)
+
+
+
+### Idiomaticity
+
+It appears idiomatic to have three sections in a `.deon` file, ordered as:
+
++ imports;
++ root;
++ leaflinks.
+
+The imports feel well-written when written in one line.
+
+The root feels well-written when it has only one level of indentation, and every leaf is a leaflink.
+
+For example, the following [`.joiner`](https://github.com/plurid/joiner) file:
+
+``` deon
+import otherPackages from ../../path/to/file
+
+
+{
+    #packages
+    #package
+    #commit
+}
+
+
+packages [
+    one
+    two
+    ...#otherPackages
+]
+
+package {
+    manager yarn
+    publisher npm
+}
+
+commit {
+    engine git
+    combine true
+    root packages
+    fullFolder true
+    divider ' > '
+    message setup: package
+}
+```
 
 
 
