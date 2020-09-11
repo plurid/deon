@@ -62,7 +62,7 @@ class Deon {
             );
 
             if (data) {
-                log(data);
+                log(JSON.stringify(data));
             }
 
             return;
