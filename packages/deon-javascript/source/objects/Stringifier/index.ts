@@ -31,6 +31,10 @@ class Stringifier {
             return item + '\n';
         }
 
+        if (item === undefined || item === null) {
+            return '\n';
+        }
+
         if (Array.isArray(item)) {
             return this.stringifyList(item);
         }
