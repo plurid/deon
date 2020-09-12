@@ -1469,6 +1469,34 @@ describe(suites.stringify, () => {
             `${suites.stringify} - simple stringify - nested list`,
         );
     });
+
+
+
+    it('simple stringify - null and undefined', async () => {
+        const dataValues = {
+            one: null,
+            two: undefined,
+        };
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+
+        expect(data.one).toEqual(null);
+        expect(data.two).toEqual(null);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - null and undefined`,
+        );
+    });
 });
 
 
