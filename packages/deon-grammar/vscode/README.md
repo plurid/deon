@@ -992,7 +992,7 @@ const data = Deon.parse(
 
 
 
-### Usages
+## Usages
 
 `deon` can be plugged in into:
 
@@ -1000,7 +1000,7 @@ const data = Deon.parse(
 
 
 
-### Idiomaticity
+## Idiomaticity
 
 It appears idiomatic to have three sections in a `.deon` file, ordered as:
 
@@ -1010,7 +1010,7 @@ It appears idiomatic to have three sections in a `.deon` file, ordered as:
 
 The imports feel well-written when written in one line.
 
-The root feels well-written when it has only one level of indentation, and every leaf is a leaflink.
+The root feels well-written when it has only one level of indentation, and every leaf is a `leaflink` (for `map`s or `list`s) or a `string`.
 
 For example, the following [`.joiner`](https://github.com/plurid/joiner) file:
 
