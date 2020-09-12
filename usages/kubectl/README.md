@@ -33,3 +33,7 @@ kubectl deonly ./relative/file1.deon /absolute/file.deon
 ```
 
 The `.deon` extension can be omitted from the filename.
+
+``` bash
+kubectl deonly file
+```
