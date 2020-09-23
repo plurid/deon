@@ -822,7 +822,7 @@ describe(suites.nested, () => {
 });
 
 
-describe.only(suites.leaflinks, () => {
+describe(suites.leaflinks, () => {
     it('simple - named map', async () => {
         const dataValues = `
 {
@@ -1355,7 +1355,7 @@ spread abc
 
 
 
-    it.only('simple - environment variables', async () => {
+    it('simple - environment variables', async () => {
         process.env.ENV_ONE = 'aValue';
         process.env.ENV_TWO = 'anotherValue';
         process.env.ENV_THREE = 'threeValue';
@@ -1376,7 +1376,7 @@ envTwo #$ENV_TWO
             dataValues,
         );
         const end = Date.now();
-        log(data);
+        // log(data);
 
 
         expect(data.key).toEqual('aValue');
