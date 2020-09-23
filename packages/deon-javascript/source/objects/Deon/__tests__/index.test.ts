@@ -822,7 +822,7 @@ describe(suites.nested, () => {
 });
 
 
-describe(suites.leaflinks, () => {
+describe.only(suites.leaflinks, () => {
     it('simple - named map', async () => {
         const dataValues = `
 {
@@ -1350,6 +1350,44 @@ spread abc
             end,
             'instant',
             `${suites.leaflinks} - simple - string spread in list`,
+        );
+    });
+
+
+
+    it.only('simple - environment variables', async () => {
+        process.env.ENV_ONE = 'aValue';
+        process.env.ENV_TWO = 'anotherValue';
+        process.env.ENV_THREE = 'threeValue';
+
+        const dataValues = `
+{
+    key #$ENV_ONE
+    #envTwo
+    #$ENV_THREE
+}
+
+envTwo #$ENV_TWO
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        log(data);
+
+
+        expect(data.key).toEqual('aValue');
+        expect(data.envTwo).toEqual('anotherValue');
+        expect(data.ENV_THREE).toEqual('threeValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - environment variables`,
         );
     });
 });

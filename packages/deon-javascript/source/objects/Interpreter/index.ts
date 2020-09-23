@@ -220,6 +220,22 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         if (statement.initializer) {
             leaflinkName = await this.evaluate(statement.initializer);
         }
+
+
+        if (leaflinkName[0] === '$') {
+            const expressionValue = leaflinkName.slice(1);
+            const leaflinkValue = process.env[expressionValue];
+
+            const resolvedName = name === leaflinkName
+                ? expressionValue
+                : name;
+
+            this.environment.define(resolvedName, leaflinkValue || '');
+
+            return null;
+        }
+
+
         const accessNames = this.resolveDeepAccess(leaflinkName);
         const keyName = accessNames[accessNames.length - 1];
 
@@ -378,6 +394,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitLinkExpression(
         expression: Expression.LinkExpression,
     ) {
+        if (expression.value[0] === '$') {
+            const expressionValue = expression.value.slice(1);
+            const value = process.env[expressionValue];
+
+            return value || '';
+        }
+
         const accessNames = this.resolveDeepAccess(expression.value);
 
         const value: any = accessNames.reduce((previous, current) => {
