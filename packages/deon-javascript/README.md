@@ -744,7 +744,7 @@ entity [
 
 ### Environment variables
 
-Environment variables can be injected using the `#$` syntax:
+A `leaflink` can represent an environment variable using the `#$` syntax. The environment variable will be injected at parse-time:
 
 ``` deon
 {
