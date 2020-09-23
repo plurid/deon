@@ -711,7 +711,7 @@ spread abc
 
 wil result in `entity` having the `value`:
 
-```
+``` deon
 entity {
     0 a
     1 b
@@ -733,13 +733,27 @@ spread abc
 
 wil result in `entity` having the `value`:
 
-```
+``` deon
 entity [
     a
     b
     c
 ]
 ```
+
+
+### Environment variables
+
+Environment variables can be injected using the `#$` syntax:
+
+``` deon
+{
+    one #$SOME_ENV_VARIABLE
+}
+
+two #$ANOTHER_ENV_VARIABLE
+```
+
 
 
 ## Importing
@@ -885,6 +899,26 @@ const main = async () => {
 }
 
 main();
+```
+
+The token can be passed at import-time in the `.deon` file:
+
+``` deon
+import urlFile from https://example.com/url-file.deon with secret-token
+
+{
+    #urlFile.key
+}
+```
+
+In order not to leak secrets, environment variables should be used:
+
+``` deon
+import urlFile from https://example.com/url-file.deon with #$SECRET_TOKEN
+
+{
+    #urlFile.key
+}
 ```
 
 
