@@ -1421,6 +1421,35 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
             `${suites.imports} - simple import`,
         );
     });
+
+
+    xit('simple import - with token', async () => {
+        const dataValues = `
+import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon with secret-token
+
+{
+    key #keyValue.aKey
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('aValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'network',
+            `${suites.imports} - simple import - with token`,
+        );
+    });
 });
 
 

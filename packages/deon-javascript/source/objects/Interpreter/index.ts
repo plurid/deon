@@ -127,9 +127,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
+        const authenticator = statement.authenticator?.lexeme;
+
         const data = await fetcher(
             statement.path.lexeme,
             this.options,
+            authenticator,
         );
 
         if (!data) {

@@ -38,15 +38,18 @@ export interface Visitor<T> {
 export class ImportStatement extends Statement {
     public name: Token;
     public path: Token;
+    public authenticator: Token | undefined;
 
     constructor(
         name: Token,
         path: Token,
+        authenticator: Token | undefined,
     ) {
         super();
 
         this.name = name;
         this.path = path;
+        this.authenticator = authenticator;
     }
 
     accept<T>(

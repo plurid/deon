@@ -31,6 +31,7 @@ class Scanner {
         this.keywords = {
             import: TokenType.IMPORT,
             from: TokenType.FROM,
+            with: TokenType.WITH,
         };
     }
 
@@ -335,6 +336,19 @@ class Scanner {
                 break;
             }
             case TokenType.FROM: {
+                const inGroup = this.inGroup(this.tokens.length - 1);
+
+                if (
+                    inGroup
+                    && inGroup !== 'LEAFLINK'
+                ) {
+                    type = TokenType.SIGNIFIER;
+                    break;
+                }
+
+                break;
+            }
+            case TokenType.WITH: {
                 const inGroup = this.inGroup(this.tokens.length - 1);
 
                 if (

@@ -301,9 +301,17 @@ class Parser {
         this.consume(TokenType.FROM, "Expect 'from' for import.");
         const importPath = this.consume(TokenType.SIGNIFIER, "Expect path for import.");
 
+        let importToken;
+
+        if (this.peek().type === TokenType.WITH) {
+            this.advance();
+            importToken = this.consume(TokenType.IDENTIFIER, 'Expect token for import.');
+        }
+
         return new Statement.ImportStatement(
             importName,
             importPath,
+            importToken,
         );
     }
 
