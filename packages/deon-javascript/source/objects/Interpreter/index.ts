@@ -180,7 +180,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             value = await this.evaluate(statement.initializer);
         }
 
-        this.environment.define(statement.name.lexeme, value);
+        this.environment.define(statement.name.lexeme, value ?? '');
 
         return null;
     }

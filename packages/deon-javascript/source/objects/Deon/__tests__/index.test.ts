@@ -152,6 +152,34 @@ describe(suites.simple, () => {
 
 
 
+    it('empty key', async () => {
+        const dataValues = `
+{
+    key
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - empty key`,
+        );
+    });
+
+
+
     it('empty - with leaflinks', async () => {
         const dataValues = `
 {}
@@ -1554,8 +1582,8 @@ describe(suites.stringify, () => {
         // log(data);
 
 
-        expect(data.one).toEqual(null);
-        expect(data.two).toEqual(null);
+        expect(data.one).toEqual('');
+        expect(data.two).toEqual('');
 
         compareTimeBenchmark(
             start,
@@ -1773,6 +1801,22 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 
 describe(suites.testings, () => {
+    it('various', async () => {
+        const dataValues = `
+{
+    key
+}
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+    });
+
+
+
     it('various', async () => {
         const dataValues = `
 // {
