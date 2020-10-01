@@ -127,27 +127,45 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
-        const authenticator = statement.authenticator?.lexeme;
+        try {
+            const authenticator = statement.authenticator?.lexeme;
 
-        const data = await fetcher(
-            statement.path.lexeme,
-            this.options,
-            authenticator,
-        );
+            const result = await fetcher(
+                statement.path.lexeme,
+                this.options,
+                authenticator,
+            );
 
-        if (!data) {
-            return;
+            if (!result) {
+                return;
+            }
+
+            const {
+                data,
+                filetype,
+            } = result;
+
+            let parsedData;
+            const deon = new Deon();
+
+            switch (filetype) {
+                case '.deon':
+                    parsedData = await deon.parse(data);
+                    break;
+                case '.json':
+                    parsedData = JSON.parse(data);
+                    break;
+            }
+
+            this.environment.define(
+                statement.name.lexeme,
+                parsedData,
+            );
+
+            return null;
+        } catch (error) {
+            return null;
         }
-
-        const deon = new Deon();
-        const parsedData = await deon.parse(data);
-
-        this.environment.define(
-            statement.name.lexeme,
-            parsedData,
-        );
-
-        return null;
     }
 
     public async visitRootStatement(

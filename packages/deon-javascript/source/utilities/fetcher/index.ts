@@ -34,7 +34,7 @@ const isURL = (
 
 
 const fetchFromURL = async (
-    path: string,
+    url: string,
     token?: string,
 ) => {
     const headers = token
@@ -46,14 +46,21 @@ const fetchFromURL = async (
         };
 
     const response = await fetch(
-        path,
+        url,
         {
             headers,
         },
     );
     const data = await response.text();
 
-    return data;
+    const extension = path.extname(url)
+        ? path.extname(url)
+        : DEON_FILENAME_EXTENSION;
+
+    return {
+        data,
+        filetype: extension,
+    };
 }
 
 
@@ -71,9 +78,8 @@ const fetchFromFile = async (
             : path.dirname(path.join(process.cwd(), parsedFile))
         : process.cwd();
 
-    const hasDeonExtension = path.extname(file) === DEON_FILENAME_EXTENSION;
-    const extension = hasDeonExtension
-        ? ''
+    const extension = path.extname(file)
+        ? path.extname(file)
         : DEON_FILENAME_EXTENSION;
     const resolvedFile = file + extension;
 
@@ -86,7 +92,10 @@ const fetchFromFile = async (
 
     const data = await fs.readFile(filepath, 'utf-8');
 
-    return data;
+    return {
+        data,
+        filetype: extension,
+    };
 }
 
 
@@ -99,20 +108,32 @@ const fetcher = async (
         const fileIsUrl = isURL(file);
 
         if (fileIsUrl) {
-            const data = await fetchFromURL(
+            const {
+                data,
+                filetype,
+            } = await fetchFromURL(
                 file,
                 token,
             );
 
-            return data;
+            return {
+                data,
+                filetype,
+            };
         }
 
-        const data = await fetchFromFile(
+        const {
+            data,
+            filetype,
+        } = await fetchFromFile(
             file,
             options,
         );
 
-        return data;
+        return {
+            data,
+            filetype,
+        };
     } catch (error) {
         return;
     }
