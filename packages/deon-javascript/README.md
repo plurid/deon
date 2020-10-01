@@ -768,7 +768,7 @@ Where the `name` is an arbitrary string, and the `path` is the path of the targe
 
 The `path` does not need to have the `.deon` filename extension specified.
 
-The `path` can also point to a `.json` or `.yaml` file, and `deon` will parse them appropriately.
+The `path` can also point to a `.json` file, and `deon` will parse it appropriately.
 
 The import imports the `root` from the targeted `.deon` file in order to be used as a regular, in-file locally-defined `leaflink`.
 
