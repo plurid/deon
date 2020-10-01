@@ -51,15 +51,14 @@ const fetchFromURL = async (
             headers,
         },
     );
+
     const data = await response.text();
 
-    const extension = path.extname(url)
-        ? path.extname(url)
-        : DEON_FILENAME_EXTENSION;
+    const filetype = path.extname(url) || DEON_FILENAME_EXTENSION;
 
     return {
         data,
-        filetype: extension,
+        filetype,
     };
 }
 
@@ -79,8 +78,9 @@ const fetchFromFile = async (
         : process.cwd();
 
     const extension = path.extname(file)
-        ? path.extname(file)
+        ? ''
         : DEON_FILENAME_EXTENSION;
+    const filetype = extension || path.extname(file);
     const resolvedFile = file + extension;
 
     const filepath = path.isAbsolute(resolvedFile)
@@ -94,7 +94,7 @@ const fetchFromFile = async (
 
     return {
         data,
-        filetype: extension,
+        filetype,
     };
 }
 
