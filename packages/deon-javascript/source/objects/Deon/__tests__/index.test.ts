@@ -1592,6 +1592,95 @@ describe(suites.stringify, () => {
             `${suites.stringify} - simple stringify - null and undefined`,
         );
     });
+
+
+
+    it('simple stringify - boolean', async () => {
+        const dataValues = {
+            one: true,
+            two: false,
+        };
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+
+        expect(data.one).toEqual('true');
+        expect(data.two).toEqual('false');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - boolean`,
+        );
+    });
+
+
+
+    it('simple stringify - number', async () => {
+        const dataValues = {
+            one: 1,
+            two: 2,
+        };
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+        expect(data.one).toEqual('1');
+        expect(data.two).toEqual('2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - number`,
+        );
+    });
+
+
+    it('simple stringify - levels', async () => {
+        const dataValues = {
+            one: {
+                two: {
+                    three: {
+                        four: {
+                            five: {
+                                key: 'value',
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+        expect(data.one.two.three.four.five.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - levels`,
+        );
+    });
 });
 
 

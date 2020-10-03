@@ -12,7 +12,7 @@
     import Scanner from '../Scanner';
     import Token from '../Token';
     import Parser from '../Parser';
-    import Resolver from '../Resolver';
+    // import Resolver from '../Resolver';
     import Interpreter from '../Interpreter';
     import Stringifier from '../Stringifier';
 

@@ -36,6 +36,10 @@ const deonStrigifyOptions: DeonStringifyOptions = {
     generatedHeader: true,
     generatedComments: true,
 };
+
+
+const SPACING_TWO = '  ';
+const SPACING_FOUR = SPACING_TWO + SPACING_TWO;
 // #endregion module
 
 
@@ -48,5 +52,8 @@ export {
 
     deonParseOptions,
     deonStrigifyOptions,
+
+    SPACING_TWO,
+    SPACING_FOUR,
 };
 // #endregion exports
