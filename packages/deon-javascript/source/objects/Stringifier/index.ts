@@ -18,6 +18,7 @@ class Stringifier {
     private dataString = '';
     private options: any;
     private indent = 0;
+    private baseData: any;
 
 
     constructor(
@@ -30,10 +31,16 @@ class Stringifier {
     public stringify(
         data: any,
     ) {
+        this.baseData = data;
+
         if (Array.isArray(data)) {
-            this.stringifyList(data);
+            this.stringifyList(
+                data,
+            );
         } else {
-            this.stringifyMap(data);
+            this.stringifyMap(
+                data,
+            );
         }
 
         return this.dataString;
@@ -71,10 +78,11 @@ class Stringifier {
     private stringifyMap(
         data: any,
     ) {
-        this.dataString += '{\n';
+        const beforeIndent = Array.isArray(this.baseData) && this.indent === 1 ? SPACING_FOUR : '';
+
+        this.dataString += beforeIndent + '{\n';
 
         this.indent += 1;
-
         const indent = indentLevel(
             this.indent,
         );
@@ -90,7 +98,6 @@ class Stringifier {
         }
 
         this.indent -= 1;
-
         const afterIndent = indentLevel(
             this.indent,
         );
@@ -104,7 +111,6 @@ class Stringifier {
         this.dataString += '[\n';
 
         this.indent += 1;
-
         const indent = indentLevel(
             this.indent,
         );
@@ -117,7 +123,6 @@ class Stringifier {
         }
 
         this.indent -= 1;
-
         const afterIndent = indentLevel(
             this.indent,
         );

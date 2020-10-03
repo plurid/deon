@@ -1649,6 +1649,7 @@ describe(suites.stringify, () => {
     });
 
 
+
     it('simple stringify - levels', async () => {
         const dataValues = {
             one: {
@@ -1679,6 +1680,56 @@ describe(suites.stringify, () => {
             end,
             'instant',
             `${suites.stringify} - simple stringify - levels`,
+        );
+    });
+
+
+
+    it('simple stringify - list', async () => {
+        const dataValues = [
+            {
+                one: {
+                    two: {
+                        three: {
+                            four: {
+                                five: {
+                                    key: 'value',
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                one: {
+                    two: {
+                        three: {
+                            four: {
+                                five: {
+                                    key: 'value',
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ];
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+        expect(data[0].one.two.three.four.five.key).toEqual('value');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - list`,
         );
     });
 });
