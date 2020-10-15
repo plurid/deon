@@ -928,7 +928,7 @@ import urlFile from https://example.com/url-file.deon with #$SECRET_TOKEN
 
 ## Injecting
 
-The `import` command will always try to parse the filetext into structured data.
+The `import` statement will always try to parse the filetext into structured data.
 
 In order to get only the filetext, the keyword `inject` can be used:
 
@@ -940,7 +940,7 @@ inject leaflinkName from /path/to/file.any
 }
 ```
 
-The arbitrarily-named `inject` can be used as a regular `leaflink` containing a `string`.
+The arbitrarily-named `inject` entity can be used as a regular `leaflink` containing a `string`.
 
 Similar to the `import` statement, the `inject` can target an URL and pass an optional authentication token.
 
