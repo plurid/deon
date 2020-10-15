@@ -1063,8 +1063,11 @@ const data = Deon.parse(
 
 ## In Use
 
-`deon` is used by:
+`deon` is used in:
 
++ [`developer`](https://github.com/plurid/developer) - configuration file
++ [`delog`](https://github.com/plurid/delog) - configuration file
++ [`deserve`](https://github.com/plurid/deserve) - configuration file
 + [`joiner`](https://github.com/plurid/joiner) - configuration file
 + [`performer`](https://github.com/plurid/performer) - configuration file
 + [`pluridoc`](https://github.com/plurid/pluridoc) - plurid plane configuration
