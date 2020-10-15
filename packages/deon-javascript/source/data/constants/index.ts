@@ -24,6 +24,8 @@ const deonParseOptions: DeonParseOptions = {
     authorization: {},
     datasignFiles: [],
     datasignMap: {},
+    allowFilesystem: true,
+    allowNetwork: true,
 };
 
 

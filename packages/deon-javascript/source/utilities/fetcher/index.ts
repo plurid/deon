@@ -108,6 +108,10 @@ const fetcher = async (
         const fileIsUrl = isURL(file);
 
         if (fileIsUrl) {
+            if (!options.parseOptions?.allowNetwork) {
+                return;
+            }
+
             const {
                 data,
                 filetype,
@@ -120,6 +124,10 @@ const fetcher = async (
                 data,
                 filetype,
             };
+        }
+
+        if (!options.parseOptions?.allowFilesystem) {
+            return;
         }
 
         const {

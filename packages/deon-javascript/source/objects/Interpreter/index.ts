@@ -4,6 +4,10 @@
         DeonInterpreterOptions,
     } from '../../data/interfaces';
 
+    import {
+        deonParseOptions,
+    } from '../../data/constants';
+
     import Deon from '../Deon';
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
@@ -26,7 +30,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private leaflinks: Environment = new Environment();
     private rootEnvironment: Environment = new Environment();
     private rootKind = 'map';
-    private options: DeonInterpreterOptions = { file: undefined };
+    private options: DeonInterpreterOptions = {
+        file: undefined,
+        parseOptions: {
+            ...deonParseOptions,
+        },
+    };
 
 
     public async interpret(
@@ -34,7 +43,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         options: DeonInterpreterOptions,
     ) {
         try {
-            this.options = options;
+            this.options = {
+                file: options.file,
+                parseOptions: {
+                    ...deonParseOptions,
+                    ...options.parseOptions,
+                },
+            };
 
             const injectStatements = [];
             const importStatements = [];

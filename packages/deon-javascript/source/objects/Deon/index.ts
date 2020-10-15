@@ -114,7 +114,7 @@ class Deon {
      */
     async parse(
         data: string,
-        options?: DeonParseOptions,
+        options?: PartialDeonParseOptions,
     ) {
         const scanner = new Scanner(
             data,
@@ -149,6 +149,7 @@ class Deon {
 
         const interpretOptions: DeonInterpreterOptions = {
             file: this.parsedFile,
+            parseOptions: options,
         };
 
         const interpretedData = await this.interpreter.interpret(

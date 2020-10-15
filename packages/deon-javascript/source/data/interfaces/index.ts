@@ -4,6 +4,8 @@ export interface DeonParseOptions {
     authorization: Record<string, string>,
     datasignFiles: string[];
     datasignMap: Record<string, string>;
+    allowFilesystem: boolean;
+    allowNetwork: boolean;
 }
 
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;
@@ -27,5 +29,6 @@ export type RootKind = 'map' | 'list';
 
 export interface DeonInterpreterOptions {
     file: string | undefined;
+    parseOptions: PartialDeonParseOptions | undefined;
 }
 // #endregion module
