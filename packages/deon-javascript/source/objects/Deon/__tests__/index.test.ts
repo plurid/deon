@@ -39,6 +39,7 @@ const suites = {
     nested: 'Deon nested',
     leaflinks: 'Deon leaflinks',
     imports: 'Deon imports',
+    injects: 'Deon injects',
     stringify: 'Deon stringify',
     examples: 'Deon examples',
     testings: 'Deon testings',
@@ -1476,6 +1477,66 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
             end,
             'network',
             `${suites.imports} - simple import - with token`,
+        );
+    });
+});
+
+
+describe(suites.injects, () => {
+    it('simple inject', async () => {
+        const dataValues = `
+inject keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
+
+{
+    key #keyValue
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual(`{\n    aKey aValue\n}\n`);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'network',
+            `${suites.injects} - simple inject`,
+        );
+    });
+
+
+    xit('simple inject - with token', async () => {
+        const dataValues = `
+inject keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon with secret-token
+
+{
+    key #keyValue
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual(`{\n    aKey aValue\n}\n`);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'network',
+            `${suites.injects} - simple inject - with token`,
         );
     });
 });

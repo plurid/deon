@@ -36,6 +36,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         try {
             this.options = options;
 
+            const injectStatements = [];
             const importStatements = [];
             const leaflinkStatements = [];
             let rootStatement;
@@ -54,9 +55,14 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 if (statement instanceof Statement.ImportStatement) {
                     importStatements.push(statement);
                 }
+
+                if (statement instanceof Statement.InjectStatement) {
+                    injectStatements.push(statement);
+                }
             }
 
             await this.resolveLeaflinks([
+                ...injectStatements,
                 ...importStatements,
                 ...leaflinkStatements,
             ]);
