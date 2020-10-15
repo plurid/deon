@@ -942,6 +942,30 @@ inject leaflinkName from /path/to/file.any
 
 The arbitrarily-named `inject` can be used as a regular `leaflink` containing a `string`.
 
+Similar to the `import` statement, the `inject` can target an URL and pass an optional authentication token.
+
+``` deon
+inject file from https://example.com/file
+inject secretFile from https://example.com/secret-file with secret-token
+
+{
+    key1 #file
+    key2 #secretFile
+}
+```
+
+In order to keep the `.deon` file secret-free, the secrets can be injected from a file outside or ignored by the versioning system.
+
+
+``` deon
+inject secret from file-with-secret.text
+inject secretFile from https://example.com/secret-file with #secret
+
+{
+    key #secretFile
+}
+```
+
 
 
 ## Stringifying
