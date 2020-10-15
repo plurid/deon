@@ -20,7 +20,7 @@
     "general": {
       "patterns": [
         {
-          "match": "^(import) (\\w+) (from) (.+)$",
+          "match": "^(inject) (\\w+) (from) (\\w+) (with)? (\\w+)?",
           "captures": {
             "1": {
               "name": "entity.name.function.deon"
@@ -32,6 +32,35 @@
               "name": "entity.name.function.deon"
             },
             "4": {
+              "name": "variable.other.constant.deon"
+            },
+            "5": {
+              "name": "entity.name.function.deon"
+            },
+            "6": {
+              "name": "variable.other.constant.deon"
+            }
+          }
+        },
+        {
+          "match": "^(import) (\\w+) (from) (\\w+) (with)? (\\w+)?",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.deon"
+            },
+            "2": {
+              "name": "variable.other.constant.deon"
+            },
+            "3": {
+              "name": "entity.name.function.deon"
+            },
+            "4": {
+              "name": "variable.other.constant.deon"
+            },
+            "5": {
+              "name": "entity.name.function.deon"
+            },
+            "6": {
               "name": "variable.other.constant.deon"
             }
           }
