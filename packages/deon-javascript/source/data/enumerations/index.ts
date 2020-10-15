@@ -7,7 +7,7 @@ export enum TokenType {
 
     // Multi-character tokens.
     SPREAD,
-    IMPORT, FROM, WITH,
+    IMPORT, INJECT, FROM, WITH,
 
     // Literals.
     SIGNIFIER,

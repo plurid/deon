@@ -168,6 +168,37 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
+    public async visitInjectStatement(
+        statement: Statement.InjectStatement,
+    ) {
+        try {
+            const authenticator = statement.authenticator?.lexeme;
+
+            const result = await fetcher(
+                statement.path.lexeme,
+                this.options,
+                authenticator,
+            );
+
+            if (!result) {
+                return;
+            }
+
+            const {
+                data,
+            } = result;
+
+            this.environment.define(
+                statement.name.lexeme,
+                data,
+            );
+
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
     public async visitRootStatement(
         statement: Statement.RootStatement,
     ) {

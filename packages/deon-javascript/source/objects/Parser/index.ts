@@ -53,6 +53,12 @@ class Parser {
             }
 
             if (
+                current.type === TokenType.INJECT
+            ) {
+                return this.injectStatement();
+            }
+
+            if (
                 current.type === TokenType.STRING
             ) {
                 return this.handleString();
@@ -312,6 +318,26 @@ class Parser {
             importName,
             importPath,
             importToken,
+        );
+    }
+
+    private injectStatement() {
+        this.advance();
+        const injectName = this.consume(TokenType.IDENTIFIER, "Expect name for inject.");
+        this.consume(TokenType.FROM, "Expect 'from' for inject.");
+        const injectPath = this.consume(TokenType.SIGNIFIER, "Expect path for inject.");
+
+        let injectToken;
+
+        if (this.peek().type === TokenType.WITH) {
+            this.advance();
+            injectToken = this.consume(TokenType.IDENTIFIER, 'Expect token for inject.');
+        }
+
+        return new Statement.InjectStatement(
+            injectName,
+            injectPath,
+            injectToken,
         );
     }
 

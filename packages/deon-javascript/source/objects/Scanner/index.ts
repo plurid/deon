@@ -30,6 +30,7 @@ class Scanner {
 
         this.keywords = {
             import: TokenType.IMPORT,
+            inject: TokenType.INJECT,
             from: TokenType.FROM,
             with: TokenType.WITH,
         };
@@ -323,6 +324,19 @@ class Scanner {
 
         switch (type) {
             case TokenType.IMPORT: {
+                const inGroup = this.inGroup(this.tokens.length - 1);
+
+                if (
+                    inGroup
+                    && inGroup !== 'LEAFLINK'
+                ) {
+                    type = TokenType.SIGNIFIER;
+                    break;
+                }
+
+                break;
+            }
+            case TokenType.INJECT: {
                 const inGroup = this.inGroup(this.tokens.length - 1);
 
                 if (

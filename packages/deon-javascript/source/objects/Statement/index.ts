@@ -24,6 +24,7 @@ export abstract class Statement {
 
 export interface Visitor<T> {
     visitImportStatement: (importStatement: ImportStatement) => T;
+    visitInjectStatement: (injectStatement: InjectStatement) => T;
     visitRootStatement: (rootStatement: RootStatement) => T;
     visitExpressionStatement: (expressionStatement: ExpressionStatement) => T;
     visitKeyStatement: (keyStatement: KeyStatement) => T;
@@ -56,6 +57,31 @@ export class ImportStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitImportStatement(this);
+    }
+}
+
+
+export class InjectStatement extends Statement {
+    public name: Token;
+    public path: Token;
+    public authenticator: Token | undefined;
+
+    constructor(
+        name: Token,
+        path: Token,
+        authenticator: Token | undefined,
+    ) {
+        super();
+
+        this.name = name;
+        this.path = path;
+        this.authenticator = authenticator;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitInjectStatement(this);
     }
 }
 

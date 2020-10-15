@@ -27,7 +27,15 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async visitImportStatement(
         statement: Statement.ImportStatement,
     ) {
-        console.log('statement', statement);
+        // console.log('statement', statement);
+
+        return null;
+    }
+
+    public async visitInjectStatement(
+        statement: Statement.InjectStatement,
+    ) {
+        // console.log('statement', statement);
 
         return null;
     }
