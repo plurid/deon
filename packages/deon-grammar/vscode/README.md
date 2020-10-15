@@ -46,6 +46,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Comments](#comments)
 + [Linking](#linking)
 + [Importing](#importing)
++ [Injecting](#injecting)
 + [Stringifying](#stringifying)
 + [Parsing](#parsing)
 + [Advanced Usage](#advanced-usage)
@@ -922,6 +923,24 @@ import urlFile from https://example.com/url-file.deon with #$SECRET_TOKEN
     #urlFile.key
 }
 ```
+
+
+
+## Injecting
+
+The `import` command will always try to parse the filetext into structured data.
+
+In order to get only the filetext, the keyword `inject` can be used:
+
+``` deon
+inject leaflinkName from /path/to/file.any
+
+{
+    key #leaflinkName
+}
+```
+
+The arbitrarily-named `inject` can be used as a regular `leaflink` containing a `string`.
 
 
 
