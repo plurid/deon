@@ -46,7 +46,7 @@ repository:
         captures:
           1:
             name: storage.type.struct
-      - match: '\/\/.+'
+      - match: '\/\/.*'
         name: comment.deon
       - match: '^(\/\*(.+)?)|((\s+)?\*(.+)?\/?)'
         name: comment.deon
