@@ -10,7 +10,7 @@ repository:
       # - include: '#square'
   general:
     patterns:
-      - match: '^(inject) (\w+) (from) (\w+) (with)? (\w+)?'
+      - match: '^(inject) (\w+) (from) (\w+)\s?(with)?\s?(\w+)?$'
         captures:
           1:
             name: entity.name.function.deon
@@ -24,7 +24,7 @@ repository:
             name: entity.name.function.deon
           6:
             name: variable.other.constant.deon
-      - match: '^(import) (\w+) (from) (\w+) (with)? (\w+)?'
+      - match: '^(import) (\w+) (from) (\w+)\s?(with)?\s?(\w+)?$'
         captures:
           1:
             name: entity.name.function.deon
