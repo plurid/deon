@@ -1628,6 +1628,34 @@ describe(suites.stringify, () => {
 
 
 
+    it('simple stringify - nested list map', async () => {
+        const dataValues = [
+            {
+                key: [],
+            },
+        ];
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        // log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        // log(data);
+
+
+        expect(data[0].key).toEqual([]);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - nested list map`,
+        );
+    });
+
+
+
     it('simple stringify - null and undefined', async () => {
         const dataValues = {
             one: null,
