@@ -5,6 +5,10 @@
     import {
         log,
     } from '../../../utilities/log';
+
+    import {
+        typer,
+    } from '../../../utilities/typer';
     // #endregion external
 // #endregion imports
 
@@ -2030,6 +2034,27 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 
 describe(suites.testings, () => {
+    it('various', async () => {
+        const dataValues = `
+[
+    {
+        a [
+        ]
+        b {}
+    }
+]
+        `;
+
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        // log(data);
+        // console.log('typer', typer(data));
+    });
+
+
+
     it('various', async () => {
         const dataValues = `
 {

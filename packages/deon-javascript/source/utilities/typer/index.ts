@@ -2,12 +2,19 @@
 const typer = (
     data: any,
 ): any => {
-    if (!isNaN(data)) {
-        if (Number.isInteger(data)) {
-            return parseInt(data);
+    if (Array.isArray(data) || data instanceof Array) {
+        const newArray = [];
+        for (const element of data) {
+            const newElement = typer(element);
+            newArray.push(newElement);
         }
+        return newArray;
+    }
 
-        return parseFloat(data);
+    if (typeof data === 'object') {
+        for (const [key, value] of Object.entries(data)) {
+            data[key] = typer(value);
+        }
     }
 
     if (data === 'true') {
@@ -22,19 +29,12 @@ const typer = (
         return data;
     }
 
-    if (Array.isArray(data)) {
-        const newArray = [];
-        for (const element of data) {
-            const newElement = typer(element);
-            newArray.push(newElement);
+    if (!isNaN(data)) {
+        if (Number.isInteger(data)) {
+            return parseInt(data);
         }
-        return newArray;
-    }
 
-    if (typeof data === 'object') {
-        for (const [key, value] of Object.entries(data)) {
-            data[key] = typer(value);
-        }
+        return parseFloat(data);
     }
 
     return data;

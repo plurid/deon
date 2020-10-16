@@ -448,6 +448,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             const data: any = [];
             const values = environment.getAll();
 
+            if (values.size === 0) {
+                return [];
+            }
+
             for (const [index, value] of values.entries()) {
                 if (value instanceof Environment) {
                     const values = value.getAll();
