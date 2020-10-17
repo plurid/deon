@@ -69,6 +69,8 @@ class Stringifier {
         }
 
         if (Array.isArray(item)) {
+            this.baseData = item;
+
             return this.stringifyList(item);
         }
 
@@ -78,7 +80,16 @@ class Stringifier {
     private stringifyMap(
         data: any,
     ) {
-        const beforeIndent = Array.isArray(this.baseData) && this.indent === 1 ? SPACING_FOUR : '';
+        /**
+         * Handles the spacing based on the previous item (`this.baseData`).
+         */
+        const beforeIndent = Array.isArray(this.baseData) && this.indent === 1
+            ? SPACING_FOUR
+            : !Array.isArray(this.baseData)
+                ? ''
+                : indentLevel(
+                    this.indent,
+                );
 
         this.dataString += beforeIndent + '{\n';
 
@@ -89,6 +100,8 @@ class Stringifier {
 
         for (const [key, value] of Object.entries(data)) {
             this.dataString += indent + `${key} `;
+
+            this.baseData = null;
 
             const dataString = this.stringifyItem(value);
 

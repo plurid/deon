@@ -2035,6 +2035,35 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 describe(suites.testings, () => {
     it('various', async () => {
+        const data = {
+            a: [
+                {
+                    b: {
+                        c: [
+                            {
+                                d: [
+                                    {
+                                        e: {
+                                            f: {
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                },
+            ],
+        }
+
+        const deon = new Deon();
+        const stringified = deon.stringify(data);
+        // log(stringified);
+    });
+
+
+
+    it('various', async () => {
         const dataValues = `
 [
     {
