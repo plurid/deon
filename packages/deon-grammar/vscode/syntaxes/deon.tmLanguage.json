@@ -82,7 +82,11 @@
           }
         },
         {
-          "match": "\\/\\/.*",
+          "match": "\\s\\/\\/.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\/\\/.*",
           "name": "comment.deon"
         },
         {
