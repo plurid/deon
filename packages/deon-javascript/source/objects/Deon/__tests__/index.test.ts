@@ -1847,9 +1847,9 @@ describe(suites.stringify, () => {
         const deon = new Deon();
         const dataStringified = deon.stringify(dataValues);
         const end = Date.now();
-        log(dataStringified);
+        // log(dataStringified);
         const data = await deon.parse(dataStringified);
-        log(data);
+        // log(data);
 
         expect(data[0].one).toEqual('two');
 
