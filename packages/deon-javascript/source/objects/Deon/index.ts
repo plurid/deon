@@ -21,7 +21,6 @@
     } from '../../data/enumerations';
 
     import {
-        DeonParseOptions,
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
         DeonInterpreterOptions,
