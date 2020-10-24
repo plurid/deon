@@ -133,6 +133,8 @@ class Stringifier {
             if (dataString) {
                 this.dataString += indent + dataString;
             }
+
+            this.baseData = data;
         }
 
         this.indent -= 1;

@@ -1825,6 +1825,41 @@ describe(suites.stringify, () => {
             `${suites.stringify} - simple stringify - list`,
         );
     });
+
+
+    it('simple stringify - list multiple items', async () => {
+        const dataValues = [
+            {
+                one: 'two'
+            },
+            {
+                three: 'four',
+            },
+            {
+                five: 'six',
+            },
+            {
+                seven: 'eight',
+            },
+        ];
+
+        const start = Date.now();
+        const deon = new Deon();
+        const dataStringified = deon.stringify(dataValues);
+        const end = Date.now();
+        log(dataStringified);
+        const data = await deon.parse(dataStringified);
+        log(data);
+
+        expect(data[0].one).toEqual('two');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.stringify} - simple stringify - list multiple items`,
+        );
+    });
 });
 
 
