@@ -89,9 +89,15 @@ class Deon {
                 ? file
                 : path.join(process.cwd(), file);
 
-            const data = await fs.readFile(filepath, 'utf-8');
+            const data = await fs.readFile(
+                filepath,
+                'utf-8',
+            );
 
-            const parsed = this.parse(data);
+            const parsed = this.parse(
+                data,
+                options,
+            );
 
             if (this.hadError) {
                 console.log(`Deon :: Error parsing file: ${file}`);
