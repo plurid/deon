@@ -687,36 +687,27 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     private async resolveLeaflinks(
         statements: Statement.Statement[],
     ) {
+        // TODO
         // to loop once over the statements
         // and create a dependency graph
         // then loop again starting from the base of the graph
         // and execute the statements
 
-        // const dependencyGraph = {
-            // example for performer file
-            // 'stage1': {
-            //     terminals: [
-            //         'directory',
-            //         'secretsEnvironment',
-            //     ],
-            //     nested: {
-            //         'commands': {
-            //             terminals: [
-            //                 'imageneName',
-            //             ],
-            //             nested: {},
-            //         },
-            //     },
-            // },
-        // };
+        const resolvedIndex = this.resolveLeaflinksDepth(
+            statements,
+        );
 
         let loop = 0;
 
-        // the index 4 is computed
-        // based on the maximum depth between all the leaflinks
-        while (loop < 4) {
+        while (loop < resolvedIndex) {
             for (const statement of statements) {
-                if (loop > 1 && statement instanceof Statement.ImportStatement) {
+                if (
+                    loop > 1
+                    && (
+                        statement instanceof Statement.ImportStatement
+                        || statement instanceof Statement.InjectStatement
+                    )
+                ) {
                     continue;
                 }
 
@@ -729,7 +720,39 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    private resolveDeepAccess (
+    private resolveLeaflinksDepth(
+        statements: Statement.Statement[],
+    ) {
+        let greatestDepth = 1;
+
+        for (const statement of statements) {
+            if (
+                statement instanceof Statement.ImportStatement
+                || statement instanceof Statement.InjectStatement
+            ) {
+                continue;
+            }
+
+            const depth = this.resolveStatementDepth(statement);
+
+            if (depth > greatestDepth) {
+                greatestDepth = depth;
+            }
+        }
+
+        return greatestDepth;
+    }
+
+    private resolveStatementDepth(
+        statement: Statement.Statement,
+    ) {
+        // TODO
+        // hardcoded 4
+        // it should visit the statement and get the depth
+        return 4;
+    }
+
+    private resolveDeepAccess(
         key: string
     ) {
         const dotSplit = key.split('.');

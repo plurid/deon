@@ -1423,6 +1423,46 @@ envTwo #$ENV_TWO
             `${suites.leaflinks} - simple - environment variables`,
         );
     });
+
+
+
+    it('complex - nested leaflinks', async () => {
+        const dataValues = `
+{
+    key #one
+}
+
+one #two
+
+two three
+
+four {
+    five {
+        six [
+            #two
+        ]
+    }
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        // expect(data.key).toEqual('three');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - complex - nested leaflinks`,
+        );
+    });
 });
 
 
