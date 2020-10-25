@@ -13,6 +13,7 @@
     // #region external
     import {
         DeonInterpreterOptions,
+        FetcherType,
     } from '../../data/interfaces';
 
     import {
@@ -36,6 +37,7 @@ const isURL = (
 const fetchFromURL = async (
     url: string,
     token?: string,
+    type?: FetcherType,
 ) => {
     const headers = token
         ?  {
@@ -54,7 +56,10 @@ const fetchFromURL = async (
 
     const data = await response.text();
 
-    const filetype = path.extname(url) || DEON_FILENAME_EXTENSION;
+    const extname = path.extname(url);
+    const filetype = type === 'inject'
+        ? extname || ''
+        : extname || DEON_FILENAME_EXTENSION;
 
     return {
         data,
@@ -66,6 +71,7 @@ const fetchFromURL = async (
 const fetchFromFile = async (
     file: string,
     options: DeonInterpreterOptions,
+    type?: FetcherType,
 ) => {
     const {
         file: parsedFile,
@@ -77,11 +83,11 @@ const fetchFromFile = async (
             : path.dirname(path.join(process.cwd(), parsedFile))
         : process.cwd();
 
-    const extension = path.extname(file)
-        ? ''
-        : DEON_FILENAME_EXTENSION;
-    const filetype = extension || path.extname(file);
-    const resolvedFile = file + extension;
+    const extname = path.extname(file);
+    const filetype = type === 'inject'
+        ? extname
+        : extname || DEON_FILENAME_EXTENSION;
+    const resolvedFile = file + filetype;
 
     const filepath = path.isAbsolute(resolvedFile)
         ? resolvedFile
@@ -90,7 +96,10 @@ const fetchFromFile = async (
             resolvedFile,
         );
 
-    const data = await fs.readFile(filepath, 'utf-8');
+    const data = await fs.readFile(
+        filepath,
+        'utf-8',
+    );
 
     return {
         data,
@@ -103,6 +112,7 @@ const fetcher = async (
     file: string,
     options: DeonInterpreterOptions,
     token?: string,
+    type?: FetcherType,
 ) => {
     try {
         const fileIsUrl = isURL(file);
@@ -118,6 +128,7 @@ const fetcher = async (
             } = await fetchFromURL(
                 file,
                 token,
+                type,
             );
 
             return {
@@ -136,6 +147,7 @@ const fetcher = async (
         } = await fetchFromFile(
             file,
             options,
+            type,
         );
 
         return {

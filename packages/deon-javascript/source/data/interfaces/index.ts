@@ -31,4 +31,7 @@ export interface DeonInterpreterOptions {
     file: string | undefined;
     parseOptions: PartialDeonParseOptions | undefined;
 }
+
+
+export type FetcherType = 'inject' | 'import';
 // #endregion module

@@ -199,6 +199,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 statement.path.lexeme,
                 this.options,
                 authenticator,
+                'inject',
             );
 
             if (!result) {
