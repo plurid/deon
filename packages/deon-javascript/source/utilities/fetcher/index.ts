@@ -17,7 +17,8 @@
     } from '../../data/interfaces';
 
     import {
-        fetcherDefaultHeaders,
+        fetcherDefaultImportHeaders,
+        fetcherDefaultInjectHeaders,
 
         DEON_FILENAME_EXTENSION,
     } from '../../data/constants';
@@ -39,12 +40,16 @@ const fetchFromURL = async (
     token?: string,
     type?: FetcherType,
 ) => {
+    const defaultHeaders = type === 'inject'
+        ? fetcherDefaultInjectHeaders
+        : fetcherDefaultImportHeaders;
+
     const headers = token
         ?  {
-            ...fetcherDefaultHeaders,
+            ...defaultHeaders,
             Authorization: `Bearer ${token}`,
         } : {
-            ...fetcherDefaultHeaders,
+            ...defaultHeaders,
         };
 
     const response = await fetch(

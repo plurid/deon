@@ -14,8 +14,12 @@ const DEON_FILENAME_EXTENSION = '.deon';
 const DEON_MEDIA_TYPE = 'application/deon';
 
 
-const fetcherDefaultHeaders = {
-    Accept: 'text/plain,' + DEON_MEDIA_TYPE,
+const fetcherDefaultImportHeaders = {
+    Accept: 'text/plain,application/json,' + DEON_MEDIA_TYPE,
+};
+
+const fetcherDefaultInjectHeaders = {
+    Accept: '*/*',
 };
 
 
@@ -50,7 +54,8 @@ const SPACING_FOUR = SPACING_TWO + SPACING_TWO;
 export {
     DEON_FILENAME_EXTENSION,
     DEON_MEDIA_TYPE,
-    fetcherDefaultHeaders,
+    fetcherDefaultImportHeaders,
+    fetcherDefaultInjectHeaders,
 
     deonParseOptions,
     deonStrigifyOptions,
