@@ -1,0 +1,26 @@
+[package]
+name = "deon"
+version = "0.0.0"
+authors = ["ly3xqhl8g9 <ly3xqhl8g9@plurid.com>"]
+license = "MIT"
+description = "DeObject Notation Format of Structured Strings"
+readme = "README.md"
+homepage = "https://github.com/plurid/deon"
+repository = "https://github.com/plurid/deon"
+keywords = ["cli", "deon"]
+categories = ["command-line-utilities", "language", "data"]
+edition = "2018"
+
+
+[lib]
+name = "deon"
+path = "src/lib.rs"
+
+
+[[bin]]
+name = "deon"
+path = "src/bin.rs"
+
+
+[dependencies]
+structopt = "0.3.13"
