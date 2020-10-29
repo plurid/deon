@@ -20,7 +20,7 @@
 
 
 // #region module
-describe(suites.simple, () => {
+describe.only(suites.simple, () => {
     it('pure empty map - new lines', async () => {
         const dataValues = `
 {
@@ -271,6 +271,64 @@ list [
             end,
             'instant',
             `${suites.simple} - simple key value string`,
+        );
+    });
+
+
+
+    it('simple key value escaped', async () => {
+        const dataValues = `
+{
+    key 'valu\\'e'
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('valu\\\'e');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value escaped`,
+        );
+    });
+
+
+
+    it('simple key value escaped multiline', async () => {
+        const dataValues = `
+{
+    key \`
+    valu\\'e
+    \`
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('valu\\\'e');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value escaped multiline`,
         );
     });
 

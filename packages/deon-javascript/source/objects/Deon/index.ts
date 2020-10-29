@@ -208,15 +208,15 @@ class Deon {
     ) {
         if (typeof entity === 'number') {
             // entity is a line number
-            this.report(entity, '', message);
+            // this.report(entity, '', message);
             return;
         }
 
         // entity is a Token
         if (entity.type === TokenType.EOF) {
-            this.report(entity.line, ' at end', message);
+            // this.report(entity.line, ' at end', message);
         } else {
-            this.report(entity.line, " at '" + entity.lexeme + "'", message);
+            // this.report(entity.line, " at '" + entity.lexeme + "'", message);
         }
     }
 

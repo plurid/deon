@@ -135,7 +135,10 @@ class Scanner {
 
 
     private singlelineString() {
-        while (this.peek() !== '\'' && !this.isAtEnd()) {
+        while (
+            (this.peek() !== '\'' || this.peek() === '\\')
+            && !this.isAtEnd()
+        ) {
             if (this.peek() === '\n') {
                 this.line += 1;
 
@@ -143,7 +146,11 @@ class Scanner {
                 return;
             }
 
-            this.advance();
+            if (this.peek() === '\\') {
+                this.advanceEscaped();
+            } else {
+                this.advance();
+            }
         }
 
         // Unterminated string.
@@ -160,12 +167,21 @@ class Scanner {
     }
 
     private multilineString() {
-        while (this.peek() !== '`' && !this.isAtEnd()) {
+        while (
+            (this.peek() !== '`' || this.peek() === '\\')
+            && !this.isAtEnd()
+        ) {
             if (this.peek() === '\n') {
                 this.line += 1;
+                this.advance();
+                continue;
             }
 
-            this.advance();
+            if (this.peek() === '\\') {
+                this.advanceEscaped();
+            } else {
+                this.advance();
+            }
         }
 
         // Unterminated string.
@@ -580,6 +596,11 @@ class Scanner {
         return this.source.charAt(this.current - 1);
     }
 
+    private advanceEscaped() {
+        this.current += 2;
+        return this.source.charAt(this.current - 1);
+    }
+
     private match(
         expected: string,
     ) {
@@ -601,6 +622,14 @@ class Scanner {
         }
 
         return this.source.charAt(this.current);
+    }
+
+    private peekPrevious() {
+        if (this.current - 1 < 0) {
+            return '\0';
+        }
+
+        return this.source.charAt(this.current - 1);
     }
 
     private peekNext() {
