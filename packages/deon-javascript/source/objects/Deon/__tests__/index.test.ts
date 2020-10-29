@@ -2110,6 +2110,37 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 
 describe(suites.testings, () => {
     it('various', async () => {
+        const dataValues = `
+{
+    b c d
+    #a
+    #f
+}
+
+a b c df g
+f ' aa '
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'fast',
+            `${suites.examples} - initial`,
+        );
+    });
+
+
+
+    it('various', async () => {
         const data = {
             a: [
                 {

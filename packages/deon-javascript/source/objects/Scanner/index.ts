@@ -398,6 +398,7 @@ class Scanner {
         let mapItemLine = -1;
         let listItemLine = -1;
         let temporary: Token[] = [];
+        let leaflinkIdentify = false;
 
         const stringifyTemporary = () => {
             if (temporary.length > 0) {
@@ -426,31 +427,6 @@ class Scanner {
             tokens.push(token);
         }
 
-        const identifyLeaflink = (
-            token: Token,
-        ) => {
-            const lastToken = tokens[tokens.length - 1];
-
-            if (!lastToken) {
-                const identifierToken = this.identifierFromSignifier(token);
-                tokens.push(identifierToken);
-                return;
-            }
-
-            if (
-                lastToken.line === token.line
-                && lastToken.type === TokenType.IDENTIFIER
-                && token.type === TokenType.SIGNIFIER
-            ) {
-                const stringToken = this.stringFromSignifiers([token]);
-                tokens.push(stringToken);
-                return;
-            }
-
-            const identifierToken = this.identifierFromSignifier(token);
-            tokens.push(identifierToken);
-        }
-
         for (const [index, token] of this.tokens.entries()) {
             switch (token.type) {
                 case TokenType.LEFT_CURLY_BRACKET:
@@ -477,6 +453,27 @@ class Scanner {
                     }
                     break;
                 }
+            }
+
+            if (leaflinkIdentify) {
+                if (token.type === TokenType.STRING) {
+                    tokens.push(token);
+                    leaflinkIdentify = false;
+                    continue;
+                }
+
+                const identifierToken = tokens[tokens.length - 1];
+
+                if (
+                    token.type === TokenType.SIGNIFIER
+                    && token.line === identifierToken.line
+                ) {
+                    temporary.push(token);
+                    continue;
+                }
+
+                stringifyTemporary();
+                leaflinkIdentify = false;
             }
 
             if (
@@ -549,7 +546,6 @@ class Scanner {
 
             const inGroup = this.inGroup(index);
 
-
             if (inGroup === 'LEAFLINK') {
                 const previous = this.tokens[index - 1];
 
@@ -559,9 +555,9 @@ class Scanner {
                     continue;
                 }
 
-                identifyLeaflink(
-                    token,
-                );
+                const identifierToken = this.identifierFromSignifier(token);
+                tokens.push(identifierToken);
+                leaflinkIdentify = true;
                 continue;
             }
 
