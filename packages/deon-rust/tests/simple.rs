@@ -9,15 +9,15 @@ use deon::Deon;
 
 #[test]
 fn simple() {
-    let _deon = Deon {};
+    let deon = Deon {};
 
-    let data = "
+    let data = String::from("
 {
     key value
 }
-";
+");
     println!("{}", data);
-    // deon.parse(data);
+    deon.parse(data);
 
     assert_eq!(1, 1);
 }

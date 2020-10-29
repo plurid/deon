@@ -12,14 +12,14 @@ impl Deon {
         let content = std::fs::read_to_string(path)
             .expect("Deon :: could not read file");
 
-        self.parse(content.lines());
+        self.parse(content);
     }
 
     pub fn parse(
         self: &Self,
-        data: std::str::Lines,
+        data: std::string::String,
     ) {
-        for line in data {
+        for line in data.lines() {
             println!("{}", line);
         }
     }
