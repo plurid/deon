@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use super::scanner::{Scanner};
+
 
 
 pub struct Deon {
@@ -23,9 +25,8 @@ impl Deon {
         self: &Self,
         data: String,
     ) -> HashMap<&str, String> {
-        for line in data.lines() {
-            println!("{}", line);
-        }
+        let scanner = Scanner { data: data };
+        let _tokens = scanner.scan();
 
         let result: HashMap<&str, String> = HashMap::new();
 
