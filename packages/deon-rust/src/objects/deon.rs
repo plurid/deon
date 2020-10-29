@@ -25,8 +25,12 @@ impl Deon {
         self: &Self,
         data: String,
     ) -> HashMap<&str, String> {
-        let scanner = Scanner::new(data);
+        let mut scanner = Scanner::new(data);
         let tokens = scanner.scan();
+
+        for token in tokens {
+            println!("{}", token.to_string());
+        }
 
         let result: HashMap<&str, String> = HashMap::new();
 

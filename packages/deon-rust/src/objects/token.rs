@@ -1,7 +1,14 @@
+use std::fmt::{
+    self,
+    Debug,
+    Display,
+};
+
 use super::super::data::enums::{TokenType};
 
 
 
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
