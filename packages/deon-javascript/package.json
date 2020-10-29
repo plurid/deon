@@ -1,6 +1,6 @@
 {
     "name": "@plurid/deon",
-    "version": "0.0.22",
+    "version": "0.0.23",
     "description": "DeObject Notation Format of Structured Strings",
     "keywords": [
         "deon"
