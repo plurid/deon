@@ -1,0 +1,48 @@
+/*
+    multiline comment
+*/
+
+
+// single line comment
+
+
+import one from one-file
+import one from one-file with token
+
+inject two from two-file
+inject two from two-file with token
+
+
+{
+    one two
+    three four five
+    six 'seven eight nine'
+
+    one {
+        two [
+            three four
+            five six
+        ]
+        seven eight
+        nine {
+            ten net
+        }
+    }
+    #two
+    three #four
+    five {
+        #seven
+    }
+}
+
+
+two three
+
+four {
+    five six
+}
+
+seven [
+    eight nine
+    ten net
+]
