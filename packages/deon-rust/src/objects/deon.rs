@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+
+
 pub struct Deon {
 }
 
@@ -17,10 +21,14 @@ impl Deon {
 
     pub fn parse(
         self: &Self,
-        data: std::string::String,
-    ) {
+        data: String,
+    ) -> HashMap<&str, String> {
         for line in data.lines() {
             println!("{}", line);
         }
+
+        let result: HashMap<&str, String> = HashMap::new();
+
+        return result;
     }
 }

@@ -16,8 +16,8 @@ fn simple() {
     key value
 }
 ");
-    println!("{}", data);
-    deon.parse(data);
 
-    assert_eq!(1, 1);
+    let result = deon.parse(data);
+
+    assert_eq!(result.is_empty(), true);
 }
