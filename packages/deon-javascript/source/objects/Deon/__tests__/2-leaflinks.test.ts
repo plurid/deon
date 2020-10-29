@@ -80,6 +80,65 @@ key aValue
     });
 
 
+    it('simple - shortened key spaced', async () => {
+        const dataValues = `
+{
+    #key
+}
+
+key value1 value2
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('value1 value2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - shortened key spaced`,
+        );
+    });
+
+
+
+    it('simple - shortened key string', async () => {
+        const dataValues = `
+{
+    #key
+}
+
+key 'value1 value2'
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('value1 value2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - shortened key string`,
+        );
+    });
+
+
 
     it('nested - shortened map', async () => {
         const dataValues = `

@@ -220,6 +220,62 @@ list [
 
 
 
+    it('simple key value spaced', async () => {
+        const dataValues = `
+{
+    key value1 value2
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('value1 value2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value spaced`,
+        );
+    });
+
+
+
+    it('simple key value string', async () => {
+        const dataValues = `
+{
+    key 'value1 value2'
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('value1 value2');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value string`,
+        );
+    });
+
+
+
     it('simple key value spaced words', async () => {
         const dataValues = `
 {
