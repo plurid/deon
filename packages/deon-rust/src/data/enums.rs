@@ -1,4 +1,12 @@
-// #region module
+use std::fmt::{
+    self,
+    Debug,
+    Display,
+};
+
+
+
+#[derive(Debug)]
 pub enum TokenType {
     // Single-character tokens.
     LeftSquareBracket, RightSquareBracket,
@@ -11,7 +19,6 @@ pub enum TokenType {
 
     // Literals.
     Signifier,
-    String,
     Link,
     Identifier,
 
@@ -21,4 +28,13 @@ pub enum TokenType {
 
     Eof,
 }
-// #endregion module
+
+
+impl Display for TokenType {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
