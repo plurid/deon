@@ -8,7 +8,7 @@ The script leverages the [`kubectl` plugins](https://kubernetes.io/docs/tasks/ex
 In order to use the `kubectl-deonly` script, rename the source with copy, make it an executable, move it to the binaries folder.
 
 ``` bash
-cp ./source/kubectl-deonly-source-[language].js ./source/kubectl-deonly
+cp ./source/kubectl-deonly-source-[language] ./source/kubectl-deonly
 
 sudo chmod +x ./source/kubectl-deonly
 
@@ -17,7 +17,7 @@ sudo mv ./source/kubectl-deonly /usr/local/bin
 
 where `[language]` is the appropriate implementation:
 
-+ `node` - NodeJS
++ `node.js` - NodeJS
 
 The name `kubectl-deonly` is a play on `deon` + `apply` and can be changed to anything else following the pattern `kubectl-name`.
 
