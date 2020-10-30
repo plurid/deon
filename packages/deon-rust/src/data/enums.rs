@@ -19,6 +19,7 @@ pub enum TokenType {
 
     // Literals.
     Signifier,
+    String,
     Link,
     Identifier,
 

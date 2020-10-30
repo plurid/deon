@@ -123,22 +123,114 @@ impl Scanner {
     }
 
 
-    // matchs
+    // matches
     fn slash(
         &mut self,
-    ) {}
+    ) {
+        if self.match_character('/') {
+            // A comment goes until the end of the line.
+            while self.peek() != '\n' && !self.is_at_end() {
+                self.advance();
+            }
+        } else if self.match_character('*') {
+            // A multline comment goes until starslash (*/).
+            while self.peek() != '*' && !self.is_at_end() {
+                self.advance();
+            }
+        } else {
+            self.signifier();
+        }
+    }
 
     fn star(
         &mut self,
-    ) {}
+    ) {
+        if self.match_character('/') {
+            self.advance();
+        }
+    }
 
     fn singleline_string(
         &mut self,
-    ) {}
+    ) {
+        while
+            (self.peek() != '\'' || self.peek() == '\\')
+            && !self.is_at_end()
+        {
+            if self.peek() == '\n' {
+                self.line += 1;
+
+                // Error: Unterminated string.
+                return;
+            }
+
+            if self.peek() == '\\' {
+                self.advance_escaped();
+            } else {
+                self.advance();
+            }
+        }
+
+        if self.is_at_end() {
+            // Error: Unterminated string.
+            return;
+        }
+
+        // The closing '.
+        self.advance();
+
+        let value = String::from(
+            &self.data.to_string()[
+                (self.start + 1) as usize..(self.current - 1) as usize
+            ]
+        );
+
+        self.add_token_literal(
+            TokenType::String,
+            value,
+        );
+    }
 
     fn multiline_string(
         &mut self,
-    ) {}
+    ) {
+        while
+            (self.peek() != '`' || self.peek() == '\\')
+            && !self.is_at_end()
+        {
+            if self.peek() == '\n' {
+                self.line += 1;
+                self.advance();
+
+                continue;
+            }
+
+            if self.peek() == '\\' {
+                self.advance_escaped();
+            } else {
+                self.advance();
+            }
+        }
+
+        if self.is_at_end() {
+            // Error: Unterminated string.
+            return;
+        }
+
+        // The closing '.
+        self.advance();
+
+        let value = String::from(
+            self.data.to_string()[
+                (self.start + 1) as usize..(self.current - 1) as usize
+            ].trim()
+        );
+
+        self.add_token_literal(
+            TokenType::String,
+            value,
+        );
+    }
 
     fn signifier(
         &mut self,
@@ -182,5 +274,15 @@ impl Scanner {
         &mut self,
     ) -> bool {
         self.current as usize >= self.data.chars().count()
+    }
+
+    fn peek(
+        &mut self,
+    ) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
+        self.data.chars().nth((self.current) as usize).unwrap()
     }
 }
