@@ -438,8 +438,6 @@ impl Scanner {
                 let string_token = self.string_from_signifiers(temporary.clone());
 
                 tokens.push(string_token);
-
-                temporary = vec![];
             }
         };
 
@@ -481,8 +479,10 @@ impl Scanner {
                         index,
                     );
 
-                    if group == "MAP" || group == "LIST" {
-                        mode = &group[..];
+                    if group == "MAP" {
+                        mode = "MAP";
+                    } else if group == "LIST" {
+                        mode = "LIST";
                     } else {
                         mode = "";
                     }
@@ -517,6 +517,8 @@ impl Scanner {
                     &mut tokens,
                     &mut temporary,
                 );
+                temporary = vec![];
+
                 leaflink_identify = false;
             }
 
@@ -526,6 +528,7 @@ impl Scanner {
                         &mut tokens,
                         &mut temporary,
                     );
+                    temporary = vec![];
 
                     tokens.push(token.clone());
                     map_lookup = false;
@@ -548,6 +551,7 @@ impl Scanner {
                             &mut tokens,
                             &mut temporary,
                         );
+                        temporary = vec![];
                     }
 
                     tokens.push(token.clone());
@@ -566,6 +570,7 @@ impl Scanner {
                             &mut tokens,
                             &mut temporary,
                         );
+                        temporary = vec![];
 
                         identify_signifier(
                             &mut tokens,
@@ -599,6 +604,7 @@ impl Scanner {
                         &mut tokens,
                         &mut temporary,
                     );
+                    temporary = vec![];
 
                     list_item_line = token.line;
 
