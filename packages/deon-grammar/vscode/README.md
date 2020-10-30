@@ -105,6 +105,26 @@ const data = {
 };
 ```
 
+``` rust
+// Rust
+
+let data = json!({
+    "entities": [
+        {
+            "id": "01",
+            "name": "One",
+            "active": "true",
+        },
+        {
+            "id": "02",
+            "name": "Two",
+            "active": "false",
+        },
+    ],
+    "time": "1598439736",
+});
+```
+
 ``` python
 # Python
 
