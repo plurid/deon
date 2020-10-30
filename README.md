@@ -334,6 +334,18 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 `deon` is implemented for:
 
 + [`JavaScript/TypeScript`](https://github.com/plurid/deon/tree/master/packages/deon-javascript)
++ [`Rust`](https://github.com/plurid/deon/tree/master/packages/deon-rust) - in progress
+
+and will be implemented for:
+
++ [`C`](https://github.com/plurid/deon/tree/master/packages/deon-c)
++ [`C++`](https://github.com/plurid/deon/tree/master/packages/deon-cpp)
++ [`denatural`](https://github.com/plurid/deon/tree/master/packages/deon-denatural)
++ [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
++ [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
++ [`PHP`](https://github.com/plurid/deon/tree/master/packages/deon-php)
++ [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
++ [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
 
 
 
@@ -1150,3 +1162,13 @@ commit {
 [@plurid/deon-javascript][deon-javascript] • `JavaScript` / `TypeScript` implementation
 
 [deon-javascript]: https://github.com/plurid/plurid/tree/master/packages/deon-javascript
+
+
+
+<a target="_blank" href="https://crates.io/crates/deon">
+    <img src="https://img.shields.io/crates/v/deon.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
+</a>
+
+[@plurid/deon-rust][deon-rust] • `Rust` implementation
+
+[deon-rust]: https://github.com/plurid/plurid/tree/master/packages/deon-rust
