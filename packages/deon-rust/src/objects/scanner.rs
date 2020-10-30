@@ -50,6 +50,8 @@ impl Scanner {
         &mut self,
     ) {
         while !self.is_at_end() {
+            self.start = self.current;
+
             self.scan_token();
         }
 
@@ -116,11 +118,11 @@ impl Scanner {
         token_type: TokenType,
         literal: String,
     ) {
-        let lexeme: String = self.data
-            .chars()
-            .skip(self.start as usize)
-            .take(self.current as usize)
-            .collect();
+        let lexeme = String::from(
+            &self.data.to_string()[
+                (self.start) as usize..(self.current) as usize
+            ]
+        );
 
         let new_token = Token {
             token_type,
