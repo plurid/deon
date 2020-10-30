@@ -39,6 +39,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 
 + [Example](#example)
 + [Implementations](#implementations)
++ [Installs](#installs)
 + [General](#general)
 + [Values](#values)
 + [Maps](#maps)
@@ -366,6 +367,24 @@ and will be implemented for:
 + [`PHP`](https://github.com/plurid/deon/tree/master/packages/deon-php)
 + [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
 + [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
+
+
+
+## Installs
+
+`deon` can be installed locally with the appropriate package manager for each implementation language, or can be installed globally as a CLI
+
+using the `NodeJS` runtime
+
+``` bash
+npm install -g @plurid/deon
+```
+
+or download the appropriate binary
+
++ [MacOS](https://files.plurid.com/)
++ [Linux](https://files.plurid.com/)
++ [Windows](https://files.plurid.com/)
 
 
 
