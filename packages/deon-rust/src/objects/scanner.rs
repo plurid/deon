@@ -448,7 +448,7 @@ impl Scanner {
         | {
             let group = in_group(
                 self.tokens.clone(),
-                position + 1,
+                position,
             );
 
             match &group[..] {
@@ -522,18 +522,22 @@ impl Scanner {
                 leaflink_identify = false;
             }
 
-            match token.token_type {
-                TokenType::Signifier => {
-                    stringify_temporary(
-                        &mut tokens,
-                        &mut temporary,
-                    );
-                    temporary = vec![];
+            if
+                token.token_type != TokenType::Signifier
+                || token.token_type != TokenType::String
+            {
+                stringify_temporary(
+                    &mut tokens,
+                    &mut temporary,
+                );
+                temporary = vec![];
 
-                    tokens.push(token.clone());
-                    map_lookup = false;
-                    continue;
-                },
+                tokens.push(token.clone());
+                map_lookup = false;
+                continue;
+            }
+
+            match token.token_type {
                 TokenType::String => {
                     let group = in_group(
                         self.tokens.clone(),

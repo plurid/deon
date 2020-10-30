@@ -5,8 +5,7 @@ use std::fmt::{
 };
 
 
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftSquareBracket, RightSquareBracket,
