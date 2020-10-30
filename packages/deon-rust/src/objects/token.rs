@@ -22,7 +22,7 @@ impl Token {
         &self,
     ) -> String {
         return String::from(
-            self.token_type.to_string() + " " + &self.lexeme + " " + &self.literal
+            self.token_type.to_string() + " '" + &self.lexeme + "' " + &self.literal
         );
     }
 }

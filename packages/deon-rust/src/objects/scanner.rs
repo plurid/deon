@@ -333,10 +333,11 @@ impl Scanner {
         while self.is_alpha_numeric(character) {
             character = self.advance();
         }
+        self.devance();
 
         let value = String::from(
             &self.data.to_string()[
-                (self.start) as usize..(self.current) as usize
+                (self.start) as usize..(self.current - 1) as usize
             ]
         );
 
@@ -524,7 +525,7 @@ impl Scanner {
 
             if
                 token.token_type != TokenType::Signifier
-                || token.token_type != TokenType::String
+                && token.token_type != TokenType::String
             {
                 stringify_temporary(
                     &mut tokens,
@@ -547,6 +548,7 @@ impl Scanner {
                     if group == "LEAFLINK" {
                         let identifier_token = self.identifier_from_signifier(token.clone());
                         tokens.push(identifier_token);
+
                         return;
                     }
 
@@ -657,6 +659,14 @@ impl Scanner {
         &mut self,
     ) -> char {
         self.current += 1;
+
+        self.data.chars().nth((self.current - 1) as usize).unwrap()
+    }
+
+    fn devance(
+        &mut self,
+    ) -> char {
+        self.current -= 1;
 
         self.data.chars().nth((self.current - 1) as usize).unwrap()
     }
