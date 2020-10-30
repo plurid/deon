@@ -1161,7 +1161,7 @@ commit {
 
 [@plurid/deon-javascript][deon-javascript] • `JavaScript` / `TypeScript` implementation
 
-[deon-javascript]: https://github.com/plurid/plurid/tree/master/packages/deon-javascript
+[deon-javascript]: https://github.com/plurid/deon/tree/master/packages/deon-javascript
 
 
 
@@ -1171,4 +1171,4 @@ commit {
 
 [@plurid/deon-rust][deon-rust] • `Rust` implementation
 
-[deon-rust]: https://github.com/plurid/plurid/tree/master/packages/deon-rust
+[deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
