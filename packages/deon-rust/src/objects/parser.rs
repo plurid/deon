@@ -10,9 +10,11 @@ pub struct Parser {
 
 
 impl Parser {
-    pub fn new() -> Parser {
+    pub fn new(
+        tokens: Vec<Token>,
+    ) -> Parser {
         Parser {
-            tokens: vec![],
+            tokens,
             current: 0,
         }
     }

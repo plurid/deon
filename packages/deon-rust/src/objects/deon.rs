@@ -27,16 +27,16 @@ impl Deon {
         data: String,
     ) -> HashMap<&str, String> {
         let mut scanner = Scanner::new(data);
-        let tokens = scanner.scan();
+        let mut tokens = scanner.scan();
         // Debug.
-        for token in tokens {
+        for token in tokens.clone() {
             println!("{}", token.to_string());
         }
 
-        let mut parser = Parser::new();
+        let mut parser = Parser::new(tokens);
         let statements = parser.parse();
         // // Debug.
-        // for statement in statements {
+        // for statement in statements.clone() {
         //     println!("{}", statement.to_string());
         // }
 
