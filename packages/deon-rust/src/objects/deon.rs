@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::scanner::{Scanner};
+use super::parser::{Parser};
 
 
 
@@ -27,13 +28,25 @@ impl Deon {
     ) -> HashMap<&str, String> {
         let mut scanner = Scanner::new(data);
         let tokens = scanner.scan();
-
+        // Debug.
         for token in tokens {
             println!("{}", token.to_string());
         }
 
-        let result: HashMap<&str, String> = HashMap::new();
+        let mut parser = Parser::new();
+        let statements = parser.parse();
+        // // Debug.
+        // for statement in statements {
+        //     println!("{}", statement.to_string());
+        // }
 
+        // let interpretOptions = HashMap::new();
+        // let mut interpreter = Interpreter::new();
+        // let data = interpreter.interpret(
+        //     statements,
+        // );
+
+        let result: HashMap<&str, String> = HashMap::new();
         return result;
     }
 }
