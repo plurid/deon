@@ -345,14 +345,14 @@ impl Scanner {
         let mut token_type_clone = token_type.clone();
 
         let length = self.tokens.len() - 1;
-        let in_group = in_group(
+        let group = in_group(
             self.tokens.clone(),
             length,
         );
 
         match token_type {
             TokenType::Import | TokenType::Inject | TokenType::From | TokenType::With => {
-                if in_group != "LEAFLINK" {
+                if group != "LEAFLINK" {
                     token_type_clone = TokenType::Signifier;
                 }
             },
@@ -420,9 +420,225 @@ impl Scanner {
     }
 
     fn identify(
-        &self,
+        &mut self,
     ) {
+        let mut tokens: Vec<Token> = vec![];
+        let mut mode = "";
+        let mut map_lookup = false;
+        let mut map_item_line = -1;
+        let mut list_item_line = -1;
+        let mut temporary: Vec<Token> = vec![];
+        let mut leaflink_identify = false;
 
+        let mut stringify_temporary = |
+            tokens: &mut Vec<Token>,
+            temporary: &mut Vec<Token>,
+        | {
+            if temporary.len() > 0 {
+                let string_token = self.string_from_signifiers(temporary.clone());
+
+                tokens.push(string_token);
+
+                temporary = vec![];
+            }
+        };
+
+        let mut identify_signifier = |
+            tokens: &mut Vec<Token>,
+            position: usize,
+            token: Token,
+        | {
+            let group = in_group(
+                self.tokens.clone(),
+                position + 1,
+            );
+
+            match &group[..] {
+                "MAP" | "LEAFLINK" => {
+                    let identifier_token = self.identifier_from_signifier(token);
+
+                    tokens.push(identifier_token);
+
+                    return;
+                },
+                _ => (),
+            }
+
+            tokens.push(token);
+        };
+
+        for (index, token) in self.tokens.clone().iter().enumerate() {
+            match &token.token_type {
+                TokenType::LeftCurlyBracket => {
+                    mode = "MAP";
+                },
+                TokenType::LeftSquareBracket => {
+                    mode = "LIST";
+                },
+                TokenType::RightCurlyBracket | TokenType::RightSquareBracket => {
+                    let group = in_group(
+                        self.tokens.clone(),
+                        index,
+                    );
+
+                    if group == "MAP" || group == "LIST" {
+                        mode = &group[..];
+                    } else {
+                        mode = "";
+                    }
+                },
+                _ => (),
+            }
+
+            if leaflink_identify {
+                match &token.token_type {
+                    TokenType::String => {
+                        tokens.push(token.clone());
+
+                        leaflink_identify = false;
+                        continue;
+                    },
+                    _ => (),
+                }
+
+                let identifier_token = tokens[tokens.len() - 1].clone();
+
+                match identifier_token.token_type {
+                    TokenType::Signifier => {
+                        if identifier_token.line == token.line {
+                            temporary.push(token.clone());
+                            continue;
+                        }
+                    },
+                    _ => (),
+                }
+
+                stringify_temporary(
+                    &mut tokens,
+                    &mut temporary,
+                );
+                leaflink_identify = false;
+            }
+
+            match token.token_type {
+                TokenType::Signifier => {
+                    stringify_temporary(
+                        &mut tokens,
+                        &mut temporary,
+                    );
+
+                    tokens.push(token.clone());
+                    map_lookup = false;
+                    continue;
+                },
+                TokenType::String => {
+                    let group = in_group(
+                        self.tokens.clone(),
+                        index + 1,
+                    );
+
+                    if group == "LEAFLINK" {
+                        let identifier_token = self.identifier_from_signifier(token.clone());
+                        tokens.push(identifier_token);
+                        return;
+                    }
+
+                    if mode == "LIST" {
+                        stringify_temporary(
+                            &mut tokens,
+                            &mut temporary,
+                        );
+                    }
+
+                    tokens.push(token.clone());
+
+                    continue;
+                },
+                _ => (),
+            }
+
+            if mode == "MAP" {
+                if map_lookup {
+                    if map_item_line == token.line {
+                        temporary.push(token.clone());
+                    } else {
+                        stringify_temporary(
+                            &mut tokens,
+                            &mut temporary,
+                        );
+
+                        identify_signifier(
+                            &mut tokens,
+                            index,
+                            token.clone(),
+                        );
+
+                        map_item_line = token.line;
+
+                        temporary = vec![];
+                    }
+                } else {
+                    map_lookup = true;
+                    map_item_line = token.line;
+
+                    identify_signifier(
+                        &mut tokens,
+                        index,
+                        token.clone(),
+                    );
+                }
+
+                continue;
+            }
+
+            if mode == "LIST" {
+                if list_item_line == token.line {
+                    temporary.push(token.clone());
+                } else {
+                    stringify_temporary(
+                        &mut tokens,
+                        &mut temporary,
+                    );
+
+                    list_item_line = token.line;
+
+                    temporary.push(token.clone());
+                }
+
+                continue;
+            }
+
+            let group = in_group(
+                self.tokens.clone(),
+                index,
+            );
+
+            if group == "LEAFLINK" {
+                let previous = self.tokens[index - 1].clone();
+
+                match previous.token_type {
+                    TokenType::From => {
+                        tokens.push(token.clone());
+
+                        continue;
+                    },
+                    _ => (),
+                }
+
+                let identifier_token = self.identifier_from_signifier(token.clone());
+                tokens.push(identifier_token);
+                leaflink_identify = true;
+                continue;
+            }
+
+            identify_signifier(
+                &mut tokens,
+                index,
+                token.clone(),
+            );
+        }
+
+        self.tokens = tokens.clone();
     }
 
 
