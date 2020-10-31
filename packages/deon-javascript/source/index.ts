@@ -10,6 +10,7 @@
 
     import {
         deon,
+        deonSynchronous,
     } from './utilities/template';
     // #endregion internal
 // #endregion imports
@@ -24,6 +25,7 @@ export {
     cli,
     typer,
     deon,
+    deonSynchronous,
 };
 
 export default Deon;

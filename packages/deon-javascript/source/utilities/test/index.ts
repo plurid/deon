@@ -41,6 +41,7 @@ const suites = {
     stringify: 'Deon stringify',
     examples: 'Deon examples',
     testings: 'Deon testings',
+    synchronous: 'Deon synchronous',
 };
 // #endregion module
 

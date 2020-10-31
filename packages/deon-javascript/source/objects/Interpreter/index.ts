@@ -90,7 +90,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    public interpretSync(
+    public interpretSynchronous(
         statements: Statement.Statement[],
         options: DeonInterpreterOptions,
     ) {
@@ -118,10 +118,10 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 }
             }
 
-            this.resolveLeaflinksSync([
+            this.resolveLeaflinksSynchronous([
                 ...leaflinkStatements,
             ]);
-            this.resolveRootSync(rootStatement);
+            this.resolveRootSynchronous(rootStatement);
 
             return this.extract();
         } catch (error) {
@@ -137,7 +137,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return value;
     }
 
-    public executeSync(
+    public executeSynchronous(
         statement: Statement.Statement,
     ) {
         const value: any = statement.accept(this);
@@ -732,14 +732,14 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         await this.execute(statement);
     }
 
-    private resolveRootSync(
+    private resolveRootSynchronous(
         statement: Statement.RootStatement | undefined,
     ) {
         if (!statement) {
             return;
         }
 
-        this.executeSync(statement);
+        this.executeSynchronous(statement);
     }
 
     private async resolveLeaflinks(
@@ -778,7 +778,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    private resolveLeaflinksSync(
+    private resolveLeaflinksSynchronous(
         statements: Statement.Statement[],
     ) {
         // TODO
@@ -805,7 +805,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                     continue;
                 }
 
-                this.executeSync(statement);
+                this.executeSynchronous(statement);
 
                 this.leaflinks = this.environment;
             }

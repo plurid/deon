@@ -20,7 +20,7 @@
 
 
 // #region module
-describe.only(suites.simple, () => {
+describe(suites.simple, () => {
     it('pure empty map - new lines', async () => {
         const dataValues = `
 {

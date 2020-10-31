@@ -126,6 +126,7 @@ class Deon {
             this.error,
         );
         // console.log('scanner', scanner);
+
         const tokens = scanner.scanTokens();
         // console.log('tokens', tokens);
         const parser = new Parser(
@@ -156,7 +157,6 @@ class Deon {
             file: this.parsedFile,
             parseOptions: options,
         };
-
         const interpretedData = await this.interpreter.interpret(
             statements,
             interpretOptions,
@@ -173,7 +173,7 @@ class Deon {
      * @param data
      * @param options
      */
-    parseSync (
+    parseSynchronous(
         data: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -193,11 +193,11 @@ class Deon {
             file: this.parsedFile,
             parseOptions: options,
         };
-
-        const interpretedData = this.interpreter.interpretSync(
+        const interpretedData = this.interpreter.interpretSynchronous(
             statements,
             interpretOptions,
         );
+
         return interpretedData;
     }
 
