@@ -7,6 +7,10 @@
     import {
         typer,
     } from './utilities/typer';
+
+    import {
+        deon,
+    } from './utilities/template';
     // #endregion internal
 // #endregion imports
 
@@ -19,6 +23,7 @@ export * from './data/interfaces';
 export {
     cli,
     typer,
+    deon,
 };
 
 export default Deon;
