@@ -26,7 +26,7 @@ describe(suites.synchronous, () => {
 
         const start = Date.now();
         const deon = new Deon();
-        const data = deon.parseSynchronous(
+        const data = deon.parseSynchronous<{key: string}>(
             dataValues,
         );
         const end = Date.now();

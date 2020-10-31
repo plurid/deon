@@ -7,10 +7,10 @@
 
 
 // #region module
-const deon = async (
+const deon = async <T = any>(
     strings: TemplateStringsArray,
     ...values: any[]
-) => {
+): Promise<T> => {
     let raw = '';
 
     strings.forEach((value, index) => {
@@ -19,13 +19,13 @@ const deon = async (
 
     const deonObject = new Deon();
 
-    const result = await deonObject.parse(raw);
+    const result: T = await deonObject.parse(raw);
 
     return result;
 }
 
 
-const deonSynchronous = (
+const deonSynchronous = <T = any>(
     strings: TemplateStringsArray,
     ...values: any[]
 ) => {
@@ -37,7 +37,7 @@ const deonSynchronous = (
 
     const deonObject = new Deon();
 
-    const result = deonObject.parseSynchronous(raw);
+    const result: T = deonObject.parseSynchronous(raw);
 
     return result;
 }

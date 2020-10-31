@@ -117,7 +117,7 @@ class Deon {
      * @param data
      * @param options
      */
-    async parse(
+    async parse<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -157,7 +157,7 @@ class Deon {
             file: this.parsedFile,
             parseOptions: options,
         };
-        const interpretedData = await this.interpreter.interpret(
+        const interpretedData: T = await this.interpreter.interpret(
             statements,
             interpretOptions,
         );
@@ -173,7 +173,7 @@ class Deon {
      * @param data
      * @param options
      */
-    parseSynchronous(
+    parseSynchronous<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -193,7 +193,7 @@ class Deon {
             file: this.parsedFile,
             parseOptions: options,
         };
-        const interpretedData = this.interpreter.interpretSynchronous(
+        const interpretedData: T = this.interpreter.interpretSynchronous(
             statements,
             interpretOptions,
         );

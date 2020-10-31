@@ -28,7 +28,10 @@ describe(suites.template, () => {
         const anotherValue = 'anotherValue';
 
         const start = Date.now();
-        const data = await deon`
+        const data = await deon<{
+            aKey: string;
+            anotherKey: string
+        }>`
             {
                 aKey aValue
                 #anotherKey
@@ -57,7 +60,10 @@ describe(suites.template, () => {
         const anotherValue = 'anotherValue';
 
         const start = Date.now();
-        const data = deonSynchronous`
+        const data = deonSynchronous<{
+            aKey: string;
+            anotherKey: string
+        }>`
             {
                 aKey aValue
                 #anotherKey
