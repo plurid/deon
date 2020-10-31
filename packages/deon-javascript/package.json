@@ -35,6 +35,7 @@
     "preferGlobal": false,
     "scripts": {
         "test": "jest -c ./configurations/jest.config.js ./source",
+        "test.suite": "jest -c ./configurations/jest.config.js",
         "watch": "rollup -c ./scripts/rollup.config.js -w",
         "build": "rollup -c ./scripts/rollup.config.js",
         "cleanup": "find ./distribution -type d -name '*__tests__' -exec rm -rf {} + && find ./distribution -type f -name '*.DS_Store' -exec rm -rf {} +",
