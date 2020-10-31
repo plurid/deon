@@ -50,6 +50,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Injecting](#injecting)
 + [Stringifying](#stringifying)
 + [Parsing](#parsing)
++ [Literals](#literals)
 + [Advanced Usage](#advanced-usage)
 + [In Use](#in-use)
 + [Usages](#usages)
@@ -109,7 +110,7 @@ const data = {
 ``` rust
 // Rust
 
-let data = json!({
+let data = deon!({
     "entities": [
         {
             "id": "01",
@@ -380,11 +381,11 @@ using the `NodeJS` runtime
 npm install -g @plurid/deon
 ```
 
-or download the appropriate binary
+or download the appropriate [binary](https://plurid.link/binaries-deon)
 
-+ [MacOS](https://files.plurid.com/)
-+ [Linux](https://files.plurid.com/)
-+ [Windows](https://files.plurid.com/)
++ [MacOS](https://files.plurid.com/binaries/deon/macos)
++ [Linux](https://files.plurid.com/binaries/deon/linux)
++ [Windows](https://files.plurid.com/binaries/deon/windows)
 
 
 
@@ -1052,6 +1053,59 @@ interface DeonParseOptions {
 
 
 
+## Literals
+
+To handle `deon` data inside the implementation language, a language-specific literal can be used.
+
+
+### `Javascript`/`Typescript`
+
+``` typescript
+import {
+    deon,
+} from '@plurid/deon';
+
+
+const main = async () => {
+    const data = await deon`
+        // handles full-fledged deon data
+        // with imports, injects, leaflinks, etc.
+        {
+            key value
+        }
+    `;
+
+    // { key: 'value' }
+    console.log(data);
+}
+
+
+main();
+```
+
+
+### Rust
+
+``` rust
+use deon::{deon}
+
+
+fn main() {
+    let data = deon!(
+        // handles full-fledged deon data
+        // with imports, injects, leaflinks, etc.
+        {
+            key value
+        }
+    );
+
+    // { key: 'value' }
+    println!("{}", data.to_string());
+}
+```
+
+
+
 ## Advanced Usage
 
 ### Datasign Type Conversion
@@ -1145,7 +1199,7 @@ The imports feel well-written when written in one line.
 
 The root feels well-written when it has only one level of indentation, and every leaf is a `leaflink` (for `map`s or `list`s) or a `string`.
 
-For example, the following [`.joiner`](https://github.com/plurid/joiner) file:
+For example, the following [`joiner`](https://github.com/plurid/joiner) file:
 
 ``` deon
 import otherPackages from ../../path/to/file
@@ -1185,7 +1239,7 @@ commit {
 
 
 <a target="_blank" href="https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode">
-    <img src="https://img.shields.io/badge/vscode-v.0.0.5-1380C3?style=for-the-badge" alt="Version">
+    <img src="https://img.shields.io/badge/vscode-v.0.0.6-1380C3?style=for-the-badge" alt="Version">
 </a>
 
 [@plurid/deon-grammar][deon-grammar] • `Visual Studio Code` syntax highlighting
