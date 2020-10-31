@@ -159,18 +159,6 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
-    public visitKeyExpression(
-        expression: Expression.KeyExpression,
-    ) {
-
-    }
-
-    public visitRootExpression(
-        expression: Expression.RootExpression,
-    ) {
-
-    }
-
     public visitMapExpression(
         expression: Expression.MapExpression,
     ) {

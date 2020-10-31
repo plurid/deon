@@ -20,9 +20,7 @@ export abstract class Expression {
 
 export interface Visitor<T> {
     visitAssignExpression: (assignExpression: AssignExpression) => T;
-    visitKeyExpression: (keyExpression: KeyExpression) => T;
     visitGroupingExpression: (groupingExpression: GroupingExpression) => T;
-    visitRootExpression: (rootExpression: RootExpression) => T;
     visitMapExpression: (mapExpression: MapExpression) => T;
     visitListExpression: (listExpression: ListExpression) => T;
     visitLinkExpression: (linkExpression: LinkExpression) => T;
@@ -53,28 +51,6 @@ export class AssignExpression extends Expression {
 }
 
 
-export class KeyExpression extends Expression {
-    public name: Token;
-    public value: Expression;
-
-    constructor(
-        name: Token,
-        value: Expression,
-    ) {
-        super();
-
-        this.name = name;
-        this.value = value;
-    }
-
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitKeyExpression(this);
-    }
-}
-
-
 export class GroupingExpression extends Expression {
     public expression: Expression;
 
@@ -90,25 +66,6 @@ export class GroupingExpression extends Expression {
         visitor: Visitor<T>,
     ) {
         return visitor.visitGroupingExpression(this);
-    }
-}
-
-
-export class RootExpression extends Expression {
-    public expression: Expression[];
-
-    constructor(
-        expression: Expression[],
-    ) {
-        super();
-
-        this.expression = expression;
-    }
-
-    accept<T>(
-        visitor: Visitor<T>,
-    ) {
-        return visitor.visitRootExpression(this);
     }
 }
 
@@ -130,7 +87,6 @@ export class MapExpression extends Expression {
         return visitor.visitMapExpression(this);
     }
 }
-
 
 
 export class ListExpression extends Expression {
@@ -222,12 +178,6 @@ export class ASTPrinter implements Visitor<string> {
         return assignExpression.name.toString();
     }
 
-    public visitKeyExpression(
-        keyExpression: KeyExpression,
-    ) {
-        return keyExpression.name.toString();
-    }
-
     public visitGroupingExpression(
         groupingExpression: GroupingExpression,
     ) {
@@ -235,12 +185,6 @@ export class ASTPrinter implements Visitor<string> {
             'group',
             groupingExpression.expression,
         );
-    }
-
-    public visitRootExpression(
-        rootExpression: RootExpression,
-    ) {
-        return '';
     }
 
     public visitMapExpression(

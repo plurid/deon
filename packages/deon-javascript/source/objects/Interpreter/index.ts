@@ -461,18 +461,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return literalExpression.value;
     }
 
-    public visitKeyExpression(
-        expression: Expression.KeyExpression,
-    ) {
-
-    }
-
-    public visitRootExpression(
-        expression: Expression.RootExpression,
-    ) {
-
-    }
-
     public visitMapExpression(
         expression: Expression.MapExpression,
     ) {
@@ -632,81 +620,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         expression: Expression.Expression,
     ): any {
         return expression.accept(this);
-    }
-
-    private isTruthy(
-        object: any,
-    ) {
-        if (object === null) {
-            return false;
-        }
-
-        if (typeof object === 'boolean') {
-            return object;
-        }
-
-        return true;
-    }
-
-    private isEqual(
-        a: any,
-        b: any,
-    ) {
-        // nil is only equal to nil.
-        if (a === null && b === null) {
-            return true;
-        }
-
-        if (a === null) {
-            return false;
-        }
-
-        if (Object.keys(a).length !== Object.keys(b).length) {
-            return false;
-        }
-
-        return a === b;
-    }
-
-    private checkNumberOperand(
-        operator: Token,
-        operand: any,
-    ) {
-        if (typeof operand === 'number') {
-            return;
-        }
-
-        // throw new RuntimeError(operator, 'Operand must be a number.');
-    }
-
-    private checkNumberOperands(
-        operator: Token,
-        left: any,
-        right: any,
-    ) {
-        if (typeof left === 'number' && typeof right === 'number') {
-            return;
-        }
-
-        // throw new RuntimeError(operator, 'Operands must be numbers.');
-    }
-
-    private stringify(
-        object: any,
-    ) {
-        if (object === null) {
-            return 'nil';
-        }
-
-        if (typeof object === 'number') {
-            let text = object.toString();
-            if (text.endsWith(".0")) {
-                text = text.substring(0, text.length - 2);
-            }
-            return text;
-        }
-
-        return object.toString();
     }
 
     private lookUpVariable(
