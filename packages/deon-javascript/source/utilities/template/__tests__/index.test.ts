@@ -4,16 +4,30 @@
         deon,
         deonSynchronous,
     } from '../';
+
+    import {
+        log,
+    } from '../../log';
+
+    import {
+        typer,
+    } from '../../typer';
+
+    import {
+        compareTimeBenchmark,
+        suites,
+    } from '../../test';
     // #endregion external
 // #endregion imports
 
 
 
 // #region module
-describe('template literal', () => {
+describe(suites.template, () => {
     it('simple', async () => {
         const anotherValue = 'anotherValue';
 
+        const start = Date.now();
         const data = await deon`
             {
                 aKey aValue
@@ -22,14 +36,27 @@ describe('template literal', () => {
 
             anotherKey ${anotherValue}
         `;
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.aKey).toEqual('aValue');
         expect(data.anotherKey).toEqual('anotherValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.template} - simple`,
+        );
     });
+
+
 
     it('simple synchronous', () => {
         const anotherValue = 'anotherValue';
 
+        const start = Date.now();
         const data = deonSynchronous`
             {
                 aKey aValue
@@ -38,9 +65,19 @@ describe('template literal', () => {
 
             anotherKey ${anotherValue}
         `;
+        const end = Date.now();
+        // log(data);
+
 
         expect(data.aKey).toEqual('aValue');
         expect(data.anotherKey).toEqual('anotherValue');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.template} - simple synchronous`,
+        );
     });
 });
 // #endregion module
