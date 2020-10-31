@@ -2,6 +2,7 @@
     // #region external
     import {
         deon,
+        deonSynchronous,
     } from '../';
     // #endregion external
 // #endregion imports
@@ -14,6 +15,22 @@ describe('template literal', () => {
         const anotherValue = 'anotherValue';
 
         const data = await deon`
+            {
+                aKey aValue
+                #anotherKey
+            }
+
+            anotherKey ${anotherValue}
+        `;
+
+        expect(data.aKey).toEqual('aValue');
+        expect(data.anotherKey).toEqual('anotherValue');
+    });
+
+    it('simple synchronous', () => {
+        const anotherValue = 'anotherValue';
+
+        const data = deonSynchronous`
             {
                 aKey aValue
                 #anotherKey
