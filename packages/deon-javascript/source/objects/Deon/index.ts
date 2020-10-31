@@ -112,7 +112,7 @@ class Deon {
     }
 
     /**
-     * Parse deon string `data`.
+     * Parse `deon` data.
      *
      * @param data
      * @param options
@@ -162,6 +162,42 @@ class Deon {
             interpretOptions,
         );
 
+        return interpretedData;
+    }
+
+    /**
+     * Parse `deon` data synchronously.
+     *
+     * `import` and `inject` features are ignored.
+     *
+     * @param data
+     * @param options
+     */
+    parseSync (
+        data: string,
+        options?: PartialDeonParseOptions,
+    ) {
+        const scanner = new Scanner(
+            data,
+            this.error,
+        );
+        const tokens = scanner.scanTokens();
+
+        const parser = new Parser(
+            tokens,
+            this.error,
+        );
+        const statements = parser.parse();
+
+        const interpretOptions: DeonInterpreterOptions = {
+            file: this.parsedFile,
+            parseOptions: options,
+        };
+
+        const interpretedData = this.interpreter.interpretSync(
+            statements,
+            interpretOptions,
+        );
         return interpretedData;
     }
 

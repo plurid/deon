@@ -13,13 +13,31 @@ const deon = async (
 ) => {
     let raw = '';
 
-    strings.forEach((string, i) => {
-        raw += string + (values[i] || '');
+    strings.forEach((value, i) => {
+        raw += value + (values[i] || '');
     });
 
     const deonObject = new Deon();
 
     const result = await deonObject.parse(raw);
+
+    return result;
+}
+
+
+const deonSync = (
+    strings: TemplateStringsArray,
+    ...values: any[]
+) => {
+    let raw = '';
+
+    strings.forEach((value, i) => {
+        raw += value + (values[i] || '');
+    });
+
+    const deonObject = new Deon();
+
+    const result = deonObject.parseSync(raw);
 
     return result;
 }
@@ -30,5 +48,6 @@ const deon = async (
 // #region exports
 export {
     deon,
+    deonSync,
 };
 // #endregion exports

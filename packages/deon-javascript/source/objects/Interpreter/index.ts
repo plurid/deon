@@ -90,10 +90,57 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
+    public interpretSync(
+        statements: Statement.Statement[],
+        options: DeonInterpreterOptions,
+    ) {
+        try {
+            this.options = {
+                file: options.file,
+                parseOptions: {
+                    ...deonParseOptions,
+                    ...options.parseOptions,
+                },
+            };
+
+            const leaflinkStatements = [];
+            let rootStatement;
+
+            for (const statement of statements) {
+                if (
+                    statement instanceof Statement.LeaflinkStatement
+                ) {
+                    leaflinkStatements.push(statement);
+                }
+
+                if (statement instanceof Statement.RootStatement) {
+                    rootStatement = statement;
+                }
+            }
+
+            this.resolveLeaflinksSync([
+                ...leaflinkStatements,
+            ]);
+            this.resolveRootSync(rootStatement);
+
+            return this.extract();
+        } catch (error) {
+
+            return;
+        }
+    }
+
     public async execute(
         statement: Statement.Statement,
     ) {
         const value: any = await statement.accept(this);
+        return value;
+    }
+
+    public executeSync(
+        statement: Statement.Statement,
+    ) {
+        const value: any = statement.accept(this);
         return value;
     }
 
@@ -685,6 +732,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         await this.execute(statement);
     }
 
+    private resolveRootSync(
+        statement: Statement.RootStatement | undefined,
+    ) {
+        if (!statement) {
+            return;
+        }
+
+        this.executeSync(statement);
+    }
+
     private async resolveLeaflinks(
         statements: Statement.Statement[],
     ) {
@@ -713,6 +770,42 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 }
 
                 await this.execute(statement);
+
+                this.leaflinks = this.environment;
+            }
+
+            loop += 1;
+        }
+    }
+
+    private resolveLeaflinksSync(
+        statements: Statement.Statement[],
+    ) {
+        // TODO
+        // to loop once over the statements
+        // and create a dependency graph
+        // then loop again starting from the base of the graph
+        // and execute the statements
+
+        const resolvedIndex = this.resolveLeaflinksDepth(
+            statements,
+        );
+
+        let loop = 0;
+
+        while (loop < resolvedIndex) {
+            for (const statement of statements) {
+                if (
+                    loop > 1
+                    && (
+                        statement instanceof Statement.ImportStatement
+                        || statement instanceof Statement.InjectStatement
+                    )
+                ) {
+                    continue;
+                }
+
+                this.executeSync(statement);
 
                 this.leaflinks = this.environment;
             }
