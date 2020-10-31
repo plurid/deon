@@ -17,7 +17,7 @@
 
 // #region module
 describe(suites.synchronous, () => {
-    it('simple', () => {
+    it('simple', async () => {
         const dataValues = `
 {
     key value
@@ -30,10 +30,10 @@ describe(suites.synchronous, () => {
             dataValues,
         );
         const end = Date.now();
-        log(data);
+        // log(data);
 
 
-        expect(Object.keys(data).length).toEqual(0);
+        expect(data.key).toEqual('value');
 
         compareTimeBenchmark(
             start,
