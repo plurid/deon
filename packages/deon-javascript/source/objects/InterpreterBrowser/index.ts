@@ -15,16 +15,8 @@
     import Token from '../Token';
 
     import {
-        fetcher as asynchronousFetcher,
-    } from '../../utilities/fetcher/asynchronous';
-
-    import {
         fetchFromURL as asynchronousFetchFromURL
     } from '../../utilities/fetcher/asynchronous/url';
-
-    import {
-        fetcher as synchronousFetcher,
-    } from '../../utilities/fetcher/synchronous';
 
     import {
         fetchFromURL as synchronousFetchFromURL
