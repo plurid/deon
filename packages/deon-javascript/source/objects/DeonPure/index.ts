@@ -4,7 +4,7 @@
     import Token from '../Token';
     import Parser from '../Parser';
     // import Resolver from '../Resolver';
-    import Interpreter from '../InterpreterBrowser';
+    import Interpreter from '../InterpreterPure';
     import Stringifier from '../Stringifier';
 
     import {
@@ -22,7 +22,7 @@
 
 
 // #region module
-class DeonBrowser {
+class DeonPure {
     private interpreter: Interpreter = new Interpreter();
     private hadError = false;
     private parsedFile = '';
@@ -193,5 +193,5 @@ class DeonBrowser {
 
 
 // #region exports
-export default DeonBrowser;
+export default DeonPure;
 // #endregion exports

@@ -8,7 +8,7 @@
         deonParseOptions,
     } from '../../data/constants';
 
-    import Deon from '../DeonBrowser';
+    import Deon from '../DeonPure';
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
     import Environment from '../Environment';
@@ -31,7 +31,7 @@
 
 
 // #region module
-class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
+class InterpreterPure implements Expression.Visitor<any>, Statement.Visitor<any> {
     public globals: Environment = new Environment();
     public locals: Map<Expression.Expression, number> = new Map();
     private environment: Environment = this.globals;
@@ -944,5 +944,5 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
 // #region exports
-export default Interpreter;
+export default InterpreterPure;
 // #endregion exports

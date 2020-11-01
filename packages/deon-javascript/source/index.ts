@@ -8,7 +8,7 @@
     import cli from './cli';
 
     import Deon from './objects/Deon';
-    import DeonBrowser from './objects/DeonBrowser';
+    import DeonPure from './objects/DeonPure';
 
     import {
         typer,
@@ -20,9 +20,9 @@
     } from './utilities/template';
 
     import {
-        deon as deonBrowser,
-        deonSynchronous as deonSynchronousBrowser,
-    } from './utilities/template/browser';
+        deon as deonPure,
+        deonSynchronous as deonSynchronousPure,
+    } from './utilities/template/pure';
     // #endregion internal
 // #endregion imports
 
@@ -44,9 +44,9 @@ export {
     deon,
     deonSynchronous,
 
-    DeonBrowser,
-    deonBrowser,
-    deonSynchronousBrowser,
+    DeonPure,
+    deonPure,
+    deonSynchronousPure,
 };
 
 
