@@ -1,24 +1,27 @@
 {
-    packages [
-        ./packages/deon-grammar/vscode
-        ./packages/deon-javascript
-    ]
-
-    package {
-        manager yarn
-        publisher npm
-    }
-
+    #packages
+    #package
+    #commit
     yarnWorkspace false
-
-    commit {
-        engine git
-        combine true
-        root ''
-        fullFolder false
-        divider ' > '
-        message setup: package
-    }
-
     runFrom ../
+}
+
+
+packages [
+    ./packages/deon-grammar/vscode
+    ./packages/deon-javascript
+]
+
+package {
+    manager yarn
+    publisher npm
+}
+
+commit {
+    engine git
+    combine true
+    root ''
+    fullFolder false
+    divider ' > '
+    message setup: package
 }
