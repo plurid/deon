@@ -8,18 +8,18 @@
         deonParseOptions,
     } from '../../data/constants';
 
-    import Deon from '../Deon';
+    import Deon from '../DeonBrowser';
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
     import Environment from '../Environment';
     import Token from '../Token';
 
     import {
-        fetchFromURL as asynchronousFetchFromURL
+        fetchFromURL as asynchronousFetchFromURL,
     } from '../../utilities/fetcher/asynchronous/url';
 
     import {
-        fetchFromURL as synchronousFetchFromURL
+        fetchFromURL as synchronousFetchFromURL,
     } from '../../utilities/fetcher/synchronous/url';
 
     import {
