@@ -168,8 +168,6 @@ class Deon {
     /**
      * Parse `deon` data synchronously.
      *
-     * `import` and `inject` features are ignored.
-     *
      * @param data
      * @param options
      */
