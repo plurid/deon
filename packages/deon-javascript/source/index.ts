@@ -31,6 +31,7 @@
 // #region exports
 export * from './data/interfaces';
 
+
 export {
     // constants
     DEON_FILENAME_EXTENSION,
@@ -47,6 +48,7 @@ export {
     deonBrowser,
     deonSynchronousBrowser,
 };
+
 
 export default Deon;
 // #endregion exports
