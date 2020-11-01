@@ -7,8 +7,8 @@
 
 
 // #region module
-const log = (
-    data: any,
+const log = <T>(
+    data: T,
 ) => {
     console.log(
         utilities.inspect(
