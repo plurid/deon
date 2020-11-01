@@ -10,15 +10,15 @@
 const log = <T>(
     data: T,
 ) => {
-    console.log(
-        utilities.inspect(
-            data,
-            {
-                showHidden: false,
-                depth: null,
-            },
-        ),
+    const text = utilities.inspect(
+        data,
+        {
+            showHidden: false,
+            depth: null,
+        },
     );
+
+    console.log(text);
 }
 // #endregion module
 

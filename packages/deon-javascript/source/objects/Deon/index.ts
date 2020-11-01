@@ -5,6 +5,10 @@
     } from 'fs';
 
     import path from 'path';
+
+    import {
+        program,
+    } from 'commander';
     // #endregion libraries
 
 
@@ -48,24 +52,36 @@ class Deon {
     public async demand(
         args: string[],
     ) {
-        const length = args.length;
+        program
+            .name('deon')
+            .version('0.0.26', '-v, --version')
+            .arguments('<file>')
+            .option(
+                '-o, --output <type>',
+                'output type: deon, json',
+                'deon',
+            ).action(async (
+                file: string,
+                options: any,
+            ) => {
+                const data: any = await this.parseFile(
+                    file,
+                );
 
-        if (length > 3) {
-            console.log('\n\tUsage: deon <source-file>\n');
-            return;
-        }
+                switch (options.output) {
+                    case 'deon':
+                        log(data);
+                        break;
+                    case 'json':
+                        log(JSON.stringify(data));
+                        break;
+                    default:
+                        console.log(`Unsupported output ${options.output}`);
+                        break;
+                }
+            });
 
-        if (length === 3) {
-            const data = await this.parseFile(
-                args[2],
-            );
-
-            if (data) {
-                log(JSON.stringify(data));
-            }
-
-            return;
-        }
+        await program.parseAsync(args);
 
         return;
     }
