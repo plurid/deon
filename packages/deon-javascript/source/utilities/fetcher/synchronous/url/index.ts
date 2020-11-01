@@ -48,7 +48,11 @@ const fetchFromURL = (
         },
     );
 
-    const data = response.getBody();
+    const body = response.getBody();
+
+    const data = typeof body === 'string'
+        ? body
+        : body.toString('utf-8');
 
     const extname = path.extname(url);
     const filetype = type === 'inject'

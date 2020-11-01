@@ -15,8 +15,12 @@
     import Token from '../Token';
 
     import {
-        fetcher,
+        fetcher as asynchronousFetcher,
     } from '../../utilities/fetcher/asynchronous';
+
+    import {
+        fetcher as synchronousFetcher,
+    } from '../../utilities/fetcher/synchronous';
     // #endregion external
 // #endregion imports
 
@@ -36,6 +40,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             ...deonParseOptions,
         },
     };
+    private interpretation: 'synchronous' | 'asynchronous' | '' = '';
 
 
     public async interpret(
@@ -43,6 +48,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         options: DeonInterpreterOptions,
     ) {
         try {
+            this.interpretation = 'asynchronous';
+
             this.options = {
                 file: options.file,
                 parseOptions: {
@@ -94,6 +101,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         options: DeonInterpreterOptions,
     ) {
         try {
+            this.interpretation = 'synchronous';
+
             this.options = {
                 file: options.file,
                 parseOptions: {
@@ -102,6 +111,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 },
             };
 
+            const injectStatements: Statement.Statement[] = [];
+            const importStatements: Statement.Statement[] = [];
             const leaflinkStatements: Statement.Statement[] = [];
             let rootStatement;
 
@@ -115,9 +126,19 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 if (statement instanceof Statement.RootStatement) {
                     rootStatement = statement;
                 }
+
+                if (statement instanceof Statement.ImportStatement) {
+                    importStatements.push(statement);
+                }
+
+                if (statement instanceof Statement.InjectStatement) {
+                    injectStatements.push(statement);
+                }
             }
 
             this.resolveLeaflinksSynchronous([
+                ...injectStatements,
+                ...importStatements,
                 ...leaflinkStatements,
             ]);
             this.resolveRoot(rootStatement);
@@ -131,6 +152,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public async execute(
         statement: Statement.Statement,
     ) {
+        if (statement instanceof Statement.ImportStatement) {
+            await this.visitImportStatementAsynchronous(statement);
+            return;
+        }
+
+        if (statement instanceof Statement.InjectStatement) {
+            await this.visitInjectStatementAsynchronous(statement);
+            return;
+        }
+
         const value: any = await statement.accept(this);
         return value;
     }
@@ -138,8 +169,17 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public executeSynchronous(
         statement: Statement.Statement,
     ) {
-        const value: any = statement.accept(this);
+        if (statement instanceof Statement.ImportStatement) {
+            this.visitImportStatementSynchronous(statement);
+            return;
+        }
 
+        if (statement instanceof Statement.InjectStatement) {
+            this.visitInjectStatementSynchronous(statement);
+            return;
+        }
+
+        const value: any = statement.accept(this);
         return value;
     }
 
@@ -191,13 +231,23 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
     /** STATEMENTS */
-    public async visitImportStatement(
+    public visitImportStatement(
+        statement: Statement.ImportStatement,
+    ) {
+        if (this.interpretation === 'asynchronous') {
+            this.visitImportStatementAsynchronous(statement);
+        } else {
+            this.visitImportStatementSynchronous(statement);
+        }
+    }
+
+    private async visitImportStatementAsynchronous(
         statement: Statement.ImportStatement,
     ) {
         try {
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = await fetcher(
+            const result = await asynchronousFetcher(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
@@ -235,13 +285,100 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         }
     }
 
-    public async visitInjectStatement(
+    private visitImportStatementSynchronous(
+        statement: Statement.ImportStatement,
+    ) {
+        try {
+            const authenticator = statement.authenticator?.lexeme;
+
+            const result = synchronousFetcher(
+                statement.path.lexeme,
+                this.options,
+                authenticator,
+            );
+
+            if (!result) {
+                return;
+            }
+
+            const {
+                data,
+                filetype,
+            } = result;
+
+            let parsedData;
+            const deon = new Deon();
+
+            switch (filetype) {
+                case '.deon':
+                    parsedData = deon.parseSynchronous(data);
+                    break;
+                case '.json':
+                    parsedData = JSON.parse(data);
+                    break;
+            }
+
+            this.environment.define(
+                statement.name.lexeme,
+                parsedData,
+            );
+
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    public visitInjectStatement(
+        statement: Statement.InjectStatement,
+    ) {
+        if (this.interpretation === 'asynchronous') {
+            this.visitInjectStatementAsynchronous(statement);
+        } else {
+            this.visitInjectStatementSynchronous(statement);
+        }
+    }
+
+    private async visitInjectStatementAsynchronous(
         statement: Statement.InjectStatement,
     ) {
         try {
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = await fetcher(
+            const result = await asynchronousFetcher(
+                statement.path.lexeme,
+                this.options,
+                authenticator,
+                'inject',
+            );
+            console.log('visitInjectStatementAsynchronous', statement, this.interpretation, result);
+
+            if (!result) {
+                return;
+            }
+
+            const {
+                data,
+            } = result;
+
+            this.environment.define(
+                statement.name.lexeme,
+                data,
+            );
+
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    private visitInjectStatementSynchronous(
+        statement: Statement.InjectStatement,
+    ) {
+        try {
+            const authenticator = statement.authenticator?.lexeme;
+
+            const result = synchronousFetcher(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
