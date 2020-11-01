@@ -10,6 +10,13 @@ const mapToObject = <K, V>(
 
     return obj;
 }
+
+
+const isURL = (
+    path: string,
+) => {
+    return path.startsWith('http');
+}
 // #endregion module
 
 
@@ -17,5 +24,6 @@ const mapToObject = <K, V>(
 // #region exports
 export {
     mapToObject,
+    isURL,
 };
 // #endregion exports

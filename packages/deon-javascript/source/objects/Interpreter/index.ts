@@ -16,7 +16,7 @@
 
     import {
         fetcher,
-    } from '../../utilities/fetcher';
+    } from '../../utilities/fetcher/asynchronous';
     // #endregion external
 // #endregion imports
 
