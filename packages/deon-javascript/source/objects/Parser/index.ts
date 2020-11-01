@@ -30,7 +30,7 @@ class Parser {
 
 
     public parse() {
-        const statements: any[] = [];
+        const statements: (Statement.Statement | Expression.Expression)[] = [];
 
         while (!this.isAtEnd()) {
             const declaration = this.declaration();

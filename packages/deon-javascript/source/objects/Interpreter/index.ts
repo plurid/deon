@@ -39,7 +39,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
     public async interpret(
-        statements: Statement.Statement[],
+        statements: (Statement.Statement | Expression.Expression)[],
         options: DeonInterpreterOptions,
     ) {
         try {
@@ -51,9 +51,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 },
             };
 
-            const injectStatements = [];
-            const importStatements = [];
-            const leaflinkStatements = [];
+            const injectStatements: Statement.Statement[] = [];
+            const importStatements: Statement.Statement[] = [];
+            const leaflinkStatements: Statement.Statement[] = [];
             let rootStatement;
 
             for (const statement of statements) {
@@ -90,7 +90,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     }
 
     public interpretSynchronous(
-        statements: Statement.Statement[],
+        statements: (Statement.Statement | Expression.Expression)[],
         options: DeonInterpreterOptions,
     ) {
         try {
@@ -102,7 +102,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 },
             };
 
-            const leaflinkStatements = [];
+            const leaflinkStatements: Statement.Statement[] = [];
             let rootStatement;
 
             for (const statement of statements) {

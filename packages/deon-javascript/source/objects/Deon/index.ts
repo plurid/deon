@@ -76,7 +76,7 @@ class Deon {
      * @param file
      * @param options
      */
-    public async parseFile(
+    public async parseFile<T>(
         file: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -93,7 +93,7 @@ class Deon {
                 'utf-8',
             );
 
-            const parsed = this.parse(
+            const parsed: T = await this.parse(
                 data,
                 options,
             );
