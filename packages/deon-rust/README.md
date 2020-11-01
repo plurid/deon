@@ -373,7 +373,7 @@ and will be implemented for:
 
 ## Installs
 
-`deon` can be installed locally with the appropriate package manager for each implementation language, or can be installed globally as a CLI
+`deon` can be installed locally with the appropriate package manager for each implementation language, or can be installed globally as a `Command-Line Interface` tool
 
 using the `NodeJS` runtime
 
@@ -386,6 +386,18 @@ or download the appropriate [binary](https://plurid.link/binaries-deon)
 + [MacOS](https://files.plurid.com/binaries/deon/macos)
 + [Linux](https://files.plurid.com/binaries/deon/linux)
 + [Windows](https://files.plurid.com/binaries/deon/windows)
+
+
+### CLI
+
+```
+Usage: deon [options] <file>
+
+Options:
+  -v, --version        output the version number
+  -o, --output <type>  output type: deon, json (default: "deon")
+  -h, --help           display help for command
+```
 
 
 
