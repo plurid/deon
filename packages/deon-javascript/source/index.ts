@@ -1,5 +1,10 @@
 // #region imports
     // #region internal
+    import {
+        DEON_FILENAME_EXTENSION,
+        DEON_MEDIA_TYPE,
+    } from './data/constants';
+
     import cli from './cli';
 
     import Deon from './objects/Deon';
@@ -24,10 +29,15 @@
 
 
 // #region exports
-export * from './data/constants';
 export * from './data/interfaces';
 
 export {
+    // constants
+    DEON_FILENAME_EXTENSION,
+    DEON_MEDIA_TYPE,
+
+
+    // functionalities
     cli,
     typer,
     deon,
