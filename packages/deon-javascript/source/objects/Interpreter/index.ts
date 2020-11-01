@@ -351,7 +351,6 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 authenticator,
                 'inject',
             );
-            console.log('visitInjectStatementAsynchronous', statement, this.interpretation, result);
 
             if (!result) {
                 return;
