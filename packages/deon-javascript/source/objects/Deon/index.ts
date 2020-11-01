@@ -45,7 +45,7 @@ class Deon {
      *
      * @param args
      */
-    async demand(
+    public async demand(
         args: string[],
     ) {
         const length = args.length;
@@ -76,7 +76,7 @@ class Deon {
      * @param file
      * @param options
      */
-    async parseFile(
+    public async parseFile(
         file: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -117,7 +117,7 @@ class Deon {
      * @param data
      * @param options
      */
-    async parse<T = any>(
+    public async parse<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -173,7 +173,7 @@ class Deon {
      * @param data
      * @param options
      */
-    parseSynchronous<T = any>(
+    public parseSynchronous<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
     ) {
@@ -207,7 +207,7 @@ class Deon {
      * @param data
      * @param options
      */
-    stringify(
+    public stringify(
         data: any,
         options?: PartialDeonStringifyOptions,
     ) {
@@ -223,7 +223,7 @@ class Deon {
      *
      * @param data
      */
-    canonical(
+    public canonical(
         data: string,
     ) {
         const parsed = this.parse(data);
@@ -238,7 +238,7 @@ class Deon {
      * @param entity
      * @param message
      */
-    error(
+    private error(
         entity: number | Token,
         message: string,
     ) {
@@ -263,7 +263,7 @@ class Deon {
      * @param where
      * @param message
      */
-    report(
+    private report(
         line: number,
         where: string,
         message: string,
