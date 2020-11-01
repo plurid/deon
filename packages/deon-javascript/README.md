@@ -55,6 +55,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [In Use](#in-use)
 + [Usages](#usages)
 + [Idiomaticity](#idiomaticity)
++ [Specifics](#specifics)
 + [Packages](#packages)
 
 
@@ -369,6 +370,7 @@ and will be implemented for:
 + [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
 + [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
 
+See [specifics](#specifics) for implementation details.
 
 
 ## Installs
@@ -1242,6 +1244,119 @@ commit {
     fullFolder true
     divider ' > '
     message setup: package
+}
+```
+
+
+
+## Specifics
+
+### `JavaScript` / `TypeScript`
+
+The `JavaScript` / `TypeScript` can be used in the `NodeJS` runtime through the `Deon` object, or the `deon` template literal.
+
+``` typescript
+import Deon, {
+    deon,
+} from '@plurid/deon';
+```
+
+The parsing of `deon` data can be achieving asynchronously or synchronously
+
+``` typescript
+import Deon, {
+    deon,
+    deonSynchronous,
+} from '@plurid/deon';
+
+const main = async () => {
+    const deonData = `
+        {
+            key value
+        }
+    `;
+
+    const deonObject = new Deon();
+    const parsedObjectAsynchronously = await deonObject.parse(deonData);
+    const parsedObjectSynchronously = deonObject.parseSynchronous(deonData);
+
+    const parsedTemplateAsynchronously = await deon`
+        {
+            key value
+        }
+    `;
+    const parsedTemplateSynchronously = deonSynchronous`
+        {
+            key value
+        }
+    `;
+}
+```
+
+Synchronous parsing is to be used when the `deon` data does not rely on `import` or `inject` features, naturally asynchronous operations. However, when the parsing operation is to be used in a blockable environment (such as the CLI), synchronous parsing can be used for `deon` data with `imports` and `injects` just as well as asynchronous parsing.
+
+`deon` data can also be parsed in the browser, or other sandboxed environments, using the `DeonPure` object, or the `deonPure` template literal.
+
+``` typescript
+import {
+    DeonPure,
+    deonPure,
+    deonSynchronousPure,
+} from '@plurid/deon';
+
+
+const main = async () => {
+    const deonData = `
+        {
+            key value
+        }
+    `;
+
+    const deonObject = new DeonPure();
+    const parsedObjectAsynchronously = await deonObject.parse(deonData);
+    const parsedObjectSynchronously = deonObject.parseSynchronous(deonData);
+
+    const parsedTemplateAsynchronously = await deonPure`
+        {
+            key value
+        }
+    `;
+    const parsedTemplateSynchronously = deonSynchronousPure`
+        {
+            key value
+        }
+    `;
+}
+```
+
+The `deon` `Pure` implementation does not have access to the file system for `import` and `inject` features.
+
+
+### Rust
+
+In order to parse `deon` data the `Deon` implementation or the `deon!` macro can be used.
+
+``` rust
+use deon::{
+    Deon,
+    deon!,
+}
+
+fn main() {
+    let deon_data = "
+        {
+            key value
+        }
+    ";
+
+    let deon_object = Deon::new();
+    let deon_object_parsed = Deon::parse(deon_data);
+
+    let deon_macro_parsed = deon!(
+        {
+            key value
+        }
+    );
 }
 ```
 
