@@ -3,6 +3,7 @@
     import cli from './cli';
 
     import Deon from './objects/Deon';
+    import DeonBrowser from './objects/DeonBrowser';
 
     import {
         typer,
@@ -12,6 +13,11 @@
         deon,
         deonSynchronous,
     } from './utilities/template';
+
+    import {
+        deon as deonBrowser,
+        deonSynchronous as deonSynchronousBrowser,
+    } from './utilities/template/browser';
     // #endregion internal
 // #endregion imports
 
@@ -26,6 +32,10 @@ export {
     typer,
     deon,
     deonSynchronous,
+
+    DeonBrowser,
+    deonBrowser,
+    deonSynchronousBrowser,
 };
 
 export default Deon;
