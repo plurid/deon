@@ -76,7 +76,7 @@ class Deon {
                         log(JSON.stringify(data));
                         break;
                     default:
-                        console.log(`Unsupported output ${options.output}`);
+                        console.log(`Unsupported output '${options.output}'`);
                         break;
                 }
             });
