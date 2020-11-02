@@ -40,6 +40,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Example](#example)
 + [Implementations](#implementations)
 + [Installs](#installs)
++ [Service](#service)
 + [General](#general)
 + [Values](#values)
 + [Maps](#maps)
@@ -399,6 +400,30 @@ Options:
   -v, --version        output the version number
   -o, --output <type>  output type: deon, json (default: "deon")
   -h, --help           display help for command
+```
+
+
+
+## Service
+
+The `deon` data parsing can be explored on [`deon.plurid.com`](https://deon.plurid.com) and `deon.plurid.com/parse` can be used for programmatic `POST` requests.
+
+``` bash
+curl \
+    -X POST \
+    -H 'Content-Type: application/deon' \
+    -d '{ key value }' \
+    https://deon.plurid.com/parse
+```
+
+The response is `json` by default, but can be specified through the `kind` query parameter (`json` or `yaml`).
+
+``` bash
+curl \
+    -X POST \
+    -H 'Content-Type: application/deon' \
+    -d '{ key value }' \
+    https://deon.plurid.com/parse?kind=yaml
 ```
 
 
