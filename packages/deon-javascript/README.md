@@ -416,7 +416,7 @@ curl \
     https://deon.plurid.com/parse
 ```
 
-The response is `json` by default, but can be specified through the `kind` query parameter (`json`, `yaml`, or `toml`).
+The response is `json` by default, but can be specified through the `kind` query parameter (`json`, `yaml`, `toml`, or `xml`).
 
 ``` bash
 curl \
