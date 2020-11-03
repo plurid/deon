@@ -7,6 +7,7 @@
 
 mod data;
 mod objects;
+mod macros;
 
 
 pub use objects::deon::{Deon};
