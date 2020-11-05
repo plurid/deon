@@ -54,7 +54,7 @@ class Deon {
     ) {
         program
             .name('deon')
-            .version('0.0.31', '-v, --version')
+            .version('0.0.32', '-v, --version')
             .arguments('<file>')
             .option(
                 '-o, --output <type>',
