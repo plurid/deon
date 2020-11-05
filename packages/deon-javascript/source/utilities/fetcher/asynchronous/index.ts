@@ -61,6 +61,7 @@ const fetcher = async (
         const {
             data,
             filetype,
+            filebase,
         } = await fetchFromFile(
             file,
             options,
@@ -70,6 +71,7 @@ const fetcher = async (
         return {
             data,
             filetype,
+            filebase,
         };
     } catch (error) {
         return;

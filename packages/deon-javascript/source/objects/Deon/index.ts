@@ -111,7 +111,10 @@ class Deon {
 
             const parsed: T = await this.parse(
                 data,
-                options,
+                {
+                    ...options,
+                    filebase: path.dirname(filepath),
+                },
             );
 
             if (this.hadError) {

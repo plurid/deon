@@ -260,6 +260,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             const {
                 data,
                 filetype,
+                filebase,
             } = result;
 
             let parsedData;
@@ -267,7 +268,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             switch (filetype) {
                 case '.deon':
-                    parsedData = await deon.parse(data);
+                    parsedData = await deon.parse(
+                        data,
+                        {
+                            filebase,
+                        },
+                    );
                     break;
                 case '.json':
                     parsedData = JSON.parse(data);
@@ -304,6 +310,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             const {
                 data,
                 filetype,
+                filebase,
             } = result;
 
             let parsedData;
@@ -311,7 +318,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             switch (filetype) {
                 case '.deon':
-                    parsedData = deon.parseSynchronous(data);
+                    parsedData = deon.parseSynchronous(
+                        data,
+                        {
+                            filebase,
+                        },
+                    );
                     break;
                 case '.json':
                     parsedData = JSON.parse(data);

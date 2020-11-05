@@ -61,6 +61,7 @@ const fetcher = (
         const {
             data,
             filetype,
+            filebase,
         } = fetchFromFile(
             file,
             options,
@@ -70,6 +71,7 @@ const fetcher = (
         return {
             data,
             filetype,
+            filebase,
         };
     } catch (error) {
         return;

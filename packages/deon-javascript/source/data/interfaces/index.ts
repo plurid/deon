@@ -1,5 +1,6 @@
 // #region module
 export interface DeonParseOptions {
+    filebase: string;
     absolutePaths: Record<string, string>,
     authorization: Record<string, string>,
     datasignFiles: string[];

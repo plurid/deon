@@ -28,13 +28,18 @@ const fetchFromFile = (
 ) => {
     const {
         file: parsedFile,
+        parseOptions,
     } = options;
+
+    const filebase = parseOptions?.filebase
+        ? parseOptions?.filebase
+        : process.cwd();
 
     const basePath = parsedFile
         ? path.isAbsolute(parsedFile)
             ? path.dirname(parsedFile)
-            : path.dirname(path.join(process.cwd(), parsedFile))
-        : process.cwd();
+            : path.dirname(path.join(filebase, parsedFile))
+        : filebase;
 
     const extname = path.extname(file);
 
@@ -65,6 +70,7 @@ const fetchFromFile = (
     return {
         data,
         filetype,
+        filebase: path.dirname(filepath),
     };
 }
 // #endregion module
