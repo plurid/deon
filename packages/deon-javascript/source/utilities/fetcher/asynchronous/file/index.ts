@@ -40,7 +40,12 @@ const fetchFromFile = async (
     const basePath = parsedFile
         ? path.isAbsolute(parsedFile)
             ? path.dirname(parsedFile)
-            : path.dirname(path.join(filebase, parsedFile))
+            : path.dirname(
+                path.join(
+                    filebase,
+                    path.basename(parsedFile)
+                )
+            )
         : filebase;
 
     const extname = path.extname(file);

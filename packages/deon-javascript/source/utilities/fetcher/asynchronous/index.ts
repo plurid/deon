@@ -74,6 +74,7 @@ const fetcher = async (
             filebase,
         };
     } catch (error) {
+        console.log('error', error);
         return;
     }
 }
