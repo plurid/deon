@@ -584,6 +584,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                     this.environment.define(i + '', char);
                 }
             }
+
+            // to handle map
+            if (
+                typeof leaflink === 'object'
+                && !Array.isArray(leaflink)
+            ) {
+                for (const [key, value] of Object.entries(leaflink)) {
+                    this.environment.define(key, value);
+                }
+            }
         }
 
         return null;

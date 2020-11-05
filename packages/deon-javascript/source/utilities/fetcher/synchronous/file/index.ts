@@ -13,8 +13,8 @@
     } from '../../../../data/interfaces';
 
     import {
-        DEON_FILENAME_EXTENSION,
-    } from '../../../../data/constants';
+        solveExtensionName,
+    } from '../../../general';
     // #endregion external
 // #endregion imports
 
@@ -37,10 +37,18 @@ const fetchFromFile = (
         : process.cwd();
 
     const extname = path.extname(file);
-    const filetype = type === 'inject'
-        ? extname
-        : extname || DEON_FILENAME_EXTENSION;
-    const resolvedFile = file + filetype;
+
+    const {
+        filetype,
+        concatenate,
+    } = solveExtensionName(
+        type || 'import',
+        extname,
+    );
+
+    const resolvedFile = concatenate
+        ? file + filetype
+        : file;
 
     const filepath = path.isAbsolute(resolvedFile)
         ? resolvedFile
