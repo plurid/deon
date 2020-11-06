@@ -24,6 +24,7 @@ const fetcherDefaultInjectHeaders = {
 
 
 const deonParseOptions: DeonParseOptions = {
+    filebase: '',
     absolutePaths: {},
     authorization: {},
     datasignFiles: [],

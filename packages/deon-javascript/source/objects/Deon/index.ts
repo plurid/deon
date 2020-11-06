@@ -33,6 +33,10 @@
     import {
         log,
     } from '../../utilities/log';
+
+    import {
+        typer,
+    } from '../../utilities/typer';
     // #endregion external
 // #endregion imports
 
@@ -60,6 +64,11 @@ class Deon {
                 '-o, --output <type>',
                 'output type: deon, json',
                 'deon',
+            )
+            .option(
+                '-t, --typed',
+                'typed output',
+                false,
             ).action(async (
                 file: string,
                 options: any,
@@ -73,7 +82,17 @@ class Deon {
                         log(data);
                         break;
                     case 'json':
-                        log(JSON.stringify(data));
+                        if (options.typed) {
+                            log(
+                                JSON.stringify(
+                                    typer(data)
+                                )
+                            );
+                        } else {
+                            log(
+                                JSON.stringify(data)
+                            );
+                        }
                         break;
                     default:
                         console.log(`Unsupported output '${options.output}'`);
