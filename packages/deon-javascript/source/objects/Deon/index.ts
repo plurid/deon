@@ -21,6 +21,10 @@
     import Stringifier from '../Stringifier';
 
     import {
+        DEON_CLI_VERSION,
+    } from '../../data/constants';
+
+    import {
         TokenType,
     } from '../../data/enumerations';
 
@@ -58,7 +62,7 @@ class Deon {
     ) {
         program
             .name('deon')
-            .version('0.0.32', '-v, --version')
+            .version(DEON_CLI_VERSION, '-v, --version')
             .arguments('<file>')
             .option(
                 '-o, --output <type>',

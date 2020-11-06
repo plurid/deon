@@ -10,6 +10,8 @@
 
 
 // #region module
+const DEON_CLI_VERSION = '0.0.33';
+
 const DEON_FILENAME_EXTENSION = '.deon';
 const DEON_MEDIA_TYPE = 'application/deon';
 
@@ -53,6 +55,8 @@ const SPACING_FOUR = SPACING_TWO + SPACING_TWO;
 
 // #region exports
 export {
+    DEON_CLI_VERSION,
+
     DEON_FILENAME_EXTENSION,
     DEON_MEDIA_TYPE,
     fetcherDefaultImportHeaders,
