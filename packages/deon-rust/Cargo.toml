@@ -2,7 +2,7 @@
 name = "deon"
 version = "0.0.0"
 authors = ["ly3xqhl8g9 <ly3xqhl8g9@plurid.com>"]
-license = "MIT"
+license = "DEL"
 description = "DeObject Notation Format of Structured Strings"
 readme = "README.md"
 homepage = "https://github.com/plurid/deon"
