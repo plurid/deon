@@ -399,6 +399,7 @@ Usage: deon [options] <file>
 Options:
   -v, --version        output the version number
   -o, --output <type>  output type: deon, json (default: "deon")
+  -t, --typed          typed output (default: false)
   -h, --help           display help for command
 ```
 
