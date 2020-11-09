@@ -20,20 +20,20 @@
 // #region module
 class Stringifier {
     private dataString = '';
-    private options: PartialDeonStringifyOptions;
+    // private options?: PartialDeonStringifyOptions;
     private baseSpacing;
     private indent = 0;
     private baseData: any;
 
 
     constructor(
-        options: PartialDeonStringifyOptions,
+        options?: PartialDeonStringifyOptions,
     ) {
-        const baseSpacing = options.indentation === 2
+        const baseSpacing = options?.indentation === 2
             ? SPACING_TWO
             : SPACING_FOUR;
 
-        this.options = options;
+        // this.options = options;
         this.baseSpacing = baseSpacing;
     }
 
