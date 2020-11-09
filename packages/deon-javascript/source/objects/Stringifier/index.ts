@@ -6,6 +6,10 @@
     } from '../../data/constants';
 
     import {
+        PartialDeonStringifyOptions,
+    } from '../../data/interfaces';
+
+    import {
         indentLevel,
     } from '../../utilities/indent';
     // #endregion external
@@ -16,15 +20,21 @@
 // #region module
 class Stringifier {
     private dataString = '';
-    private options: any;
+    private options: PartialDeonStringifyOptions;
+    private baseSpacing;
     private indent = 0;
     private baseData: any;
 
 
     constructor(
-        options: any,
+        options: PartialDeonStringifyOptions,
     ) {
+        const baseSpacing = options.indentation === 2
+            ? SPACING_TWO
+            : SPACING_FOUR;
+
         this.options = options;
+        this.baseSpacing = baseSpacing;
     }
 
 
@@ -84,11 +94,12 @@ class Stringifier {
          * Handles the spacing based on the previous item (`this.baseData`).
          */
         const beforeIndent = Array.isArray(this.baseData) && this.indent === 1
-            ? SPACING_FOUR
+            ? this.baseSpacing
             : !Array.isArray(this.baseData)
                 ? ''
                 : indentLevel(
                     this.indent,
+                    this.baseSpacing,
                 );
 
         this.dataString += beforeIndent + '{\n';
@@ -96,6 +107,7 @@ class Stringifier {
         this.indent += 1;
         const indent = indentLevel(
             this.indent,
+            this.baseSpacing,
         );
 
         for (const [key, value] of Object.entries(data)) {
@@ -113,6 +125,7 @@ class Stringifier {
         this.indent -= 1;
         const afterIndent = indentLevel(
             this.indent,
+            this.baseSpacing,
         );
 
         this.dataString += afterIndent + '}\n';
@@ -126,6 +139,7 @@ class Stringifier {
         this.indent += 1;
         const indent = indentLevel(
             this.indent,
+            this.baseSpacing,
         );
 
         for (const item of data) {
@@ -140,6 +154,7 @@ class Stringifier {
         this.indent -= 1;
         const afterIndent = indentLevel(
             this.indent,
+            this.baseSpacing,
         );
 
         this.dataString += afterIndent + ']\n';
