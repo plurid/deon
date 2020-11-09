@@ -17,12 +17,12 @@
     import {
         deon,
         deonSynchronous,
-    } from './utilities/template';
+    } from './utilities/template/deon';
 
     import {
-        deon as deonPure,
-        deonSynchronous as deonSynchronousPure,
-    } from './utilities/template/pure';
+        deonPure,
+        deonPureSynchronous,
+    } from './utilities/template/deonPure';
     // #endregion internal
 // #endregion imports
 
@@ -46,7 +46,7 @@ export {
 
     DeonPure,
     deonPure,
-    deonSynchronousPure,
+    deonPureSynchronous,
 };
 
 

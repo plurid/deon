@@ -7,16 +7,16 @@
 
     import {
         log,
-    } from '../../log';
+    } from '../../../log';
 
     import {
         typer,
-    } from '../../typer';
+    } from '../../../typer';
 
     import {
         compareTimeBenchmark,
         suites,
-    } from '../../test';
+    } from '../../../test';
     // #endregion external
 // #endregion imports
 

@@ -1,13 +1,13 @@
 // #region imports
     // #region external
-    import Deon from '../../objects/Deon';
+    import Deon from '../../../objects/DeonPure';
     // #endregion external
 // #endregion imports
 
 
 
 // #region module
-const deon = async <T = any>(
+const deonPure = async <T = any>(
     strings: TemplateStringsArray,
     ...values: any[]
 ): Promise<T> => {
@@ -25,7 +25,7 @@ const deon = async <T = any>(
 }
 
 
-const deonSynchronous = <T = any>(
+const deonPureSynchronous = <T = any>(
     strings: TemplateStringsArray,
     ...values: any[]
 ) => {
@@ -47,7 +47,7 @@ const deonSynchronous = <T = any>(
 
 // #region exports
 export {
-    deon,
-    deonSynchronous,
+    deonPure,
+    deonPureSynchronous,
 };
 // #endregion exports

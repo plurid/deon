@@ -1,6 +1,6 @@
 // #region imports
     // #region external
-    import Deon from '../../../objects/DeonPure';
+    import Deon from '../../../objects/Deon';
     // #endregion external
 // #endregion imports
 
