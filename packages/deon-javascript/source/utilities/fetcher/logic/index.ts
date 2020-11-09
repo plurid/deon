@@ -2,6 +2,18 @@
     // #region libraries
     import path from 'path';
     // #endregion libraries
+
+
+    // #region external
+    import {
+        DeonInterpreterOptions,
+        FetcherType,
+    } from '../../../data/interfaces';
+
+    import {
+        solveExtensionName,
+    } from '../../general';
+    // #endregion external
 // #endregion imports
 
 
@@ -26,6 +38,53 @@ const resolveBasePath = (
         ),
     );
 }
+
+
+const resolveFilepath = (
+    file: string,
+    options: DeonInterpreterOptions,
+    type?: FetcherType,
+) => {
+    const {
+        file: parsedFile,
+        parseOptions,
+    } = options;
+
+    const filebase = parseOptions?.filebase
+        ? parseOptions?.filebase
+        : process.cwd();
+
+    const basePath = resolveBasePath(
+        parsedFile,
+        filebase,
+    );
+
+    const extname = path.extname(file);
+
+    const {
+        filetype,
+        concatenate,
+    } = solveExtensionName(
+        type || 'import',
+        extname,
+    );
+
+    const resolvedFile = concatenate
+        ? file + filetype
+        : file;
+
+    const filepath = path.isAbsolute(resolvedFile)
+        ? resolvedFile
+        : path.join(
+            basePath,
+            resolvedFile,
+        );
+
+    return {
+        filetype,
+        filepath,
+    };
+}
 // #endregion module
 
 
@@ -33,5 +92,6 @@ const resolveBasePath = (
 // #region exports
 export {
     resolveBasePath,
+    resolveFilepath,
 };
 // #endregion exports

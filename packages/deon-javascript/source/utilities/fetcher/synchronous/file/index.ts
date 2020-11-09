@@ -13,11 +13,7 @@
     } from '../../../../data/interfaces';
 
     import {
-        solveExtensionName,
-    } from '../../../general';
-
-    import {
-        resolveBasePath,
+        resolveFilepath,
     } from '../../logic';
     // #endregion external
 // #endregion imports
@@ -31,39 +27,13 @@ const fetchFromFile = (
     type?: FetcherType,
 ) => {
     const {
-        file: parsedFile,
-        parseOptions,
-    } = options;
-
-    const filebase = parseOptions?.filebase
-        ? parseOptions?.filebase
-        : process.cwd();
-
-    const basePath = resolveBasePath(
-        parsedFile,
-        filebase,
-    );
-
-    const extname = path.extname(file);
-
-    const {
+        filepath,
         filetype,
-        concatenate,
-    } = solveExtensionName(
-        type || 'import',
-        extname,
+    } = resolveFilepath(
+        file,
+        options,
+        type,
     );
-
-    const resolvedFile = concatenate
-        ? file + filetype
-        : file;
-
-    const filepath = path.isAbsolute(resolvedFile)
-        ? resolvedFile
-        : path.join(
-            basePath,
-            resolvedFile,
-        );
 
     const data = fs.readFileSync(
         filepath,
