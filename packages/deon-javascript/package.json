@@ -1,6 +1,6 @@
 {
     "name": "@plurid/deon",
-    "version": "0.0.33",
+    "version": "0.0.34",
     "description": "DeObject Notation Format of Structured Strings",
     "keywords": [
         "deon"
@@ -44,8 +44,8 @@
     "devDependencies": {
         "@types/jest": "^26.0.15",
         "@types/node": "^14.14.6",
-        "@typescript-eslint/eslint-plugin": "^4.6.1",
-        "@typescript-eslint/parser": "^4.6.1",
+        "@typescript-eslint/eslint-plugin": "^4.7.0",
+        "@typescript-eslint/parser": "^4.7.0",
         "eslint": "^7.13.0",
         "jest": "^26.6.3",
         "rollup": "^2.33.1",
