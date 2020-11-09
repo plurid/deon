@@ -22,7 +22,7 @@
 <br />
 
 
-`deon` is a notation format for structured strings.
+`deon` is a notation format for structured data.
 
 `deon` is intended to be:
 
@@ -113,19 +113,19 @@ const data = {
 // Rust
 
 let data = deon!({
-    "entities": [
+    entities [
         {
-            "id": "01",
-            "name": "One",
-            "active": "true",
-        },
+            id 01
+            name One
+            active true
+        }
         {
-            "id": "02",
-            "name": "Two",
-            "active": "false",
-        },
-    ],
-    "time": "1598439736",
+            id 02
+            name Two
+            active false
+        }
+    ]
+    time: 1598439736
 });
 ```
 
@@ -425,6 +425,16 @@ curl \
     -H 'Content-Type: application/deon' \
     -d '{ key value }' \
     https://deon.plurid.com/parse?kind=yaml
+```
+
+Conversely, `json`, `yaml`, `toml`, or `xml` data can be converted to `deon` through `deon.plurid.com/convert`
+
+``` bash
+curl \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{ "key": "value" }' \
+    https://deon.plurid.com/convert
 ```
 
 
