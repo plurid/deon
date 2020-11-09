@@ -17,6 +17,10 @@
     import {
         solveExtensionName,
     } from '../../../general';
+
+    import {
+        resolveBasePath,
+    } from '../../logic';
     // #endregion external
 // #endregion imports
 
@@ -37,16 +41,10 @@ const fetchFromFile = async (
         ? parseOptions?.filebase
         : process.cwd();
 
-    const basePath = parsedFile
-        ? path.isAbsolute(parsedFile)
-            ? path.dirname(parsedFile)
-            : path.dirname(
-                path.join(
-                    filebase,
-                    path.basename(parsedFile)
-                )
-            )
-        : filebase;
+    const basePath = resolveBasePath(
+        parsedFile,
+        filebase,
+    );
 
     const extname = path.extname(file);
 
