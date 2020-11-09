@@ -4,11 +4,15 @@
         TokenType,
     } from '../../data/enumerations';
 
+    import {
+        ScanMode,
+    } from '../../data/interfaces';
+
     import Token from '../Token';
     // #endregion external
 // #endregion imports
 
-export type ScanMode = 'MAP' | 'LIST';
+
 
 // #region module
 class Scanner {
@@ -409,7 +413,7 @@ class Scanner {
 
     private identify() {
         const tokens: Token[] = [];
-        let mode = '';
+        let mode: ScanMode = '';
         let mapLookup = false;
         let mapItemLine = -1;
         let listItemLine = -1;

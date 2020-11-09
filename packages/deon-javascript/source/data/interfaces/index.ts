@@ -35,4 +35,7 @@ export interface DeonInterpreterOptions {
 
 
 export type FetcherType = 'inject' | 'import';
+
+
+export type ScanMode = 'MAP' | 'LIST' | '';
 // #endregion module
