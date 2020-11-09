@@ -624,28 +624,6 @@ class Scanner {
         return this.source.charAt(this.current);
     }
 
-    private peekPrevious() {
-        if (this.current - 1 < 0) {
-            return '\0';
-        }
-
-        return this.source.charAt(this.current - 1);
-    }
-
-    private peekNext() {
-        if (this.current + 1 >= this.source.length) {
-            return '\0';
-        }
-
-        return this.source.charAt(this.current + 1);
-    }
-
-    private isString(
-        c: string,
-    ) {
-        // to check if c is string-like
-    }
-
     private isAlpha(
         c: string,
     ) {
