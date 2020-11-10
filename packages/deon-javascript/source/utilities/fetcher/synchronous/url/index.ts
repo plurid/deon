@@ -1,7 +1,5 @@
 // #region imports
     // #region libraries
-    import path from 'path';
-
     import fetch from 'sync-request';
     // #endregion libraries
 
@@ -12,11 +10,8 @@
     } from '../../../../data/interfaces';
 
     import {
-        fetcherDefaultImportHeaders,
-        fetcherDefaultInjectHeaders,
-
-        DEON_FILENAME_EXTENSION,
-    } from '../../../../data/constants';
+        resolveFetchURL,
+    } from '../../logic';
     // #endregion external
 // #endregion imports
 
@@ -28,17 +23,14 @@ const fetchFromURL = (
     token?: string,
     type?: FetcherType,
 ) => {
-    const defaultHeaders = type === 'inject'
-        ? fetcherDefaultInjectHeaders
-        : fetcherDefaultImportHeaders;
-
-    const headers = token
-        ?  {
-            ...defaultHeaders,
-            Authorization: `Bearer ${token}`,
-        } : {
-            ...defaultHeaders,
-        };
+    const {
+        headers,
+        filetype,
+    } = resolveFetchURL(
+        url,
+        token,
+        type,
+    );
 
     const response = fetch(
         'GET',
@@ -47,17 +39,10 @@ const fetchFromURL = (
             headers,
         },
     );
-
     const body = response.getBody();
-
     const data = typeof body === 'string'
         ? body
         : body.toString('utf-8');
-
-    const extname = path.extname(url);
-    const filetype = type === 'inject'
-        ? extname || ''
-        : extname || DEON_FILENAME_EXTENSION;
 
     return {
         data,

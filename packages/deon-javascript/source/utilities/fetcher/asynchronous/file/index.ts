@@ -15,7 +15,7 @@
     } from '../../../../data/interfaces';
 
     import {
-        resolveFilepath,
+        resolveFetchFile,
     } from '../../logic';
     // #endregion external
 // #endregion imports
@@ -31,7 +31,8 @@ const fetchFromFile = async (
     const {
         filepath,
         filetype,
-    } = resolveFilepath(
+        filebase,
+    } = resolveFetchFile(
         file,
         options,
         type,
@@ -45,7 +46,7 @@ const fetchFromFile = async (
     return {
         data,
         filetype,
-        filebase: path.dirname(filepath),
+        filebase,
     };
 }
 // #endregion module

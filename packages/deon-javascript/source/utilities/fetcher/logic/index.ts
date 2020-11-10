@@ -11,6 +11,13 @@
     } from '../../../data/interfaces';
 
     import {
+        fetcherDefaultImportHeaders,
+        fetcherDefaultInjectHeaders,
+
+        DEON_FILENAME_EXTENSION,
+    } from '../../../data/constants';
+
+    import {
         solveExtensionName,
     } from '../../general';
     // #endregion external
@@ -40,7 +47,7 @@ const resolveBasePath = (
 }
 
 
-const resolveFilepath = (
+const resolveFetchFile = (
     file: string,
     options: DeonInterpreterOptions,
     type?: FetcherType,
@@ -83,6 +90,36 @@ const resolveFilepath = (
     return {
         filetype,
         filepath,
+        filebase: path.dirname(filepath),
+    };
+}
+
+
+const resolveFetchURL = (
+    url: string,
+    token?: string,
+    type?: FetcherType,
+) => {
+    const defaultHeaders = type === 'inject'
+    ? fetcherDefaultInjectHeaders
+    : fetcherDefaultImportHeaders;
+
+    const headers = token
+        ?  {
+            ...defaultHeaders,
+            Authorization: `Bearer ${token}`,
+        } : {
+            ...defaultHeaders,
+        };
+
+    const extname = path.extname(url);
+    const filetype = type === 'inject'
+        ? extname || ''
+        : extname || DEON_FILENAME_EXTENSION;
+
+    return {
+        headers,
+        filetype,
     };
 }
 // #endregion module
@@ -92,6 +129,7 @@ const resolveFilepath = (
 // #region exports
 export {
     resolveBasePath,
-    resolveFilepath,
+    resolveFetchFile,
+    resolveFetchURL,
 };
 // #endregion exports

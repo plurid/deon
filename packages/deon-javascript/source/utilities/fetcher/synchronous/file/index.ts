@@ -1,8 +1,6 @@
 // #region imports
     // #region libraries
     import fs from 'fs';
-
-    import path from 'path';
     // #endregion libraries
 
 
@@ -13,7 +11,7 @@
     } from '../../../../data/interfaces';
 
     import {
-        resolveFilepath,
+        resolveFetchFile,
     } from '../../logic';
     // #endregion external
 // #endregion imports
@@ -29,7 +27,8 @@ const fetchFromFile = (
     const {
         filepath,
         filetype,
-    } = resolveFilepath(
+        filebase,
+    } = resolveFetchFile(
         file,
         options,
         type,
@@ -43,7 +42,7 @@ const fetchFromFile = (
     return {
         data,
         filetype,
-        filebase: path.dirname(filepath),
+        filebase,
     };
 }
 // #endregion module
