@@ -10,9 +10,9 @@
     import Deon from './objects/Deon';
     import DeonPure from './objects/DeonPure';
 
-    import {
-        typer,
-    } from './utilities/typer';
+    import Scanner from './objects/Scanner';
+    import Parser from './objects/Parser';
+    import Interpreter from './objects/Interpreter';
 
     import {
         deon,
@@ -23,8 +23,22 @@
         deonPure,
         deonPureSynchronous,
     } from './logics/template/deonPure';
+
+    import {
+        typer,
+    } from './utilities/typer';
     // #endregion internal
 // #endregion imports
+
+
+
+// #region module
+const internals = {
+    Scanner,
+    Parser,
+    Interpreter,
+};
+// #endregion module
 
 
 
@@ -41,14 +55,16 @@ export {
     // functionalities
     cli,
 
-    typer,
-
     deon,
     deonSynchronous,
 
     DeonPure,
     deonPure,
     deonPureSynchronous,
+
+    typer,
+
+    internals,
 };
 
 
