@@ -40,7 +40,9 @@ export {
 
     // functionalities
     cli,
+
     typer,
+
     deon,
     deonSynchronous,
 
