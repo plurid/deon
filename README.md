@@ -1337,7 +1337,7 @@ Synchronous parsing is to be used when the `deon` data does not rely on `import`
 import {
     DeonPure,
     deonPure,
-    deonSynchronousPure,
+    deonPureSynchronous,
 } from '@plurid/deon';
 
 
@@ -1357,7 +1357,7 @@ const main = async () => {
             key value
         }
     `;
-    const parsedTemplateSynchronously = deonSynchronousPure`
+    const parsedTemplateSynchronously = deonPureSynchronous`
         {
             key value
         }
