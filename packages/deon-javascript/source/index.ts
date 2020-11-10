@@ -13,6 +13,7 @@
     import Scanner from './objects/Scanner';
     import Parser from './objects/Parser';
     import Interpreter from './objects/Interpreter';
+    import Stringifier from './objects/Stringifier';
 
     import {
         deon,
@@ -37,6 +38,7 @@ const internals = {
     Scanner,
     Parser,
     Interpreter,
+    Stringifier,
 };
 // #endregion module
 
