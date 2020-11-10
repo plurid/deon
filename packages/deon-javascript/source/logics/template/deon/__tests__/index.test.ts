@@ -3,20 +3,20 @@
     import {
         deon,
         deonSynchronous,
-    } from '../';
+    } from '..';
 
     import {
         log,
-    } from '../../../log';
+    } from '../../../../utilities/log';
 
     import {
         typer,
-    } from '../../../typer';
+    } from '../../../../utilities/typer';
 
     import {
         compareTimeBenchmark,
         suites,
-    } from '../../../test';
+    } from '../../../../utilities/test';
     // #endregion external
 // #endregion imports
 

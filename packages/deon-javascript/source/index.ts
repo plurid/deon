@@ -17,12 +17,12 @@
     import {
         deon,
         deonSynchronous,
-    } from './utilities/template/deon';
+    } from './logics/template/deon';
 
     import {
         deonPure,
         deonPureSynchronous,
-    } from './utilities/template/deonPure';
+    } from './logics/template/deonPure';
     // #endregion internal
 // #endregion imports
 
