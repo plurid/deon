@@ -13,8 +13,6 @@
     import {
         fetcherDefaultImportHeaders,
         fetcherDefaultInjectHeaders,
-
-        DEON_FILENAME_EXTENSION,
     } from '../../../data/constants';
 
     import {
@@ -67,7 +65,6 @@ const resolveFetchFile = (
     );
 
     const extname = path.extname(file);
-
     const {
         filetype,
         concatenate,
@@ -79,7 +76,6 @@ const resolveFetchFile = (
     const resolvedFile = concatenate
         ? file + filetype
         : file;
-
     const filepath = path.isAbsolute(resolvedFile)
         ? resolvedFile
         : path.join(
@@ -113,9 +109,12 @@ const resolveFetchURL = (
         };
 
     const extname = path.extname(url);
-    const filetype = type === 'inject'
-        ? extname || ''
-        : extname || DEON_FILENAME_EXTENSION;
+    const {
+        filetype,
+    } = solveExtensionName(
+        type || 'import',
+        extname,
+    );
 
     return {
         headers,
