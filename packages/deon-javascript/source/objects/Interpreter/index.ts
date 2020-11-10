@@ -9,6 +9,7 @@
     } from '../../data/constants';
 
     import Deon from '../Deon';
+    import DeonPure from '../DeonPure';
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
     import Environment from '../Environment';
@@ -21,6 +22,18 @@
     import {
         fetcher as synchronousFetcher,
     } from '../../utilities/fetcher/synchronous';
+
+    import {
+        fetchFromURL as asynchronousFetchFromURL,
+    } from '../../utilities/fetcher/asynchronous/url';
+
+    import {
+        fetchFromURL as synchronousFetchFromURL,
+    } from '../../utilities/fetcher/synchronous/url';
+
+    import {
+        isURL,
+    } from '../../utilities/general';
     // #endregion external
 // #endregion imports
 
@@ -41,6 +54,16 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         },
     };
     private interpretation: 'synchronous' | 'asynchronous' | '' = '';
+    private pure: boolean;
+
+
+    constructor(
+        options?: {
+            pure?: boolean,
+        },
+    ) {
+        this.pure = options?.pure || false;
+    }
 
 
     public async interpret(
@@ -245,6 +268,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.ImportStatement,
     ) {
         try {
+            const valid = this.checkImportFunctionality(statement);
+            if (!valid) {
+                return;
+            }
+
             const authenticator = statement.authenticator?.lexeme;
 
             const result = await asynchronousFetcher(
@@ -295,6 +323,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.ImportStatement,
     ) {
         try {
+            const valid = this.checkImportFunctionality(statement);
+            if (!valid) {
+                return;
+            }
+
             const authenticator = statement.authenticator?.lexeme;
 
             const result = synchronousFetcher(
@@ -355,6 +388,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.InjectStatement,
     ) {
         try {
+            const valid = this.checkImportFunctionality(statement);
+            if (!valid) {
+                return;
+            }
+
             const authenticator = statement.authenticator?.lexeme;
 
             const result = await asynchronousFetcher(
@@ -387,6 +425,11 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         statement: Statement.InjectStatement,
     ) {
         try {
+            const valid = this.checkImportFunctionality(statement);
+            if (!valid) {
+                return;
+            }
+
             const authenticator = statement.authenticator?.lexeme;
 
             const result = synchronousFetcher(
@@ -919,6 +962,26 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         });
 
         return nameAccess.flat();
+    }
+
+    private checkImportFunctionality(
+        statement: Statement.ImportStatement | Statement.InjectStatement,
+    ) {
+        if (!this.options.parseOptions?.allowNetwork) {
+            return false;
+        }
+
+        if (this.pure) {
+            const url = isURL(statement.path.lexeme);
+
+            if (!url) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return true;
     }
 }
 // #endregion module

@@ -4,7 +4,7 @@
     import Token from '../Token';
     import Parser from '../Parser';
     // import Resolver from '../Resolver';
-    import Interpreter from '../InterpreterPure';
+    import Interpreter from '../Interpreter';
     import Stringifier from '../Stringifier';
 
     import {
@@ -23,7 +23,9 @@
 
 // #region module
 class DeonPure {
-    private interpreter: Interpreter = new Interpreter();
+    private interpreter: Interpreter = new Interpreter({
+        pure: true,
+    });
     private hadError = false;
     private parsedFile = '';
 
