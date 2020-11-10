@@ -24,14 +24,6 @@
     } from '../../utilities/fetcher/synchronous';
 
     import {
-        fetchFromURL as asynchronousFetchFromURL,
-    } from '../../utilities/fetcher/asynchronous/url';
-
-    import {
-        fetchFromURL as synchronousFetchFromURL,
-    } from '../../utilities/fetcher/synchronous/url';
-
-    import {
         isURL,
     } from '../../utilities/general';
     // #endregion external
@@ -292,7 +284,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             } = result;
 
             let parsedData;
-            const deon = new Deon();
+            const deon = this.pure
+                ? new Deon()
+                : new DeonPure();
 
             switch (filetype) {
                 case '.deon':
@@ -347,7 +341,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             } = result;
 
             let parsedData;
-            const deon = new Deon();
+            const deon = this.pure
+                ? new Deon()
+                : new DeonPure();
 
             switch (filetype) {
                 case '.deon':
