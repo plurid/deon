@@ -12,6 +12,12 @@ export default {
             sourcemap: true,
             exports: 'named',
         },
+        {
+            file: './distribution/index.es.js',
+            format: 'es',
+            sourcemap: true,
+            exports: 'named',
+        },
     ],
     external: [
         'fs',
