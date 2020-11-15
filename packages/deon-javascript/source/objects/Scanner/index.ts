@@ -1,6 +1,10 @@
 // #region imports
     // #region external
     import {
+        nonAlphanumericCharacters,
+    } from '../../data/constants';
+
+    import {
         TokenType,
     } from '../../data/enumerations';
 
@@ -109,12 +113,6 @@ class Scanner {
 
             default:
                 this.signifier();
-
-                // if (this.isAlphaNumeric(character)) {
-                //     this.signifier();
-                // } else {
-                //     this.deonError(this.line, 'Unexpected character.');
-                // }
                 break;
         }
     }
@@ -485,7 +483,7 @@ class Scanner {
     private isAlphaNumeric(
         c: string,
     ) {
-        return this.isAlpha(c) || this.isDigit(c);
+        return !nonAlphanumericCharacters.includes(c);
     }
 
     private isAtEnd() {

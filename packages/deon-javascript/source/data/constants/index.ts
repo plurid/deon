@@ -49,6 +49,13 @@ const deonStrigifyOptions: DeonStringifyOptions = {
 
 const SPACING_TWO = '  ';
 const SPACING_FOUR = SPACING_TWO + SPACING_TWO;
+
+
+const nonAlphanumericCharacters = [
+    ' ',
+    '\n',
+    ',',
+];
 // #endregion module
 
 
@@ -67,5 +74,7 @@ export {
 
     SPACING_TWO,
     SPACING_FOUR,
+
+    nonAlphanumericCharacters,
 };
 // #endregion exports

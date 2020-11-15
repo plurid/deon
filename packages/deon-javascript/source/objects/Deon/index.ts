@@ -167,15 +167,13 @@ class Deon {
             data,
             this.error,
         );
-        // console.log('scanner', scanner);
-
         const tokens = scanner.scanTokens();
         // console.log('tokens', tokens);
+
         const parser = new Parser(
             tokens,
             this.error,
         );
-        // console.log('parser', parser);
         const statements = parser.parse();
         // console.log('statements', statements);
 

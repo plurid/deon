@@ -220,6 +220,34 @@ list [
 
 
 
+    it('simple key value non-ascii characters', async () => {
+        const dataValues = `
+{
+    key v!a@l#u$e
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('v!a@l#u$e');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple key value non-ascii characters`,
+        );
+    });
+
+
+
     it('simple key value spaced', async () => {
         const dataValues = `
 {
