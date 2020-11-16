@@ -1,7 +1,15 @@
+// #region imports
+    import {
+        javascript,
+    } from './typings';
+// #endregion imports
+
+
+
 // #region module
 const customTyper = <T = any>(
     data: any,
-    typingFunction: (
+    typing: (
         value: string,
     ) => any,
 ): T => {
@@ -10,7 +18,7 @@ const customTyper = <T = any>(
         for (const element of data) {
             const newElement = customTyper(
                 element,
-                typingFunction,
+                typing,
             );
             newArray.push(newElement);
         }
@@ -22,14 +30,14 @@ const customTyper = <T = any>(
         for (const [key, value] of Object.entries(data)) {
             newData[key] = customTyper(
                 value,
-                typingFunction,
+                typing,
             );
         }
         return newData;
     }
 
     if (typeof data === 'string') {
-        const value = typingFunction(
+        const value = typing(
             data,
         );
         return value;
@@ -44,29 +52,7 @@ const typer = <T = any>(
 ): T => {
     const typedData = customTyper<T>(
         data,
-        (
-            value,
-        ) => {
-            if (value === 'true') {
-                return true;
-            }
-
-            if (value === 'false') {
-                return false;
-            }
-
-            const valueNumber = Number(value);
-
-            if (!isNaN(valueNumber)) {
-                if (Number.isInteger(valueNumber)) {
-                    return parseInt(value);
-                }
-
-                return parseFloat(value);
-            }
-
-            return value;
-        }
+        javascript,
     );
 
     return typedData;

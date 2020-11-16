@@ -29,6 +29,8 @@
         customTyper,
         typer,
     } from './utilities/typer';
+
+    import * as typings from './utilities/typer/typings';
     // #endregion internal
 // #endregion imports
 
@@ -67,6 +69,7 @@ export {
 
     customTyper,
     typer,
+    typings,
 
     internals,
 };
