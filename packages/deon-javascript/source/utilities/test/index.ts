@@ -43,6 +43,7 @@ const suites = {
     testings: 'Deon testings',
     synchronous: 'Deon synchronous',
     template: 'Deon template literals',
+    errors: 'Deon errors',
 };
 // #endregion module
 
