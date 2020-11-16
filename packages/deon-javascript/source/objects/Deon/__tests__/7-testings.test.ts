@@ -24,6 +24,41 @@ describe(suites.testings, () => {
     it('various', async () => {
         const dataValues = `
 {
+    a [
+        0
+        -1
+        12b
+        1.2
+    ]
+    c {
+        d 12
+    }
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+        // console.log('typer', typer(data));
+
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.examples} - various`,
+        );
+    });
+
+
+
+    it('various', async () => {
+        const dataValues = `
+{
     a b!c
 }
         `;

@@ -26,6 +26,7 @@
     } from './logics/template/deonPure';
 
     import {
+        customTyper,
         typer,
     } from './utilities/typer';
     // #endregion internal
@@ -64,6 +65,7 @@ export {
     deonPure,
     deonPureSynchronous,
 
+    customTyper,
     typer,
 
     internals,

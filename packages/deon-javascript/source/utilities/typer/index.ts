@@ -1,43 +1,75 @@
 // #region module
-const typer = (
+const customTyper = <T = any>(
     data: any,
-): any => {
+    typingFunction: (
+        value: string,
+    ) => any,
+): T => {
     if (Array.isArray(data) || data instanceof Array) {
-        const newArray = [];
+        const newArray: any[] = [];
         for (const element of data) {
-            const newElement = typer(element);
+            const newElement = customTyper(
+                element,
+                typingFunction,
+            );
             newArray.push(newElement);
         }
-        return newArray;
+        return newArray as any;
     }
 
     if (typeof data === 'object') {
+        const newData: any = {};
         for (const [key, value] of Object.entries(data)) {
-            data[key] = typer(value);
+            newData[key] = customTyper(
+                value,
+                typingFunction,
+            );
         }
-    }
-
-    if (data === 'true') {
-        return true;
-    }
-
-    if (data === 'false') {
-        return false;
+        return newData;
     }
 
     if (typeof data === 'string') {
-        return data;
-    }
-
-    if (!isNaN(data)) {
-        if (Number.isInteger(data)) {
-            return parseInt(data);
-        }
-
-        return parseFloat(data);
+        const value = typingFunction(
+            data,
+        );
+        return value;
     }
 
     return data;
+}
+
+
+const typer = <T = any>(
+    data: any,
+): T => {
+    const typedData = customTyper<T>(
+        data,
+        (
+            value,
+        ) => {
+            if (value === 'true') {
+                return true;
+            }
+
+            if (value === 'false') {
+                return false;
+            }
+
+            const valueNumber = Number(value);
+
+            if (!isNaN(valueNumber)) {
+                if (Number.isInteger(valueNumber)) {
+                    return parseInt(value);
+                }
+
+                return parseFloat(value);
+            }
+
+            return value;
+        }
+    );
+
+    return typedData;
 }
 // #endregion module
 
@@ -45,6 +77,7 @@ const typer = (
 
 // #region exports
 export {
+    customTyper,
     typer,
 };
 // #endregion exports
