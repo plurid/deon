@@ -1,3 +1,4 @@
+import commonjs from '@rollup/plugin-commonjs';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 import typescript from 'rollup-plugin-typescript2';
 
@@ -32,12 +33,13 @@ export default {
         'events',
         'commander',
         'cross-fetch',
-        'sync-request',
+        'encoding',
     ],
     watch: {
         include: 'source/**',
     },
     plugins: [
+        commonjs(),
         sourceMaps(),
         typescript({
             file: '../tsconfig.json',
