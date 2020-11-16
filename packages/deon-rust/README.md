@@ -1289,6 +1289,8 @@ commit {
 
 ### `JavaScript` / `TypeScript`
 
+#### Parsing
+
 The `JavaScript` / `TypeScript` can be used in the `NodeJS` runtime through the `Deon` object, or the `deon` template literal.
 
 ``` typescript
@@ -1366,6 +1368,46 @@ const main = async () => {
 ```
 
 The `deon` `Pure` implementation does not have access to the file system for `import` and `inject` features.
+
+#### Typing
+
+In order to handle the typing of the `deon` parsed data the `typer` can be used, which handles the typing in the standard `JavaScript`/`TypeScript` fashion, or the `customTyper` can be used, which requires a `typingFunction`.
+
+``` typescript
+import Deon, {
+    customTyper,
+    typer,
+} from '@plurid/deon';
+
+
+const main = async () => {
+    const deonData = `
+        {
+            keyBoolean true
+            keyNumber 1
+        }
+    `;
+
+    const deonObject = new Deon();
+    // keyBoolean and keyNumber are typeof 'string'
+    const parsedData = await deonObject.parse(deonData);
+
+    // keyBoolean is typeof 'boolean' and keyNumber is typeof 'number'
+    const defaultTypedData = typer(parsedData);
+
+    // keyBoolean is typeof 'boolean' and keyNumber is typeof 'string'
+    const customTypedData = customTyper(
+        parsedData,
+        (value) => {
+            if (value === 'true') {
+                return true;
+            }
+
+            return value;
+        },
+    );
+}
+```
 
 
 ### Rust
