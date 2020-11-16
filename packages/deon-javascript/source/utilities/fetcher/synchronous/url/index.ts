@@ -1,6 +1,6 @@
 // #region imports
     // #region libraries
-    import fetch from 'sync-request';
+    import fetch from 'sync-fetch';
     // #endregion libraries
 
 
@@ -33,13 +33,12 @@ const fetchFromURL = (
     );
 
     const response = fetch(
-        'GET',
         url,
         {
             headers,
         },
     );
-    const body = response.getBody();
+    const body = response.text();
     const data = typeof body === 'string'
         ? body
         : body.toString('utf-8');
