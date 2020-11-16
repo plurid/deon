@@ -333,7 +333,10 @@ class Scanner {
     }
 
     private signifier() {
-        while (this.isAlphaNumeric(this.peek())) {
+        while (
+            this.isAlphaNumeric(this.peek())
+            && !this.isAtEnd()
+        ) {
             this.advance();
         }
 
