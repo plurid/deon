@@ -1371,7 +1371,7 @@ The `deon` `Pure` implementation does not have access to the file system for `im
 
 #### Typing
 
-In order to handle the typing of the `deon` parsed data the `typer` can be used, which handles the typing in the standard `JavaScript`/`TypeScript` fashion, or the `customTyper` can be used, which requires a `typingFunction`.
+In order to handle the typing of the `deon` parsed data the `typer` can be used, which handles the typing in the standard `JavaScript`/`TypeScript` fashion, or the `customTyper` can be used, which requires an aditional, custom `typing` function.
 
 ``` typescript
 import Deon, {
