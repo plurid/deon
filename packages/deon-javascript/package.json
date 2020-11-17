@@ -1,6 +1,6 @@
 {
     "name": "@plurid/deon",
-    "version": "0.0.40",
+    "version": "0.0.41",
     "description": "DeObject Notation Format of Structured Strings",
     "keywords": [
         "deon"
@@ -58,6 +58,7 @@
     "dependencies": {
         "commander": "^6.2.0",
         "cross-fetch": "^3.0.6",
+        "encoding": "^0.1.13",
         "sync-fetch": "^0.3.0"
     }
 }
