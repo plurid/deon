@@ -1,9 +1,10 @@
+import base from https://raw.githubusercontent.com/plurid/joiner/master/packages/joiner-data/values/base.deon
+
+
+
 {
+    ...#base
     #packages
-    #package
-    #commit
-    yarnWorkspace false
-    runFrom ../
 }
 
 
@@ -11,17 +12,3 @@ packages [
     ./packages/deon-grammar/vscode
     ./packages/deon-javascript
 ]
-
-package {
-    manager yarn
-    publisher npm
-}
-
-commit {
-    engine git
-    combine true
-    root ''
-    fullFolder false
-    divider ' > '
-    message setup: package
-}
