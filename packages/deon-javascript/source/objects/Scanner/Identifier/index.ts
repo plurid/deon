@@ -229,6 +229,15 @@ class Identifier {
         for (const token of tokens) {
             lexemes.push(token.lexeme);
 
+            // Handle string quotes in middle of value.
+            if (
+                token.type === TokenType.STRING
+                && tokens.length > 1
+            ) {
+                literals.push(token.lexeme);
+                continue;
+            }
+
             if (token.literal) {
                 literals.push(token.literal);
             } else {

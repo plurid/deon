@@ -764,7 +764,7 @@ value
             dataValues,
         );
         const end = Date.now();
-        log(data);
+        // log(data);
 
 
         expect(data.keyOne).toEqual(`a 'foo' b`);

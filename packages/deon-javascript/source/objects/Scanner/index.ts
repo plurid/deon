@@ -56,6 +56,7 @@ class Scanner {
         }
 
         this.endScan();
+        // console.log('this.tokens', this.tokens);
 
         this.identify();
 
