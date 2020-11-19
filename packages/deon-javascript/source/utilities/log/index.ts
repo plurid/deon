@@ -10,13 +10,20 @@
 const log = <T>(
     data: T,
 ) => {
-    const text = utilities.inspect(
+    let text = utilities.inspect(
         data,
         {
             showHidden: false,
             depth: null,
         },
     );
+
+    if (text.startsWith('`')) {
+        text = text.slice(1);
+    }
+    if (text.endsWith('`')) {
+        text = text.slice(0, text.length - 1);
+    }
 
     console.log(text);
 }
