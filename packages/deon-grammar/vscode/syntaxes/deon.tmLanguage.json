@@ -66,7 +66,15 @@
           }
         },
         {
-          "match": "^(\\w+)",
+          "match": "^(\\S+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(\\S+)",
           "captures": {
             "1": {
               "name": "variable.other.property.deon"
@@ -90,7 +98,19 @@
           "name": "comment.deon"
         },
         {
-          "match": "^(\\/\\*(.+)?)|((\\s+)?\\*(.+)?\\/?)",
+          "match": "\\s\\/\\*.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\/\\*.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "\\s\\*\\/.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\*\\/.*",
           "name": "comment.deon"
         }
       ]

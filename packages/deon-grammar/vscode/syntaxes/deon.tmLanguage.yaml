@@ -38,19 +38,33 @@ repository:
             name: entity.name.function.deon
           6:
             name: variable.other.constant.deon
-      - match: '^(\w+)' # root key
+
+      - match: '^(\S+)' # root key
         captures:
           1:
             name: variable.other.property.deon
+      - match: '^\s*(\S+)' # root key
+        captures:
+          1:
+            name: variable.other.property.deon
+
       - match: '(#.+)\b' # link
         captures:
           1:
             name: storage.type.struct
+
       - match: '\s\/\/.*'
         name: comment.deon
       - match: '^\/\/.*'
         name: comment.deon
-      - match: '^(\/\*(.+)?)|((\s+)?\*(.+)?\/?)'
+
+      - match: '\s\/\*.*'
+        name: comment.deon
+      - match: '^\/\*.*'
+        name: comment.deon
+      - match: '\s\*\/.*'
+        name: comment.deon
+      - match: '^\*\/.*'
         name: comment.deon
   'curly-keywords':
     patterns:
