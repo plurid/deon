@@ -135,6 +135,11 @@ class Identifier {
                     continue;
                 }
 
+                if (inGroup === 'MAP') {
+                    temporary.push(token);
+                    continue;
+                }
+
                 if (mode === 'LIST') {
                     stringifyTemporary();
                 }
@@ -217,19 +222,27 @@ class Identifier {
     private stringFromSignifiers(
         tokens: Token[],
     ) {
-        let texts: string[] = [];
+        let lexemes: string[] = [];
+        let literals: string[] = [];
         const line = tokens[0].line;
 
         for (const token of tokens) {
-            texts.push(token.lexeme);
+            lexemes.push(token.lexeme);
+
+            if (token.literal) {
+                literals.push(token.literal);
+            } else {
+                literals.push(token.lexeme);
+            }
         }
 
-        const text = texts.join(' ');
+        const lexeme = lexemes.join(' ');
+        const literal = literals.join(' ');
 
         const stringToken = new Token(
             TokenType.STRING,
-            text,
-            text,
+            lexeme,
+            literal,
             line,
         );
 

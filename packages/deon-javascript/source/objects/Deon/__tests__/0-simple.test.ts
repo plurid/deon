@@ -702,7 +702,7 @@ value
             start,
             end,
             'instant',
-            'simple',
+            `${suites.simple} - simple comments`,
         );
     });
 
@@ -744,7 +744,37 @@ value
             start,
             end,
             'instant',
-            'simple',
+            `${suites.simple} - simple comments - multi-line`,
+        );
+    });
+
+
+
+    it('simple quote values', async () => {
+        const dataValues = `
+{
+    keyOne a 'foo' b
+    keyTwo \`a 'foo' b {}\`
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        log(data);
+
+
+        expect(data.keyOne).toEqual(`a 'foo' b`);
+        expect(data.keyTwo).toEqual(`a 'foo' b {}`);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.simple} - simple quote values`,
         );
     });
 });
