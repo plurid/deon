@@ -394,13 +394,18 @@ or download the appropriate [binary](https://plurid.link/binaries-deon)
 ### CLI
 
 ```
-Usage: deon [options] <file>
+Usage: deon [options] [command] <file>
+
+read a ".deon" file and output the parsed result
 
 Options:
-  -v, --version        output the version number
-  -o, --output <type>  output type: deon, json (default: "deon")
-  -t, --typed          typed output (default: false)
-  -h, --help           display help for command
+    -v, --version                   output the version number
+    -o, --output <type>             output type: deon, json (default: "deon")
+    -t, --typed                     typed output (default: false)
+    -h, --help                      display help for command
+
+Commands:
+    convert <source> [destination]  convert a ".json" file to ".deon"
 ```
 
 
