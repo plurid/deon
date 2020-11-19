@@ -61,6 +61,15 @@ class Stringifier {
         item: any,
     ) {
         if (typeof item === 'string') {
+            if (
+                item.includes('{')
+                || item.includes('}')
+                || item.includes('[')
+                || item.includes(']')
+            ) {
+                return '`' + item + '`\n';
+            }
+
             return item + '\n';
         }
 
