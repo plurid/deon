@@ -18,16 +18,17 @@ const log = <T>(
         },
     );
 
-    if (text.startsWith('`')) {
+    if (
+        text.startsWith('`')
+        || text.startsWith('\'')
+    ) {
         text = text.slice(1);
     }
-    if (text.startsWith('\'')) {
-        text = text.slice(1);
-    }
-    if (text.endsWith('`')) {
-        text = text.slice(0, text.length - 1);
-    }
-    if (text.endsWith('\'')) {
+
+    if (
+        text.endsWith('`')
+        || text.endsWith('\'')
+    ) {
         text = text.slice(0, text.length - 1);
     }
 
