@@ -35,12 +35,13 @@
     } from '../../data/interfaces';
 
     import {
-        log,
-    } from '../../utilities/log';
+        resolveAbsolutePath,
+    } from '../../utilities/general';
 
     import {
-        typer,
-    } from '../../utilities/typer';
+        handleFileOutput,
+        handleConvert,
+    } from '../../utilities/cli';
     // #endregion external
 // #endregion imports
 
@@ -78,44 +79,18 @@ class Deon {
                 file: string,
                 options: any,
             ) => {
-                const data: any = await this.parseFile(
-                    file,
-                );
+                try {
+                    const data: any = await this.parseFile(
+                        file,
+                    );
 
-                switch (options.output) {
-                    case 'deon': {
-                        const deonValue = this.stringify(data)
-                        // remove doubled new lines
-                        const value = deonValue.slice(
-                            0,
-                            deonValue.length - 1,
-                        );
-                        log(value);
-                        break;
-                    }
-                    case 'json': {
-                        if (options.typed) {
-                            log(
-                                JSON.stringify(
-                                    typer(data),
-                                    null,
-                                    4,
-                                ),
-                            );
-                        } else {
-                            log(
-                                JSON.stringify(
-                                    data,
-                                    null,
-                                    4,
-                                ),
-                            );
-                        }
-                        break;
-                    }
-                    default:
-                        console.log(`Unsupported output '${options.output}'`);
-                        break;
+                    handleFileOutput(
+                        data,
+                        this.stringify(data),
+                        options,
+                    );
+                } catch (error) {
+                    console.log(`Deon :: Something went wrong.`);
                 }
             });
 
@@ -123,46 +98,26 @@ class Deon {
             .command('convert <source> [destination]')
             .description('convert a ".json" file to ".deon"')
             .action(async (
-                source,
-                destination,
+                source: string,
+                destination: string | undefined,
             ) => {
                 try {
-                    const absolutePath = path.isAbsolute(source);
-                    const filepath = absolutePath
-                        ? source
-                        : path.join(process.cwd(), source);
-
+                    const filepath = resolveAbsolutePath(source);
                     const data = await fs.readFile(
                         filepath,
                         'utf-8',
                     );
-
                     const parsedData = JSON.parse(data);
-
                     const deonString = this.stringify(
                         parsedData,
                     );
 
-                    if (destination) {
-                        const absoluteDestinationPath = path.isAbsolute(destination);
-                        const filepathDestination = absoluteDestinationPath
-                            ? destination
-                            : path.join(process.cwd(), destination);
-
-                        await fs.writeFile(
-                            filepathDestination,
-                            deonString,
-                        );
-                    } else {
-                        // remove doubled new lines
-                        const value = deonString.slice(
-                            0,
-                            deonString.length - 1,
-                        );
-                        console.log(value);
-                    }
+                    await handleConvert(
+                        destination,
+                        deonString,
+                    );
                 } catch (error) {
-                    console.log(`Could not convert '${source}'`);
+                    console.log(`Deon :: Could not convert '${source}'.`);
                 }
             });
 
@@ -184,11 +139,7 @@ class Deon {
     ) {
         try {
             this.parsedFile = file;
-            const absolutePath = path.isAbsolute(file);
-
-            const filepath = absolutePath
-                ? file
-                : path.join(process.cwd(), file);
+            const filepath = resolveAbsolutePath(file);
 
             const data = await fs.readFile(
                 filepath,

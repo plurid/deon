@@ -1,4 +1,13 @@
 // #region imports
+    // #region libraries
+    import {
+        promises as fs,
+    } from 'fs';
+
+    import path from 'path';
+    // #endregion libraries
+
+
     // #region external
     import {
         DEON_FILENAME_EXTENSION,
@@ -128,6 +137,31 @@ const inGroupClassify = (
 
     return;
 }
+
+
+const removeEndDoubleNewline = (
+    value: string,
+) => {
+    return value.slice(
+        0,
+        value.length - 1,
+    );
+}
+
+
+const resolveAbsolutePath = (
+    value: string,
+) => {
+    const absolutePath = path.isAbsolute(value);
+    const filepath = absolutePath
+        ? value
+        : path.join(
+            process.cwd(),
+            value,
+        );
+
+    return filepath;
+}
 // #endregion module
 
 
@@ -138,5 +172,7 @@ export {
     isURL,
     solveExtensionName,
     inGroupClassify,
+    removeEndDoubleNewline,
+    resolveAbsolutePath,
 };
 // #endregion exports
