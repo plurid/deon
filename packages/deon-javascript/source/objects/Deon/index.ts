@@ -64,6 +64,7 @@ class Deon {
             .name('deon')
             .version(DEON_CLI_VERSION, '-v, --version')
             .arguments('<file>')
+            .description('read a ".deon" file and output the parsed result')
             .option(
                 '-o, --output <type>',
                 'output type: deon, json',
@@ -106,7 +107,7 @@ class Deon {
 
         program
             .command('convert <source> [destination]')
-            .description('convert a .json file to .deon')
+            .description('convert a ".json" file to ".deon"')
             .action(async (
                 source,
                 destination,
