@@ -104,6 +104,49 @@ class Deon {
                 }
             });
 
+        program
+            .command('convert <source> [destination]')
+            .description('convert a .json file to .deon')
+            .action(async (
+                source,
+                destination,
+            ) => {
+                try {
+                    const absolutePath = path.isAbsolute(source);
+                    const filepath = absolutePath
+                        ? source
+                        : path.join(process.cwd(), source);
+
+                    const data = await fs.readFile(
+                        filepath,
+                        'utf-8',
+                    );
+
+                    const parsedData = JSON.parse(data);
+
+                    const deonString = this.stringify(
+                        parsedData,
+                    );
+
+                    if (destination) {
+                        const absoluteDestinationPath = path.isAbsolute(destination);
+                        const filepathDestination = absoluteDestinationPath
+                            ? destination
+                            : path.join(process.cwd(), destination);
+
+                        await fs.writeFile(
+                            filepathDestination,
+                            deonString,
+                        );
+                    } else {
+                        console.log(deonString);
+                    }
+                } catch (error) {
+                    console.log(`Could not convert '${source}'`);
+                }
+            });
+
+
         await program.parseAsync(args);
 
         return;
