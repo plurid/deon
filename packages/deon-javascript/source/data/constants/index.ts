@@ -10,7 +10,7 @@
 
 
 // #region module
-const DEON_CLI_VERSION = '0.0.41';
+const DEON_CLI_VERSION = '0.0.42';
 
 const DEON_FILENAME_EXTENSION = '.deon';
 const DEON_MEDIA_TYPE = 'application/deon';
