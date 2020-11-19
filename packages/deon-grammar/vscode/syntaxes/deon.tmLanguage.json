@@ -66,18 +66,18 @@
           }
         },
         {
-          "match": "^(\\S+)",
+          "match": "^\\.\\.\\.(#.+)\\b",
           "captures": {
             "1": {
-              "name": "variable.other.property.deon"
+              "name": "storage.type.struct"
             }
           }
         },
         {
-          "match": "^\\s*(\\S+)",
+          "match": "\\s*\\.\\.\\.(#.+)\\b",
           "captures": {
             "1": {
-              "name": "variable.other.property.deon"
+              "name": "storage.type.struct"
             }
           }
         },
@@ -90,7 +90,7 @@
           }
         },
         {
-          "match": "\\s\\/\\/.*",
+          "match": "\\s*\\/\\/.*",
           "name": "comment.deon"
         },
         {
@@ -106,17 +106,57 @@
           "name": "comment.deon"
         },
         {
-          "match": "\\s\\*\\/.*",
+          "match": ".*\\s\\*\\/",
           "name": "comment.deon"
         },
         {
-          "match": "^\\*\\/.*",
+          "match": "^\\*\\/",
           "name": "comment.deon"
+        },
+        {
+          "match": "^(\\S+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(\\S+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
         }
       ]
     },
     "curly-keywords": {
       "patterns": [
+        {
+          "match": "^\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "\\s*\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
         {
           "match": "^\\s*?(\\w+)",
           "captures": {

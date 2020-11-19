@@ -7,6 +7,7 @@ repository:
     patterns:
       - include: '#general'
       - include: '#curly'
+      # - include: '#multi-comment'
       # - include: '#square'
   general:
     patterns:
@@ -39,21 +40,20 @@ repository:
           6:
             name: variable.other.constant.deon
 
-      - match: '^(\S+)' # root key
+      - match: '^\.\.\.(#.+)\b' # link
         captures:
           1:
-            name: variable.other.property.deon
-      - match: '^\s*(\S+)' # root key
+            name: storage.type.struct
+      - match: '\s*\.\.\.(#.+)\b' # link
         captures:
           1:
-            name: variable.other.property.deon
-
+            name: storage.type.struct
       - match: '(#.+)\b' # link
         captures:
           1:
             name: storage.type.struct
 
-      - match: '\s\/\/.*'
+      - match: '\s*\/\/.*'
         name: comment.deon
       - match: '^\/\/.*'
         name: comment.deon
@@ -62,12 +62,34 @@ repository:
         name: comment.deon
       - match: '^\/\*.*'
         name: comment.deon
-      - match: '\s\*\/.*'
+      - match: '.*\s\*\/'
         name: comment.deon
-      - match: '^\*\/.*'
+      - match: '^\*\/'
         name: comment.deon
+
+      - match: '^(\S+)' # root key
+        captures:
+          1:
+            name: variable.other.property.deon
+      - match: '^\s*(\S+)' # root key
+        captures:
+          1:
+            name: variable.other.property.deon
   'curly-keywords':
     patterns:
+      - match: '^\.\.\.(#.+)\b' # link
+        captures:
+          1:
+            name: storage.type.struct
+      - match: '\s*\.\.\.(#.+)\b' # link
+        captures:
+          1:
+            name: storage.type.struct
+      - match: '(#.+)\b' # link
+        captures:
+          1:
+            name: storage.type.struct
+
       - match: '^\s*?(\w+)' # key
         captures:
           1:
@@ -91,6 +113,16 @@ repository:
     patterns:
       - include: '#core'
       - include: '#curly-keywords'
+  # 'multi-comment':
+  #   begin: '\/\*'
+  #   end: '\*\/'
+  #   beginCaptures:
+  #     0:
+  #       name: comment.deon
+  #   endCaptures:
+  #     0:
+  #       name: comment.deon
+  #   name: comment.deon
   # square:
   #   begin: '['
   #   end: ']'
