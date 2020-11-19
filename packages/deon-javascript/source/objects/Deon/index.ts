@@ -83,22 +83,36 @@ class Deon {
                 );
 
                 switch (options.output) {
-                    case 'deon':
-                        log(data);
+                    case 'deon': {
+                        const deonValue = this.stringify(data)
+                        // remove doubled new lines
+                        const value = deonValue.slice(
+                            0,
+                            deonValue.length - 1,
+                        );
+                        log(value);
                         break;
-                    case 'json':
+                    }
+                    case 'json': {
                         if (options.typed) {
                             log(
                                 JSON.stringify(
-                                    typer(data)
-                                )
+                                    typer(data),
+                                    null,
+                                    4,
+                                ),
                             );
                         } else {
                             log(
-                                JSON.stringify(data)
+                                JSON.stringify(
+                                    data,
+                                    null,
+                                    4,
+                                ),
                             );
                         }
                         break;
+                    }
                     default:
                         console.log(`Unsupported output '${options.output}'`);
                         break;
@@ -140,7 +154,12 @@ class Deon {
                             deonString,
                         );
                     } else {
-                        console.log(deonString);
+                        // remove doubled new lines
+                        const value = deonString.slice(
+                            0,
+                            deonString.length - 1,
+                        );
+                        console.log(value);
                     }
                 } catch (error) {
                     console.log(`Could not convert '${source}'`);

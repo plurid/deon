@@ -1,6 +1,6 @@
 // #region imports
     // #region libraries
-    import utilities from 'util';
+    // import utilities from 'util';
     // #endregion libraries
 // #endregion imports
 
@@ -10,29 +10,29 @@
 const log = <T>(
     data: T,
 ) => {
-    let text = utilities.inspect(
-        data,
-        {
-            showHidden: false,
-            depth: null,
-        },
-    );
+    // let text = utilities.inspect(
+    //     data,
+    //     {
+    //         showHidden: false,
+    //         depth: null,
+    //     },
+    // );
 
-    if (
-        text.startsWith('`')
-        || text.startsWith('\'')
-    ) {
-        text = text.slice(1);
-    }
+    // if (
+    //     text.startsWith('`')
+    //     || text.startsWith('\'')
+    // ) {
+    //     text = text.slice(1);
+    // }
 
-    if (
-        text.endsWith('`')
-        || text.endsWith('\'')
-    ) {
-        text = text.slice(0, text.length - 1);
-    }
+    // if (
+    //     text.endsWith('`')
+    //     || text.endsWith('\'')
+    // ) {
+    //     text = text.slice(0, text.length - 1);
+    // }
 
-    console.log(text);
+    console.log(data);
 }
 // #endregion module
 
