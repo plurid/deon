@@ -12,6 +12,32 @@ const expect = (
 }
 
 
+// const runner = (
+//     config,
+//     fn,
+// ) => {
+//     const start = Date.now();
+//     const result = await fn();
+//     const end = Date.now();
+
+//     expect(
+//         loque.extract(
+//             config.target,
+//             result,
+//         ),
+//         config.expected,
+//         config.comparison,
+//     );
+
+//     timeBenchmark(
+//         start,
+//         end,
+//         config.time,
+//         config.name,
+//     );
+// }
+
+
 const run = async (
     data,
     access,
