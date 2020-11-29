@@ -58,6 +58,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Idiomaticity](#idiomaticity)
 + [Specifics](#specifics)
 + [Packages](#packages)
++ [Codeophon](#codeophon)
 
 
 
@@ -1475,3 +1476,10 @@ fn main() {
 [@plurid/deon-rust][deon-rust] • `Rust` implementation
 
 [deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
+
+
+
+## [Codeophon](https://github.com/ly3xqhl8g9/codeophon)
+
++ licensing: [delicense](https://github.com/ly3xqhl8g9/delicense)
++ versioning: [αver](https://github.com/ly3xqhl8g9/alpha-versioning)
