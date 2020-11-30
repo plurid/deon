@@ -1423,12 +1423,14 @@ const main = async () => {
 Run the function call as soon as possible in the program.
 
 ``` deon
+// env-file.deon
 {
     ONE one
 }
 ```
 
 ``` typescript
+// index.ts
 import Deon from '@plurid/deon';
 
 
