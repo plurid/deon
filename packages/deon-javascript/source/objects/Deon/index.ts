@@ -42,6 +42,10 @@
         handleFileOutput,
         handleConvert,
     } from '../../utilities/cli';
+
+    import {
+        setEnvironment,
+    } from '../../utilities/environment';
     // #endregion external
 // #endregion imports
 
@@ -52,6 +56,8 @@ class Deon {
     private interpreter: Interpreter = new Interpreter();
     private hadError = false;
     private parsedFile = '';
+
+
 
     /**
      * Parse based on arguments passed as command line.
@@ -121,11 +127,21 @@ class Deon {
                 }
             });
 
+        program
+            .command('environment <source>')
+            .description('loads environment variables from a ".deon" file')
+            .action(async (
+                source: string,
+            ) => {
+                this.loadEnvironment(source);
+            });
+
 
         await program.parseAsync(args);
 
         return;
     }
+
 
     /**
      * Parse from file
@@ -166,6 +182,7 @@ class Deon {
             return;
         }
     }
+
 
     /**
      * Parse `deon` data.
@@ -219,6 +236,7 @@ class Deon {
         return interpretedData;
     }
 
+
     /**
      * Parse `deon` data synchronously.
      *
@@ -253,6 +271,7 @@ class Deon {
         return interpretedData;
     }
 
+
     /**
      * Transform in-memory `data` into a deon string.
      *
@@ -270,6 +289,7 @@ class Deon {
         return stringifier.stringify(data);
     }
 
+
     /**
      * Formats deon data to the canonical shape.
      *
@@ -283,6 +303,26 @@ class Deon {
 
         return stringified;
     }
+
+
+    /**
+     * Loads environment variables from a ".deon" file.
+     *
+     * @param source
+     */
+    public async loadEnvironment(
+        source: string,
+    ) {
+        try {
+            const data = await this.parseFile<any>(source);
+
+            setEnvironment(data);
+        } catch (error) {
+            console.log(`Deon :: Could not load environment '${source}'.`);
+        }
+    }
+
+
 
     /**
      * Log error.
@@ -307,6 +347,7 @@ class Deon {
             // this.report(entity.line, " at '" + entity.lexeme + "'", message);
         }
     }
+
 
     /**
      * Logs to console a static error.
