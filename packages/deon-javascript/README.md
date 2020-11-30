@@ -444,6 +444,8 @@ curl \
     https://deon.plurid.com/convert
 ```
 
+The [`deon.plurid.com`](https://deon.plurid.com) service can also host `.deon` files to be easily `import`ed or `inject`ed from a fixed `URL` allowing control over the private/public status, the file's revision, or token-aware content (the content of the file changes based on who/what token requests it).
+
 
 
 ## General
