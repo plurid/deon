@@ -406,7 +406,8 @@ Options:
     -h, --help                      display help for command
 
 Commands:
-    convert <source> [destination]  convert a ".json" file to ".deon"
+    convert <source> [destination]                  convert a ".json" file to ".deon"
+    environment [options] <source> <command...>     loads environment variables from a ".deon" file and spawns a new command
 ```
 
 
@@ -1414,6 +1415,47 @@ const main = async () => {
     );
 }
 ```
+
+#### Environment Loading
+
+`deon` can be used to load environment variables at runtime from a `.deon` file.
+
+Run the function call as soon as possible in the program.
+
+``` deon
+{
+    ONE one
+}
+```
+
+``` typescript
+import Deon from '@plurid/deon';
+
+
+const loadEnvironment = async () => {
+    const deon = new Deon();
+
+    // optional
+    const options = {
+        overwrite: false,
+    };
+
+    await deon.loadEnvironment(
+        '/path/to/env-file.deon'
+        options,
+    );
+}
+
+const main = async () => {
+    await loadEnvironment();
+
+    console.log(process.env.ONE) // one
+}
+
+main();
+```
+
+The `.deon` file that will be used for environment variables can use all the features of `deon`, however the `root` must be comprised only of `string`s, or `list` of `string`s, other values will be ignored.
 
 
 ### Rust
