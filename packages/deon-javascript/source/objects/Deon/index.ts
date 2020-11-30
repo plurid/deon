@@ -46,6 +46,7 @@
 
     import {
         setEnvironment,
+        spawnEnvironmentCommand,
     } from '../../utilities/environment';
     // #endregion external
 // #endregion imports
@@ -129,7 +130,7 @@ class Deon {
             });
 
         program
-            .command('environment <source>')
+            .command('environment <source> [command...]')
             .description('loads environment variables from a ".deon" file')
             .option(
                 '-w, --writeover',
@@ -138,13 +139,23 @@ class Deon {
             )
             .action(async (
                 source: string,
+                command: string[],
                 options,
             ) => {
-                await this.loadEnvironment(
-                    source,
-                    {
-                        overwrite: options.writeover,
-                    },
+                if (command.length === 0) {
+                    await this.loadEnvironment(
+                        source,
+                        {
+                            overwrite: options.writeover,
+                        },
+                    );
+                    return;
+                }
+
+                const data = await this.parseFile<any>(source);
+                spawnEnvironmentCommand(
+                    data,
+                    command,
                 );
             });
 
