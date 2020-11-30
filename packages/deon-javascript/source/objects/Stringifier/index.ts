@@ -18,6 +18,24 @@
 
 
 // #region module
+const safeItemString = (
+    item: string,
+) => {
+    if (
+        item.includes('{')
+        || item.includes('}')
+        || item.includes('[')
+        || item.includes(']')
+        || item.startsWith(' ')
+        || item.endsWith(' ')
+    ) {
+        return '`' + item + '`\n';
+    }
+
+    return item + '\n';
+}
+
+
 class Stringifier {
     private dataString = '';
     // private options?: PartialDeonStringifyOptions;
@@ -61,16 +79,7 @@ class Stringifier {
         item: any,
     ) {
         if (typeof item === 'string') {
-            if (
-                item.includes('{')
-                || item.includes('}')
-                || item.includes('[')
-                || item.includes(']')
-            ) {
-                return '`' + item + '`\n';
-            }
-
-            return item + '\n';
+            return safeItemString(item);
         }
 
         if (typeof item === 'boolean') {
