@@ -379,9 +379,9 @@ See [specifics](#specifics) for implementation details.
 
 ## Installs
 
-`deon` can be installed locally with the appropriate package manager for each implementation language, or can be installed globally as a `Command-Line Interface` tool
+`deon` can be installed locally with the appropriate package manager for each implementation language, or can be installed globally as a `Command-Line Interface` tool.
 
-using the `NodeJS` runtime
+Using the `NodeJS` runtime, run the command
 
 ``` bash
 npm install -g @plurid/deon
@@ -426,7 +426,7 @@ curl \
     https://deon.plurid.com/parse
 ```
 
-The response is `json` by default, but can be specified through the `kind` query parameter (`json`, `yaml`, `toml`, or `xml`).
+The response is `deon` by default, but can be specified through the `kind` query parameter (`json`, `yaml`, `toml`, or `xml`).
 
 ``` bash
 curl \
@@ -436,7 +436,7 @@ curl \
     https://deon.plurid.com/parse?kind=yaml
 ```
 
-Conversely, `json`, `yaml`, `toml`, or `xml` data can be converted to `deon` through `deon.plurid.com/convert`
+Conversely, `json`, `yaml`, `toml`, or `xml` data can be converted to `deon` through a `deon.plurid.com/convert` `POST` request
 
 ``` bash
 curl \
@@ -446,7 +446,7 @@ curl \
     https://deon.plurid.com/convert
 ```
 
-The [`deon.plurid.com`](https://deon.plurid.com) service can also host `.deon` files to be easily `import`ed or `inject`ed from a fixed `URL` allowing control over the private/public status, the file's revision, or access-aware content (the content of the file changes based on who/what token requests it).
+The [`deon.plurid.com`](https://deon.plurid.com) service can also host `.deon` files to be easily `import`ed or `inject`ed into other files from a fixed `URL` allowing control over the private/public status, the file's revision, or access-aware content (the content of the file changes based on who/what token requests it).
 
 
 
