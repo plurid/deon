@@ -46,19 +46,13 @@ const cleanEnvironmentData = (
         }
 
         if (Array.isArray(value)) {
-            let isStringArray = true;
+            const isNotStringArray = value.some(item => typeof item !== 'string');
 
-            value.forEach(item => {
-                if (typeof item !== 'string') {
-                    isStringArray = false;
-                };
-            });
-
-            if (isStringArray) {
-                cleanData[key] = value.join(' ');
+            if (isNotStringArray) {
+                continue;
             }
 
-            continue;
+            cleanData[key] = value.join(' ');
         }
     }
 
