@@ -32,6 +32,7 @@
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
         DeonInterpreterOptions,
+        DeonLoadEnvironmentOptions,
     } from '../../data/interfaces';
 
     import {
@@ -130,10 +131,21 @@ class Deon {
         program
             .command('environment <source>')
             .description('loads environment variables from a ".deon" file')
+            .option(
+                '-w, --writeover',
+                'overwrite keys if already defined',
+                false,
+            )
             .action(async (
                 source: string,
+                options,
             ) => {
-                this.loadEnvironment(source);
+                await this.loadEnvironment(
+                    source,
+                    {
+                        overwrite: options.writeover,
+                    },
+                );
             });
 
 
@@ -312,11 +324,15 @@ class Deon {
      */
     public async loadEnvironment(
         source: string,
+        options?: DeonLoadEnvironmentOptions,
     ) {
         try {
             const data = await this.parseFile<any>(source);
 
-            setEnvironment(data);
+            setEnvironment(
+                data,
+                options?.overwrite,
+            );
         } catch (error) {
             console.log(`Deon :: Could not load environment '${source}'.`);
         }

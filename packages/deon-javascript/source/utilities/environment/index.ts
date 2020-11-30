@@ -1,7 +1,20 @@
 // #region module
 const setEnvironment = (
-    data: any
+    data: any,
+    overwrite?: boolean,
 ) => {
+    if (!data) {
+        return;
+    }
+
+    if (Array.isArray(data)) {
+        return;
+    }
+
+    if (typeof data !== 'object') {
+        return;
+    }
+
     Object.keys(data).forEach((key) => {
         const value = data[key];
 
@@ -9,11 +22,19 @@ const setEnvironment = (
             return;
         }
 
-        if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+        if (
+            !Object.prototype.hasOwnProperty.call(process.env, key)
+        ) {
             process.env[key] = value;
-        } else {
-            console.log(`"${key}" is already defined in \`process.env\` and will not be overwritten`)
+            return;
         }
+
+        if (overwrite) {
+            process.env[key] = value;
+            return;
+        }
+
+        console.log(`'${key}' is already defined.`);
     });
 }
 // #endregion module

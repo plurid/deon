@@ -12,6 +12,11 @@ export interface DeonParseOptions {
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;
 
 
+export interface DeonLoadEnvironmentOptions {
+    overwrite?: boolean;
+}
+
+
 export interface DeonStringifyOptions {
     readable: boolean;
     indentation: number;
