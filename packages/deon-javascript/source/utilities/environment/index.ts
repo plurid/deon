@@ -4,6 +4,13 @@
         spawn,
     } from 'child_process';
     // #endregion libraries
+
+
+    // #region external
+    import {
+        DeonLoadEnvironmentOptions,
+    } from '../../data/interfaces';
+    // #endregion external
 // #endregion imports
 
 
@@ -94,15 +101,35 @@ const setEnvironment = (
 }
 
 
-const spawnEnvironmentCommand = async (
-    data: any,
+const spawnEnvironmentCommand = (
     command: string[],
+    data: any,
+    options: DeonLoadEnvironmentOptions,
 ) => {
     const cleanData = cleanEnvironmentData(data);
 
     if (!cleanData) {
         return;
     }
+
+    const env: any = {
+        ...process.env,
+    };
+
+    Object.entries(data).map(([key, value]) => {
+        if (typeof value !== 'string') {
+            return;
+        }
+
+        if (
+            env[key]
+            && !options.overwrite
+        ) {
+            return;
+        }
+
+        env[key] = value;
+    });
 
     // Based on cross-env
     // https://github.com/kentcdodds/cross-env/blob/master/src/index.js
@@ -111,10 +138,7 @@ const spawnEnvironmentCommand = async (
         command.slice(1),
         {
             stdio: 'inherit',
-            env: {
-                ...process.env,
-                ...cleanData,
-            },
+            env,
         },
     );
 

@@ -130,8 +130,8 @@ class Deon {
             });
 
         program
-            .command('environment <source> [command...]')
-            .description('loads environment variables from a ".deon" file')
+            .command('environment <source> <command...>')
+            .description('loads environment variables from a ".deon" file and spawns a new command')
             .option(
                 '-w, --writeover',
                 'overwrite keys if already defined',
@@ -142,20 +142,13 @@ class Deon {
                 command: string[],
                 options,
             ) => {
-                if (command.length === 0) {
-                    await this.loadEnvironment(
-                        source,
-                        {
-                            overwrite: options.writeover,
-                        },
-                    );
-                    return;
-                }
-
                 const data = await this.parseFile<any>(source);
                 spawnEnvironmentCommand(
-                    data,
                     command,
+                    data,
+                    {
+                        overwrite: options.writeover,
+                    },
                 );
             });
 
