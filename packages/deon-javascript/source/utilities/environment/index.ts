@@ -28,9 +28,8 @@ const verifyEnvironmentData = (
 }
 
 
-const setEnvironment = (
+const cleanEnvironmentData = (
     data: any,
-    overwrite?: boolean,
 ) => {
     const verification = verifyEnvironmentData(data);
 
@@ -38,8 +37,47 @@ const setEnvironment = (
         return;
     }
 
-    Object.keys(data).forEach((key) => {
-        const value = data[key];
+    const cleanData: any = {};
+
+    for (const [key, value] of Object.entries(data)) {
+        if (typeof value === 'string') {
+            cleanData[key] = value;
+            continue;
+        }
+
+        if (Array.isArray(value)) {
+            let isStringArray = true;
+
+            value.forEach(item => {
+                if (typeof item !== 'string') {
+                    isStringArray = false;
+                };
+            });
+
+            if (isStringArray) {
+                cleanData[key] = value.join(' ');
+            }
+
+            continue;
+        }
+    }
+
+    return cleanData;
+}
+
+
+const setEnvironment = (
+    data: any,
+    overwrite?: boolean,
+) => {
+    const cleanData = cleanEnvironmentData(data);
+
+    if (!cleanData) {
+        return;
+    }
+
+    Object.keys(cleanData).forEach((key) => {
+        const value = cleanData[key];
 
         if (typeof value !== 'string') {
             return;
@@ -66,9 +104,9 @@ const spawnEnvironmentCommand = async (
     data: any,
     command: string[],
 ) => {
-    const verification = verifyEnvironmentData(data);
+    const cleanData = cleanEnvironmentData(data);
 
-    if (!verification) {
+    if (!cleanData) {
         return;
     }
 
@@ -81,7 +119,7 @@ const spawnEnvironmentCommand = async (
             stdio: 'inherit',
             env: {
                 ...process.env,
-                ...data,
+                ...cleanData,
             },
         },
     );
