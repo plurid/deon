@@ -38,9 +38,11 @@
         "test": "jest -c ./configurations/jest.config.js ./source",
         "test.suite": "jest -c ./configurations/jest.config.js",
         "watch": "rollup -c ./scripts/rollup.config.js -w",
+        "clean": "rm -rf ./distribution",
         "build.cleanup": "find ./distribution -type d -name '*__tests__' -exec rm -rf {} + && find ./distribution -type f -name '*.DS_Store' -exec rm -rf {} +",
-        "build": "rollup -c ./scripts/rollup.config.js",
-        "prepublishOnly": "yarn build && yarn build.cleanup"
+        "build.production": "rollup -c ./scripts/rollup.config.js",
+        "build": "yarn clean && yarn build.production && yarn build.cleanup",
+        "prepublishOnly": "yarn build"
     },
     "dependencies": {
         "commander": "^6.2.0",
