@@ -1497,7 +1497,7 @@ fn main() {
 ## Packages
 
 
-<a target="_blank" href="https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode">
+<a target="_blank" href="https://marketplace.visualstudio.com/items?itemName=plurid.deon-grammar">
     <img src="https://img.shields.io/badge/vscode-v.0.0.8-1380C3?style=for-the-badge" alt="Version">
 </a>
 
