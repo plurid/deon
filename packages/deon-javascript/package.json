@@ -17,6 +17,7 @@
     },
     "homepage": "https://github.com/plurid/deon/tree/master/packages/deon-javascript/README.md",
     "publishConfig": {
+        "registry": "https://registry.npmjs.org/",
         "access": "public"
     },
     "engines": {
