@@ -20,7 +20,7 @@ const indentLevel = (
     let spacing = '';
 
     for (let i = 0; i < indent; i++) {
-        spacing += spaces || SPACING_FOUR;
+        spacing += spaces ?? SPACING_FOUR;
     }
 
     return spacing;
