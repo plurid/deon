@@ -47,12 +47,15 @@ class Stringifier {
     constructor(
         options?: PartialDeonStringifyOptions,
     ) {
-        const baseSpacing = options?.indentation === 2
-            ? SPACING_TWO
-            : SPACING_FOUR;
+        const indent = options?.indentation ?? 4;
+
+        let spacing = '';
+        for (let i = 0; i < indent; i++) {
+            spacing += ' ';
+        }
 
         // this.options = options;
-        this.baseSpacing = baseSpacing;
+        this.baseSpacing = spacing;
     }
 
 
