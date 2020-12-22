@@ -613,6 +613,51 @@ spread abc
 
 
 
+    it('simple - string list spread in list with other values', async () => {
+        const dataValues = `
+{
+    entity [
+        one
+        two
+        ...#spread
+        five
+        six
+    ]
+}
+
+spread [
+    three
+    four
+]
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        log(data);
+
+
+        expect(data.entity[0]).toEqual('one');
+        expect(data.entity[1]).toEqual('two');
+        expect(data.entity[2]).toEqual('three');
+        expect(data.entity[3]).toEqual('four');
+        expect(data.entity[4]).toEqual('five');
+        expect(data.entity[5]).toEqual('six');
+        expect(data.entity.length).toEqual(6);
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.leaflinks} - simple - string spread in list with other values`,
+        );
+    });
+
+
+
     it('simple - environment variables', async () => {
         process.env.ENV_ONE = 'aValue';
         process.env.ENV_TWO = 'anotherValue';

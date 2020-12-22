@@ -616,8 +616,19 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         if (leaflink) {
             // to handle multi-array spreading
             if (Array.isArray(leaflink)) {
-                for (const [index, value] of leaflink.entries()) {
-                    this.environment.define(index + '', value);
+                const all = this.environment.getAll();
+
+                if (all.size === 0) {
+                    for (const [index, value] of leaflink.entries()) {
+                        this.environment.define(index + '', value);
+                    }
+                } else {
+                    for (const [index, value] of leaflink.entries()) {
+                        const all = this.environment.getAll();
+                        const idx = all.size + index;
+
+                        this.environment.define(idx  + '', value);
+                    }
                 }
             }
 
@@ -788,14 +799,54 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         try {
             this.environment = environment;
 
-            for (const [index, statement] of statements.entries()) {
-                const value: any = this.executeSynchronous(statement);
+            let tempEnv;
+            let idx = 0;
 
-                if (value) {
-                    this.environment.define(
-                        index + '',
-                        value,
-                    );
+            // Loops over statements
+            // and handles the spread in list case
+            for (const [_, statement] of statements.entries()) {
+                if (statement instanceof Statement.SpreadStatement) {
+                    tempEnv = this.environment;
+                    this.environment = new Environment();
+                    statement.accept(this);
+                    const holder = this.environment;
+                    this.environment = tempEnv;
+
+                    for (const [_, value] of holder.getAll()) {
+                        this.environment.define(
+                            idx + '',
+                            value,
+                        );
+
+                        idx += 1;
+                    }
+
+                    continue;
+                }
+
+                tempEnv = this.environment;
+                this.environment = new Environment();
+                this.executeSynchronous(statement);
+                const holder = this.environment;
+                this.environment = tempEnv;
+
+                for (const [index, value] of holder.getAll()) {
+                    if (
+                        typeof parseInt(index) === 'number'
+                        && !isNaN(parseInt(index))
+                    ) {
+                        this.environment.define(
+                            idx + '',
+                            value,
+                        );
+
+                        idx += 1;
+                    } else {
+                        this.environment.define(
+                            index + '',
+                            value,
+                        );
+                    }
                 }
             }
 
