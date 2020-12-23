@@ -797,6 +797,9 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         let local;
 
         try {
+            // TODO
+            // cleanup
+
             this.environment = environment;
 
             let tempEnv;
@@ -804,7 +807,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             // Loops over statements
             // and handles the spread in list case
-            for (const [_, statement] of statements.entries()) {
+            for (const [index, statement] of statements.entries()) {
                 if (statement instanceof Statement.SpreadStatement) {
                     tempEnv = this.environment;
                     this.environment = new Environment();
@@ -812,13 +815,27 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                     const holder = this.environment;
                     this.environment = tempEnv;
 
-                    for (const [_, value] of holder.getAll()) {
-                        this.environment.define(
-                            idx + '',
-                            value,
-                        );
+                    for (const [index, value] of holder.getAll()) {
+                        if (
+                            typeof parseInt(index as any) === 'number'
+                            && !isNaN(parseInt(index as any))
+                        ) {
+                            this.environment.define(
+                                idx + '',
+                                value,
+                            );
 
-                        idx += 1;
+                            idx += 1;
+                        } else {
+                            if (index === 'enclosing' || index === 'values') {
+                                continue;
+                            }
+
+                            this.environment.define(
+                                index + '',
+                                value,
+                            );
+                        }
                     }
 
                     continue;
@@ -826,9 +843,29 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
                 tempEnv = this.environment;
                 this.environment = new Environment();
-                this.executeSynchronous(statement);
+                const value = this.executeSynchronous(statement);
                 const holder = this.environment;
                 this.environment = tempEnv;
+
+                if (value) {
+                    if (
+                        typeof parseInt(index as any) === 'number'
+                        && !isNaN(parseInt(index as any))
+                    ) {
+                        this.environment.define(
+                            idx + '',
+                            value,
+                        );
+
+                        idx += 1;
+                    } else {
+                        this.environment.define(
+                            index + '',
+                            value,
+                        );
+                    }
+                    continue;
+                }
 
                 for (const [index, value] of holder.getAll()) {
                     if (
