@@ -47,6 +47,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Values](#values)
 + [Maps](#maps)
 + [Lists](#lists)
++ [Structures](#structures)
 + [Comments](#comments)
 + [Linking](#linking)
 + [Importing](#importing)
@@ -634,6 +635,30 @@ listName [
 ]
 ```
 
+
+## Structures
+
+A `structure` is used to specify structured data
+
+```
+{
+    aStructure <
+        // structure signature
+        id
+        value
+    > [
+        // first data entry
+        one
+        two
+        // second data entry
+        three
+        four
+        // third data entry
+        five
+        six
+    ]
+}
+```
 
 
 ## Comments
