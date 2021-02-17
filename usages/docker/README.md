@@ -35,5 +35,21 @@ where `LANGUAGE_X` is the appropriate implementation:
 Commands can be issued with
 
 ``` bash
-docker-deon <path/to/source/file.deon> <path/to/generated/dockerfile>
+docker-deon <path/to/source/file.deon> <path/to/generate/dockerfile>
+```
+
+The `.deon` source file is comprised of a `deon` list at the root-level, using all the other `deon` features (imports, leaflinks, etc.).
+
+Each item of the root list is considered a docker stage. A stage can be specified using a `deon` list of literals, e.g., `FROM imagene:version`, or a special `deon` map following the interface
+
+``` typescript
+interface DockerDeonStageMap {
+    imagene: string;
+    arguments?: string[];
+    environment?: Record<string, string>;
+    directory?: string;
+    actions?: string[];
+    literals?: string[];
+    command?: string[];
+}
 ```
