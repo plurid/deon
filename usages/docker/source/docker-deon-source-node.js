@@ -119,7 +119,11 @@ const writeDockerfile = async (
             if (Array.isArray(stage)) {
                 dockerText += `# Stage ${index}\n`;
                 dockerText += stage.join('\n');
-                dockerText += '\n\n\n';
+
+                const endString = index < data.length - 1
+                    ? '\n\n\n'
+                    : '\n';
+                dockerText += endString;
                 continue;
             }
 
