@@ -96,5 +96,5 @@ For repeated usage, aliases are recommended
 
 ``` bash
 alias d='docker'
-alais ddeon='docker-deon'
+alias ddeon='docker-deon'
 ```
