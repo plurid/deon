@@ -15,7 +15,7 @@ INTERPRETER=`which $LANGUAGE_INTERPRETER`
 echo $INTERPRETER
 head -1 ./source/docker-deon
 
-# if INTERPRETER does not equal head
+# if INTERPRETER does not equal head, replace the value
 sed -i "1s+.*+\#\!$INTERPRETER+" ./source/docker-deon
 
 sudo chmod +x ./source/docker-deon

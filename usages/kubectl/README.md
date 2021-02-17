@@ -17,7 +17,7 @@ INTERPRETER=`which $LANGUAGE_INTERPRETER`
 echo $INTERPRETER
 head -1 ./source/kubectl-deonly
 
-# if INTERPRETER does not equal head
+# if INTERPRETER does not equal head, replace the value
 sed -i "1s+.*+\#\!$INTERPRETER+" ./source/kubectl-deonly
 
 sudo chmod +x ./source/kubectl-deonly
