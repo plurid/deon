@@ -1,4 +1,4 @@
-// import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 import typescript from 'rollup-plugin-typescript2';
@@ -21,26 +21,17 @@ export default {
             exports: 'named',
         },
     ],
-    // external: [
-    //     'fs',
-    //     'path',
-    //     'util',
-    //     'http',
-    //     'stream',
-    //     'https',
-    //     'url',
-    //     'zlib',
-    //     'child_process',
-    //     'events',
-    //     'commander',
-    //     'cross-fetch',
-    //     'encoding',
-    // ],
+    external: [
+        'commander',
+        'cross-fetch',
+        'encoding',
+        'sync-fetch',
+    ],
     watch: {
         include: 'source/**',
     },
     plugins: [
-        // nodeResolve(),
+        nodeResolve(),
         commonjs(),
         sourceMaps(),
         typescript({
