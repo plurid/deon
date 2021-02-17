@@ -23,7 +23,7 @@ sudo chmod +x ./source/docker-deon
 sudo mv ./source/docker-deon /usr/local/bin
 ```
 
-where `[language-x]` is the appropriate implementation:
+where `LANGUAGE_X` is the appropriate implementation:
 
 + NodeJS:
     + `LANGUAGE_FILE`: `node.js`
