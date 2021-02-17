@@ -5,19 +5,31 @@ Use `.deon` files with `kubectl` to `apply` configurations to the Kubernetes clu
 
 The script leverages the [`kubectl` plugins](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/) mechanism.
 
-In order to use the `kubectl-deonly` script, rename the source with copy, make it an executable, move it to the binaries folder.
+In order to use the `kubectl-deonly` script, rename the source with copy, check interpreter path, make it an executable, move it to the binaries folder.
 
 ``` bash
-cp ./source/kubectl-deonly-source-[language] ./source/kubectl-deonly
+LANGUAGE_FILE=""
+LANGUAGE_INTERPRETER=""
+
+cp ./source/kubectl-deonly-source-$LANGUAGE_FILE ./source/kubectl-deonly
+
+INTERPRETER=`which $LANGUAGE_INTERPRETER`
+echo $INTERPRETER
+head -1 ./source/kubectl-deonly
+
+# if INTERPRETER does not equal head
+sed -i "1s+.*+\#\!$INTERPRETER+" ./source/kubectl-deonly
 
 sudo chmod +x ./source/kubectl-deonly
 
 sudo mv ./source/kubectl-deonly /usr/local/bin
 ```
 
-where `[language]` is the appropriate implementation:
+where `LANGUAGE_X` is the appropriate implementation:
 
-+ `node.js` - NodeJS
++ NodeJS:
+    + `LANGUAGE_FILE`: `node.js`
+    + `LANGUAGE_INTERPRETER`: `node`
 
 The name `kubectl-deonly` is a play on `deon` + `apply` and can be changed to anything else following the pattern `kubectl-name`.
 
