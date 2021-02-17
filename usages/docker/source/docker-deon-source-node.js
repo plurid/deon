@@ -33,6 +33,11 @@ const composeStage = (
     index,
     stage,
 ) => {
+    if (!stage.imagene) {
+        console.log(`Stage ${index} has no imagene.`);
+        return;
+    }
+
     let stageString = `# Stage ${index}\n`;
 
     const fromString = 'FROM ' + stage.imagene + '\n';
@@ -50,13 +55,18 @@ const composeStage = (
         }
     }
 
-    if (stage.workdir) {
-        const workdirString = 'WORKDIR ' + stage.workdir + '\n';
+    if (stage.directory) {
+        const workdirString = 'WORKDIR ' + stage.directory + '\n';
         stageString += workdirString;
     }
 
-    if (stage.executes) {
-        stageString += stage.executes.join('\n');
+    if (stage.actions) {
+        stageString += stage.actions.join('\n');
+        stageString += '\n';
+    }
+
+    if (stage.literals) {
+        stageString += stage.literals.join('\n');
         stageString += '\n';
     }
 
@@ -128,8 +138,6 @@ const writeDockerfile = async (
             dockerText,
         );
     } catch (error) {
-        console.log(error);
-
         console.log(`Could not write 'Dockerfile' file '${target}'`);
     }
 }
