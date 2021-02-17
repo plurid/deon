@@ -1269,6 +1269,7 @@ const data = Deon.parse(
 
 `deon` can be plugged in into:
 
++ [`docker`](https://github.com/plurid/deon/tree/master/usages/docker)
 + [`kubectl`](https://github.com/plurid/deon/tree/master/usages/kubectl)
 
 
