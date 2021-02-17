@@ -9,7 +9,7 @@ Generate `dockerfile`s from `.deon` files.
 
 ## Install
 
-In order to use the `docker-deon` script, rename the source with copy, check interpreter path, make it an executable, move it to the binaries folder.
+In order to setup the `docker-deon` script, rename the source with copy, check interpreter path, make it an executable, move it to the binaries folder.
 
 ``` bash
 LANGUAGE_FILE=""
