@@ -1,7 +1,13 @@
 # docker
 
 
+
+## About
+
 Generate `dockerfile`s from `.deon` files.
+
+
+## Install
 
 In order to use the `docker-deon` script, rename the source with copy, check interpreter path, make it an executable, move it to the binaries folder.
 
@@ -32,11 +38,16 @@ where `LANGUAGE_X` is the appropriate implementation:
 `docker-deon` NodeJS leverages the [`NodeJS`](https://nodejs.org) runtime and the [`@plurid/deon`](https://www.npmjs.com/package/@plurid/deon) NPM package. Ensure that they are properly installed before using `docker-deon`.
 
 
+## Use
+
 Commands can be issued with
 
 ``` bash
 docker-deon <path/to/source/file.deon> <path/to/generate/dockerfile>
 ```
+
+
+## Description
 
 The `docker` `.deon` source file is comprised of a `deon` list at the root-level, using all the other `deon` features ([imports](https://github.com/plurid/deon#importing), [leaflinks](https://github.com/plurid/deon#linking), etc.).
 
@@ -76,4 +87,14 @@ interface DockerDeonStageMap {
      */
     command?: string[];
 }
+```
+
+
+## Customization
+
+For repeated usage, aliases are recommended
+
+``` bash
+alias d='docker'
+alais ddeon='docker-deon'
 ```
