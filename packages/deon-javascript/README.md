@@ -52,6 +52,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Linking](#linking)
 + [Importing](#importing)
 + [Injecting](#injecting)
++ [Interpolation](#interpolation)
 + [Stringifying](#stringifying)
 + [Parsing](#parsing)
 + [Literals](#literals)
@@ -1101,6 +1102,54 @@ inject secretFile from https://example.com/secret-file with #secret
 
 {
     key #secretFile
+}
+```
+
+
+
+## Interpolation
+
+A `string` value can be interpolated in another `string` using the `#{}` syntax.
+
+``` deon
+{
+    key value1 #{value2Key} value3
+    list [
+        value1 #{value2Key}
+        value3
+    ]
+}
+
+value2Key value2-text
+```
+
+which will produce the result
+
+``` deon
+{
+    key value1 value2-text text3
+    list [
+        value1 value2-text
+        value3
+    ]
+}
+```
+
+
+A `deon` entity, `map`, `list`, `string`, can be "called" to provision the interpolation values dynamically, on a use-case basis.
+
+``` deon
+aKey {
+    subKey value1 #{value2} value3
+}
+
+{
+    key1 #aKey(
+        value2 value2-text
+    )
+    key2 #aKey(
+        value2 value2-different-text
+    )
 }
 ```
 
