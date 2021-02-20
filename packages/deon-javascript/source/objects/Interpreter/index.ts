@@ -8,6 +8,10 @@
         deonParseOptions,
     } from '../../data/constants';
 
+    // TOFIX: circular dependency
+    import Deon from '../Deon';
+    import DeonPure from '../DeonPure';
+
     import * as Expression from '../Expression';
     import * as Statement from '../Statement';
     import Environment from '../Environment';
