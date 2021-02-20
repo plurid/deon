@@ -9,6 +9,8 @@
 		TextDocumentSyncKind,
 		InitializeResult
 	} from 'vscode-languageserver/node';
+
+	import Deon from '@plurid/deon';
 	// #endregion libraries
 
 
@@ -117,20 +119,40 @@ connection.onDidChangeWatchedFiles(_change => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	async (_textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
+	async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+		const document = documents.get(textDocumentPosition.textDocument.uri);
+
+		if (!document) {
+			return [];
+		}
+
+		const offset = document.offsetAt(textDocumentPosition.position);
+		const text = document.getText();
+
+		const deon = new Deon();
+		const parsedData = await deon.parse(text);
+
+
 		return [
 			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
+				label: JSON.stringify(parsedData),
+				kind: CompletionItemKind.Field,
 				data: 1
 			},
 			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
+				label: 'two',
+				kind: CompletionItemKind.Value,
 				data: 2
+			},
+			{
+				label: 'three',
+				kind: CompletionItemKind.Variable,
+				data: 3
+			},
+			{
+				label: 'four',
+				kind: CompletionItemKind.Text,
+				data: 4
 			}
 		];
 	}
