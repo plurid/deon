@@ -1,0 +1,194 @@
+{
+  "name": "deon",
+  "scopeName": "source.deon",
+  "patterns": [
+    {
+      "include": "#core"
+    }
+  ],
+  "repository": {
+    "core": {
+      "patterns": [
+        {
+          "include": "#general"
+        },
+        {
+          "include": "#curly"
+        }
+      ]
+    },
+    "general": {
+      "patterns": [
+        {
+          "match": "^(inject)\\s+?([^\\s]+)\\s+?(from)\\s*?([^\\s]+)\\s*?(with)?\\s*?([^\\s]+)?$",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.deon"
+            },
+            "2": {
+              "name": "variable.other.constant.deon"
+            },
+            "3": {
+              "name": "entity.name.function.deon"
+            },
+            "4": {
+              "name": "variable.other.constant.deon"
+            },
+            "5": {
+              "name": "entity.name.function.deon"
+            },
+            "6": {
+              "name": "variable.other.constant.deon"
+            }
+          }
+        },
+        {
+          "match": "^(import)\\s+?([^\\s]+)\\s+?(from)\\s*?([^\\s]+)\\s*?(with)?\\s*?([^\\s]+)?$",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.deon"
+            },
+            "2": {
+              "name": "variable.other.constant.deon"
+            },
+            "3": {
+              "name": "entity.name.function.deon"
+            },
+            "4": {
+              "name": "variable.other.constant.deon"
+            },
+            "5": {
+              "name": "entity.name.function.deon"
+            },
+            "6": {
+              "name": "variable.other.constant.deon"
+            }
+          }
+        },
+        {
+          "match": "^\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "\\s*\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "\\s*\\/\\/.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\/\\/.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "\\s\\/\\*.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\/\\*.*",
+          "name": "comment.deon"
+        },
+        {
+          "match": ".*\\s\\*\\/",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^\\*\\/",
+          "name": "comment.deon"
+        },
+        {
+          "match": "^(\\S+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(\\S+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
+        }
+      ]
+    },
+    "curly-keywords": {
+      "patterns": [
+        {
+          "match": "^\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "\\s*\\.\\.\\.(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "(#.+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct"
+            }
+          }
+        },
+        {
+          "match": "^\\s*?(\\w+)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.deon"
+            }
+          }
+        }
+      ]
+    },
+    "curly": {
+      "begin": "{",
+      "end": "}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.paren.open.curly"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.paren.close.curly"
+        }
+      },
+      "name": "expression.group.curly",
+      "patterns": [
+        {
+          "include": "#core"
+        },
+        {
+          "include": "#curly-keywords"
+        }
+      ]
+    }
+  }
+}

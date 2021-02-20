@@ -1,0 +1,19 @@
+{
+	"name": "deon-language-server",
+	"description": "Deon Language Server",
+	"version": "0.0.0",
+	"author": "ly3xqhl8g9 <ly3xqhl8g9@plurid.com> (https://plurid.com)",
+	"license": "SEE LICENSE IN LICENSE",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/plurid/deon"
+	},
+	"engines": {
+		"node": "*"
+	},
+	"dependencies": {
+		"vscode-languageserver": "^7.0.0",
+		"vscode-languageserver-textdocument": "^1.0.1"
+	},
+	"scripts": {}
+}
