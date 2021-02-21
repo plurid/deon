@@ -7,7 +7,10 @@
 		CompletionItemKind,
 		TextDocumentPositionParams,
 		TextDocumentSyncKind,
-		InitializeResult
+		InitializeResult,
+		// Hover,
+		// SignatureHelp,
+		// Location,
 	} from 'vscode-languageserver/node';
 	// #endregion libraries
 
@@ -66,15 +69,19 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
-			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
 				triggerCharacters: [
 					'#',
-					'.'
-				]
-			}
-		}
+					'.',
+				],
+			},
+			// hoverProvider: true,
+			// signatureHelpProvider: {
+			// 	triggerCharacters: [ '(' ],
+			// },
+			// definitionProvider: true,
+		},
 	};
 	if (hasWorkspaceFolderCapability) {
 		result.capabilities.workspace = {
@@ -98,6 +105,7 @@ connection.onInitialized(() => {
 	}
 });
 
+
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
@@ -116,6 +124,7 @@ connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
 });
+
 
 // This handler provides the initial list of the completion items.
 let completionValue: null | any = null;
@@ -246,4 +255,51 @@ connection.onCompletionResolve(
 		}
 	}
 );
+
+
+// connection.onHover(
+// 	(data): Hover => {
+// 		return {
+// 			contents: {
+// 				kind: 'markdown',
+// 				language: 'deon',
+// 				value: `## heading`
+// 			},
+// 		};
+// 	}
+// );
+
+
+// connection.onSignatureHelp(
+// 	(data): SignatureHelp => {
+// 		return {
+// 			activeParameter: 0,
+// 			activeSignature: 0,
+// 			signatures: [
+// 				{
+// 					label: 'sign',
+// 				},
+// 			],
+// 		};
+// 	}
+// );
+
+
+// connection.onDefinition(
+// 	(data): Location => {
+// 		return {
+// 			uri: data.textDocument.uri,
+// 			range: {
+// 				start: {
+// 					character: 0,
+// 					line: 15,
+// 				},
+// 				end: {
+// 					character: 2,
+// 					line: 15,
+// 				},
+// 			}
+// 		};
+// 	}
+// );
 // #endregion module
