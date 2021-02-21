@@ -10,7 +10,10 @@
 		InitializeResult
 	} from 'vscode-languageserver/node';
 
-	import Deon from '@plurid/deon';
+	import {
+		internals,
+		DeonInterpreterOptions,
+	} from '@plurid/deon';
 	// #endregion libraries
 
 
@@ -46,6 +49,44 @@
 
 
 // #region module
+const {
+	Scanner,
+	Parser,
+	Interpreter,
+} = internals;
+
+const getLeaflinks = async (
+	data: string,
+) => {
+	const error = () => {}
+
+	const scanner = new Scanner(
+		data,
+		error,
+	);
+	const tokens = scanner.scanTokens();
+
+	const parser = new Parser(
+		tokens,
+		error,
+	);
+	const statements = parser.parse();
+
+	const interpretOptions: DeonInterpreterOptions = {
+		file: '',
+		parseOptions: {
+		},
+	};
+    const interpreter = new Interpreter();
+	await interpreter.interpret(
+		statements,
+		interpretOptions,
+	);
+
+	return interpreter.getLeaflinks();
+}
+
+
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
@@ -129,13 +170,14 @@ connection.onCompletion(
 		const offset = document.offsetAt(textDocumentPosition.position);
 		const text = document.getText();
 
-		const deon = new Deon();
-		const parsedData = await deon.parse(text);
+		const data = await getLeaflinks(
+			text,
+		);
 
 
 		return [
 			{
-				label: JSON.stringify(parsedData),
+				label: JSON.stringify(data),
 				kind: CompletionItemKind.Field,
 				data: 1
 			},
