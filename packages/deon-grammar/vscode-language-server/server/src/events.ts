@@ -9,11 +9,6 @@
 		TextDocumentSyncKind,
 		InitializeResult
 	} from 'vscode-languageserver/node';
-
-	import {
-		internals,
-		DeonInterpreterOptions,
-	} from '@plurid/deon';
 	// #endregion libraries
 
 
@@ -34,6 +29,8 @@
 		validateDocument,
 	} from './functions';
 
+	import getLeaflinks from './utilities/getLeaflinks';
+
 	let {
 		globalSettings,
 	} = require('./settings');
@@ -49,49 +46,6 @@
 
 
 // #region module
-const {
-	Scanner,
-	Parser,
-	Interpreter,
-} = internals;
-
-const getLeaflinks = async (
-	data: string,
-) => {
-	try {
-		const error = () => {}
-
-		const scanner = new Scanner(
-			data,
-			error,
-		);
-		const tokens = scanner.scanTokens();
-
-		const parser = new Parser(
-			tokens,
-			error,
-		);
-		const statements = parser.parse();
-
-		const interpretOptions: DeonInterpreterOptions = {
-			file: '',
-			parseOptions: {
-			},
-		};
-		const interpreter = new Interpreter();
-		await interpreter.interpret(
-			statements,
-			interpretOptions,
-		);
-
-		return interpreter.getLeaflinks();
-	} catch (error) {
-		console.log(error);
-		return {};
-	}
-}
-
-
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
@@ -177,6 +131,7 @@ connection.onCompletion(
 
 		const data = await getLeaflinks(
 			text,
+			document.uri,
 		);
 
 		const textPartial = text.slice(0, offset);
@@ -249,10 +204,10 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	async (item: CompletionItem): Promise<CompletionItem> => {
-		if (item.data === 1) {
+		if (item.data === 0) {
 			item.detail = 'TypeScript details';
 			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
+		} else if (item.data === 1) {
 			item.detail = 'JavaScript details';
 			item.documentation = 'JavaScript documentation';
 		}
