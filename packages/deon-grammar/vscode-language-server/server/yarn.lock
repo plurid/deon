@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@plurid/deon@^0.0.0-1":
-  version "0.0.0-1"
-  resolved "https://registry.yarnpkg.com/@plurid/deon/-/deon-0.0.0-1.tgz#39e45b7ec460bcc9675f94fd48c1d9dee5a058a3"
-  integrity sha512-wUiX0M3wweoBKJLRjROabSLIjC6+7hHtW4lApEsm/HqBocQV0bufwexKl8jlLWgcnaGXPTFx9rCRFIbu4dBC7g==
+"@plurid/deon@^0.0.0-2":
+  version "0.0.0-2"
+  resolved "https://registry.yarnpkg.com/@plurid/deon/-/deon-0.0.0-2.tgz#07f9987105080765cfd728a1fa595e2db1249609"
+  integrity sha512-eImuH+GApzD4yByPuH9LxMRxxD8FqFBAXfdzkoYEAXxsPuLc7W+D7UBuWD9t/i7PtV8kd53FzSlBHXL+rtlMiQ==
   dependencies:
     commander "^7.0.0"
     cross-fetch "^3.0.6"
