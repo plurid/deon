@@ -789,6 +789,24 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
         return value;
     }
 
+    public getLeaflinks() {
+        const obj: any = {};
+
+        const values = this.leaflinks.getAll();
+
+        for (const [key, value] of values) {
+            if (value instanceof Environment) {
+                const envValues = value.getAll();
+                obj[key] = this.extractFromValues(envValues);
+            } else {
+                obj[key] = value;
+            }
+        }
+
+        return obj;
+    }
+
+
 
     private executeBlock(
         statements: Statement.Statement[],
