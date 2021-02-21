@@ -118,100 +118,132 @@ connection.onDidChangeWatchedFiles(_change => {
 });
 
 // This handler provides the initial list of the completion items.
+let completionValue: null | any = null;
+
 connection.onCompletion(
 	async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
-		const document = documents.get(textDocumentPosition.textDocument.uri);
+		try {
+			const document = documents.get(textDocumentPosition.textDocument.uri);
 
-		if (!document) {
-			return [];
-		}
-
-		const offset = document.offsetAt(textDocumentPosition.position);
-		const text = document.getText();
-
-		const data = await getLeaflinks(
-			text,
-			document.uri,
-		);
-
-		const textPartial = text.slice(0, offset);
-
-		if (!textPartial) {
-			return [];
-		}
-
-		let textValue = '';
-
-		// read the textPartial slice from the end until the #
-		for (let i = textPartial.length - 1; i > 0; i -= 1) {
-			const char = textPartial[i];
-			if (char === '#') {
-				textValue = textPartial.slice(i);
-				break;
+			if (!document) {
+				return [];
 			}
-		}
 
-		if (!textValue) {
-			return [];
-		}
+			const offset = document.offsetAt(textDocumentPosition.position);
+			const text = document.getText();
 
-		// based on textValue navigate the leaflinks data
-		const links = textValue.replace('#', '').split('.');
+			const data = await getLeaflinks(
+				text,
+				document.uri,
+			);
 
-		let value = {
-			...data,
-		};
-		for (const link of links) {
-			if (value[link]) {
-				value = value[link];
+			const textPartial = text.slice(0, offset);
+
+			if (!textPartial) {
+				return [];
 			}
-		}
 
-		return Object.keys(value).map((key, index) => {
-			return {
-				label: key,
-				kind: CompletionItemKind.Value,
-				data: index,
+			let textValue = '';
+
+			// read the textPartial slice from the end until the #
+			for (let i = textPartial.length - 1; i > 0; i -= 1) {
+				const char = textPartial[i];
+				if (char === '#') {
+					textValue = textPartial.slice(i);
+					break;
+				}
+			}
+
+			if (!textValue) {
+				return [];
+			}
+
+			// based on textValue navigate the leaflinks data
+			const links = textValue.replace('#', '').split('.');
+
+			let value = {
+				...data,
 			};
-		});
+			for (const link of links) {
+				const current = value[link];
 
-		// return [
-		// 	// {
-		// 	// 	label: JSON.stringify(data),
-		// 	// 	kind: CompletionItemKind.Field,
-		// 	// 	data: 1
-		// 	// },
-		// 	{
-		// 		label: textValue,
-		// 		kind: CompletionItemKind.Value,
-		// 		data: 2
-		// 	},
-		// 	// {
-		// 	// 	label: 'three',
-		// 	// 	kind: CompletionItemKind.Variable,
-		// 	// 	data: 3
-		// 	// },
-		// 	// {
-		// 	// 	label: 'four',
-		// 	// 	kind: CompletionItemKind.Text,
-		// 	// 	data: 4
-		// 	// }
-		// ];
-	}
+				if (!current) {
+					continue;
+				}
+
+				if (typeof current === 'object' && !Array.isArray(current)) {
+					value = {
+						...current,
+					};
+				} else {
+					value = undefined;
+				}
+			}
+
+			if (!value) {
+				return [];
+			}
+
+			completionValue = value;
+
+			return Object.keys(value).sort().map(key => {
+				const selection = value[key];
+				let kind: any = CompletionItemKind.Text;
+
+				if (Array.isArray(selection)) {
+					kind = CompletionItemKind.Unit;
+				}
+
+				if (typeof selection === 'string') {
+					kind = CompletionItemKind.Text;
+				}
+
+				if (typeof selection === 'object' && !Array.isArray(selection)) {
+					kind = CompletionItemKind.Struct;
+				}
+
+				return {
+					label: key,
+					data: key,
+					kind,
+				};
+			});
+		} catch (error) {
+			return [];
+		}
+	},
 );
 
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve(
 	async (item: CompletionItem): Promise<CompletionItem> => {
-		if (item.data === 0) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 1) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
+		try {
+			if (!completionValue) {
+				return item;
+			}
+
+			const selection = completionValue[item.data];
+
+			if (Array.isArray(selection)) {
+				item.detail = 'list';
+				return item;
+			}
+
+			if (typeof selection === 'string') {
+				item.detail = 'string';
+				return item;
+			}
+
+			if (typeof selection === 'object') {
+				item.detail = 'map';
+				return item;
+			}
+
+			return item;
+		} catch (error) {
+			return item;
 		}
-		return item;
 	}
 );
 // #endregion module
