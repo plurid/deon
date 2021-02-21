@@ -58,32 +58,37 @@ const {
 const getLeaflinks = async (
 	data: string,
 ) => {
-	const error = () => {}
+	try {
+		const error = () => {}
 
-	const scanner = new Scanner(
-		data,
-		error,
-	);
-	const tokens = scanner.scanTokens();
+		const scanner = new Scanner(
+			data,
+			error,
+		);
+		const tokens = scanner.scanTokens();
 
-	const parser = new Parser(
-		tokens,
-		error,
-	);
-	const statements = parser.parse();
+		const parser = new Parser(
+			tokens,
+			error,
+		);
+		const statements = parser.parse();
 
-	const interpretOptions: DeonInterpreterOptions = {
-		file: '',
-		parseOptions: {
-		},
-	};
-    const interpreter = new Interpreter();
-	await interpreter.interpret(
-		statements,
-		interpretOptions,
-	);
+		const interpretOptions: DeonInterpreterOptions = {
+			file: '',
+			parseOptions: {
+			},
+		};
+		const interpreter = new Interpreter();
+		await interpreter.interpret(
+			statements,
+			interpretOptions,
+		);
 
-	return interpreter.getLeaflinks();
+		return interpreter.getLeaflinks();
+	} catch (error) {
+		console.log(error);
+		return {};
+	}
 }
 
 
@@ -174,29 +179,69 @@ connection.onCompletion(
 			text,
 		);
 
+		const textPartial = text.slice(0, offset);
 
-		return [
-			{
-				label: JSON.stringify(data),
-				kind: CompletionItemKind.Field,
-				data: 1
-			},
-			{
-				label: 'two',
-				kind: CompletionItemKind.Value,
-				data: 2
-			},
-			{
-				label: 'three',
-				kind: CompletionItemKind.Variable,
-				data: 3
-			},
-			{
-				label: 'four',
-				kind: CompletionItemKind.Text,
-				data: 4
+		if (!textPartial) {
+			return [];
+		}
+
+		let textValue = '';
+
+		// read the textPartial slice from the end until the #
+		for (let i = textPartial.length - 1; i > 0; i -= 1) {
+			const char = textPartial[i];
+			if (char === '#') {
+				textValue = textPartial.slice(i);
+				break;
 			}
-		];
+		}
+
+		if (!textValue) {
+			return [];
+		}
+
+		// based on textValue navigate the leaflinks data
+		const links = textValue.replace('#', '').split('.');
+
+		let value = {
+			...data,
+		};
+		for (const link of links) {
+			if (value[link]) {
+				value = value[link];
+			}
+		}
+
+		return Object.keys(value).map((key, index) => {
+			return {
+				label: key,
+				kind: CompletionItemKind.Value,
+				data: index,
+			};
+		});
+
+		// return [
+		// 	// {
+		// 	// 	label: JSON.stringify(data),
+		// 	// 	kind: CompletionItemKind.Field,
+		// 	// 	data: 1
+		// 	// },
+		// 	{
+		// 		label: textValue,
+		// 		kind: CompletionItemKind.Value,
+		// 		data: 2
+		// 	},
+		// 	// {
+		// 	// 	label: 'three',
+		// 	// 	kind: CompletionItemKind.Variable,
+		// 	// 	data: 3
+		// 	// },
+		// 	// {
+		// 	// 	label: 'four',
+		// 	// 	kind: CompletionItemKind.Text,
+		// 	// 	data: 4
+		// 	// }
+		// ];
 	}
 );
 
