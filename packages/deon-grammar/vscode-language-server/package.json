@@ -8,7 +8,7 @@
 		"color": "#222222",
 		"theme": "dark"
 	},
-	"description": "Syntax highlighting for .deon files.",
+	"description": "Syntax support for .deon files.",
 	"author": "ly3xqhl8g9 <ly3xqhl8g9@plurid.com> (https://plurid.com)",
 	"license": "SEE LICENSE IN LICENSE",
 	"repository": {
