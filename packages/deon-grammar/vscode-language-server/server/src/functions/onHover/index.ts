@@ -6,23 +6,43 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
-	// #endregion internal
+
+	import {
+		documents,
+	} from '../../document';
+	// #endregion external
 // #endregion imports
 
 
 
 // #region module
 connection.onHover(
-	(data): Hover => {
-		return {
-			contents: {
-				kind: 'markdown',
-				language: 'deon',
-				value: `## heading`
-			},
-		};
+	(data): Hover | undefined => {
+		try {
+			const document = documents.get(data.textDocument.uri);
+
+			if (!document) {
+				return;
+			}
+
+			return;
+
+			// get text from position
+			// check if key
+			// resolve value
+
+			// return {
+			// 	contents: {
+			// 		kind: 'markdown',
+			// 		language: 'deon',
+			// 		value: `## heading`,
+			// 	},
+			// };
+		} catch (error) {
+			return;
+		}
 	}
 );
 // #endregion module

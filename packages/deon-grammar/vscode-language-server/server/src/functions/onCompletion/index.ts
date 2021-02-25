@@ -8,7 +8,7 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
 
 	import {
@@ -16,14 +16,14 @@
 	} from '../../document';
 
 	import getLeaflinks from '../../utilities/getLeaflinks';
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 
 
 // #region module
 // This handler provides the initial list of the completion items.
-let completionValue: null | any = null;
+export let completionValue: null | any = null;
 
 connection.onCompletion(
 	async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {

@@ -8,7 +8,7 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
 
 	import {
@@ -16,15 +16,19 @@
 	} from '../../document';
 
 	import getLeaflinks from '../../utilities/getLeaflinks';
+	// #endregion external
+
+
+	// #region internal
+	let {
+		completionValue,
+	} = require('../onCompletion');
 	// #endregion internal
 // #endregion imports
 
 
 
 // #region module
-// This handler provides the initial list of the completion items.
-let completionValue: null | any = null;
-
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve(

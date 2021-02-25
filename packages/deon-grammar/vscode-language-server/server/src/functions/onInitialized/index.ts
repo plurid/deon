@@ -6,14 +6,14 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
 
 	let {
 		hasConfigurationCapability,
 		hasWorkspaceFolderCapability,
 	} = require('../../document');
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 

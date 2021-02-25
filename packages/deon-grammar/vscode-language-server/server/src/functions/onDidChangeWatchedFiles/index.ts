@@ -3,9 +3,9 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 

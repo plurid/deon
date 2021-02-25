@@ -6,29 +6,35 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 
 
 // #region module
 connection.onDefinition(
-	(data): Location => {
-		return {
-			uri: data.textDocument.uri,
-			range: {
-				start: {
-					character: 0,
-					line: 15,
-				},
-				end: {
-					character: 2,
-					line: 15,
-				},
-			}
-		};
+	(data): Location | undefined => {
+		try {
+			return;
+
+			// return {
+			// 	uri: data.textDocument.uri,
+			// 	range: {
+			// 		start: {
+			// 			character: 0,
+			// 			line: 15,
+			// 		},
+			// 		end: {
+			// 			character: 2,
+			// 			line: 15,
+			// 		},
+			// 	}
+			// };
+		} catch (error) {
+			return;
+		}
 	},
 );
 // #endregion module

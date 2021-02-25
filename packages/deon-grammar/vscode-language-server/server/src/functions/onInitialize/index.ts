@@ -8,7 +8,7 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
 
 	let {
@@ -20,7 +20,7 @@
 		hasWorkspaceFolderCapability,
 		hasDiagnosticRelatedInformationCapability,
 	} = require('../../document');
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 
@@ -53,11 +53,11 @@ connection.onInitialize((params: InitializeParams) => {
 					'.',
 				],
 			},
-			// hoverProvider: true,
-			// signatureHelpProvider: {
-			// 	triggerCharacters: [ '(' ],
-			// },
-			// definitionProvider: true,
+			hoverProvider: true,
+			signatureHelpProvider: {
+				triggerCharacters: [ '(' ],
+			},
+			definitionProvider: true,
 		},
 	};
 	if (hasWorkspaceFolderCapability) {

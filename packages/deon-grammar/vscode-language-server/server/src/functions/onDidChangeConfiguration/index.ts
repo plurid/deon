@@ -1,5 +1,5 @@
 // #region imports
-	// #region internal
+	// #region external
 	import connection from '../../connection';
 
 	import {
@@ -23,7 +23,7 @@
 	let {
 		hasConfigurationCapability,
 	} = require('../../document');
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 

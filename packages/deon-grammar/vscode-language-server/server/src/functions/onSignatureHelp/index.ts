@@ -6,25 +6,31 @@
 	// #endregion libraries
 
 
-	// #region internal
+	// #region external
 	import connection from '../../connection';
-	// #endregion internal
+	// #endregion external
 // #endregion imports
 
 
 
 // #region module
 connection.onSignatureHelp(
-	(data): SignatureHelp => {
-		return {
-			activeParameter: 0,
-			activeSignature: 0,
-			signatures: [
-				{
-					label: 'sign',
-				},
-			],
-		};
+	(data): SignatureHelp | undefined => {
+		try {
+			return;
+
+			// return {
+			// 	activeParameter: 0,
+			// 	activeSignature: 0,
+			// 	signatures: [
+			// 		{
+			// 			label: 'sign',
+			// 		},
+			// 	],
+			// };
+		} catch (error) {
+			return;
+		}
 	},
 );
 // #endregion module
