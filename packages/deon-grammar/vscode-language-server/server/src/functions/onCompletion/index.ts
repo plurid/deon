@@ -16,6 +16,8 @@
 	} from '../../document';
 
 	import getLeaflinks from '../../utilities/getLeaflinks';
+
+	import completionHandler from '../../objects/CompletionHandler';
 	// #endregion external
 // #endregion imports
 
@@ -23,8 +25,6 @@
 
 // #region module
 // This handler provides the initial list of the completion items.
-export let completionValue: null | any = null;
-
 connection.onCompletion(
 	async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
 		try {
@@ -89,7 +89,7 @@ connection.onCompletion(
 				return [];
 			}
 
-			completionValue = value;
+			completionHandler.set(value);
 
 			return Object.keys(value).sort().map(key => {
 				const selection = value[key];

@@ -16,14 +16,9 @@
 	} from '../../document';
 
 	import getLeaflinks from '../../utilities/getLeaflinks';
+
+	import completionHandler from '../../objects/CompletionHandler';
 	// #endregion external
-
-
-	// #region internal
-	let {
-		completionValue,
-	} = require('../onCompletion');
-	// #endregion internal
 // #endregion imports
 
 
@@ -34,6 +29,8 @@
 connection.onCompletionResolve(
 	async (item: CompletionItem): Promise<CompletionItem> => {
 		try {
+			const completionValue = completionHandler.get();
+
 			if (!completionValue) {
 				return item;
 			}
