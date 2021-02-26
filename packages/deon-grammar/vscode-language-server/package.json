@@ -1,6 +1,6 @@
 {
 	"name": "deon-grammar",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"displayName": "deon",
 	"publisher": "plurid",
 	"icon": "assets/icon.png",
@@ -16,13 +16,14 @@
 		"url": "https://github.com/plurid/deon"
 	},
 	"engines": {
-		"vscode": "^1.48.0"
+		"vscode": "^1.53.0"
 	},
 	"categories": [
 		"Programming Languages"
 	],
 	"keywords": [
-		"multi-root ready"
+		"language server",
+		"syntax highlighting"
 	],
 	"activationEvents": [
 		"onLanguage:deon"
@@ -80,15 +81,14 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn compile",
-		"compile": "tsc -b",
+		"vscode:prepublish": "yarn compile && yarn compile.syntax",
 		"watch": "tsc -b -w",
+		"compile": "tsc -b",
+		"compile.syntax": "js-yaml syntaxes/deon.tmLanguage.yaml > syntaxes/deon.tmLanguage.json",
 		"postinstall": "cd client && yarn install && cd ../server && yarn install && cd ..",
 		"test": "sh ./scripts/e2e.sh",
-
-		"compile.syntax": "js-yaml syntaxes/deon.tmLanguage.yaml > syntaxes/deon.tmLanguage.json",
         "package": "yarn compile && vsce package --yarn",
-        "install.local": "code --install-extension deon-grammar-0.0.9.vsix",
+        "install.local": "code --install-extension deon-grammar-0.0.10.vsix",
         "run.local": "yarn package && yarn install.local",
         "publish": "yarn package && vsce publish -m \"\""
 	},
