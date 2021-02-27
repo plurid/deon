@@ -77,6 +77,12 @@ class Parser {
             }
 
             if (
+                current.type === TokenType.INTERPOLATE
+            ) {
+                return this.handleInterpolate();
+            }
+
+            if (
                 current.type == TokenType.SPREAD
             ) {
                 return this.handleSpread();
@@ -198,6 +204,14 @@ class Parser {
             linkName,
             expression,
             rootKind,
+        );
+    }
+
+    private handleInterpolate() {
+        const interpolate = this.peek();
+        this.advance();
+        return new Statement.InterpolateStatement(
+            interpolate,
         );
     }
 

@@ -6,6 +6,7 @@
 
     import {
         deonParseOptions,
+        INTERNAL_INTERPOLATOR_SIGN,
     } from '../../data/constants';
 
     // TOFIX: circular dependency
@@ -49,6 +50,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     };
     private interpretation: 'synchronous' | 'asynchronous' | '' = '';
     private pure: boolean;
+    private interpolatorKeys: string[] = [];
+    private interpolatorRecords: Record<string, string> = {};
 
 
     constructor(
@@ -82,6 +85,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             for (const statement of statements) {
                 if (
+                    statement instanceof Statement.InterpolateStatement
+                ) {
+                    this.visitInterpolateStatement(statement);
+                    continue;
+                }
+
+                if (
                     statement instanceof Statement.LeaflinkStatement
                 ) {
                     leaflinkStatements.push(statement);
@@ -106,6 +116,8 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 ...leaflinkStatements,
             ]);
             this.resolveRoot(rootStatement);
+
+            this.resolveInterpolatorRecords();
 
             return this.extract();
         } catch (error) {
@@ -134,6 +146,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             let rootStatement;
 
             for (const statement of statements) {
+                if (
+                    statement instanceof Statement.InterpolateStatement
+                ) {
+                    this.visitInterpolateStatement(statement);
+                    continue;
+                }
+
                 if (
                     statement instanceof Statement.LeaflinkStatement
                 ) {
@@ -219,13 +238,60 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             if (value instanceof Environment) {
                 const envValues = value.getAll();
                 const keyValue = this.extractFromValues(envValues);
-                obj[key] = keyValue;
+                obj[key] = this.solveInterpolations(keyValue);
             } else {
-                obj[key] = value;
+                obj[key] = this.solveInterpolations(value);
             }
         }
 
         return obj;
+    }
+
+    private solveInterpolations(
+        value: any,
+    ) {
+        let data = value;
+
+        for (const [key, record] of Object.entries(this.interpolatorRecords)) {
+            data = data.replace(
+                INTERNAL_INTERPOLATOR_SIGN + key,
+                record,
+            );
+        }
+
+        return data;
+    }
+
+    private resolveInterpolatorRecords() {
+        for (const interpolatorKey of this.interpolatorKeys) {
+            const accessNames = this.resolveDeepAccess(interpolatorKey);
+
+            const value: any = accessNames.reduce((previous, current) => {
+                if (previous instanceof Environment) {
+                    const value = previous.getValue(current);
+
+                    return value;
+                }
+
+                if (Array.isArray(previous)) {
+                    return previous[current];
+                }
+
+                if (typeof previous === 'object') {
+                    return previous[current];
+                }
+
+                if (typeof previous === 'string') {
+                    return previous;
+                }
+
+                return null;
+            }, this.leaflinks);
+
+            if (typeof value === 'string') {
+                this.interpolatorRecords[interpolatorKey] = value;
+            }
+        }
     }
 
     public extract() {
@@ -238,7 +304,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
                 const envValues = value.getAll();
                 obj[key] = this.extractFromValues(envValues);
             } else {
-                obj[key] = value;
+                obj[key] = this.solveInterpolations(value);
             }
         }
 
@@ -582,6 +648,19 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             : name
 
         this.environment.define(resolvedName, leaflinkValue || '');
+
+        return null;
+    }
+
+    public visitInterpolateStatement(
+        statement: Statement.InterpolateStatement,
+    ) {
+        this.interpolatorKeys.push(
+            statement.name.literal.replace(
+                INTERNAL_INTERPOLATOR_SIGN,
+                '',
+            ),
+        );
 
         return null;
     }

@@ -56,6 +56,9 @@ const nonAlphanumericCharacters = [
     '\n',
     ',',
 ];
+
+
+const INTERNAL_INTERPOLATOR_SIGN = '#-~-#';
 // #endregion module
 
 
@@ -76,5 +79,8 @@ export {
     SPACING_FOUR,
 
     nonAlphanumericCharacters,
+
+
+    INTERNAL_INTERPOLATOR_SIGN,
 };
 // #endregion exports

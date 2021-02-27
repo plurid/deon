@@ -2,6 +2,7 @@
     // #region external
     import {
         nonAlphanumericCharacters,
+        INTERNAL_INTERPOLATOR_SIGN,
     } from '../../data/constants';
 
     import {
@@ -84,7 +85,7 @@ class Scanner {
                 this.addToken(TokenType.COMMA);
                 break;
             case '#':
-                this.link();
+                this.hash();
                 break;
             case '.':
                 this.dot();
@@ -205,7 +206,35 @@ class Scanner {
         this.addTokenLiteral(TokenType.STRING, value);
     }
 
-    private link() {
+    private hash() {
+        if (this.match('{')) {
+            // Handle interpolation.
+            while (
+                this.peek() !== '}'
+                && this.peek() !== '\n'
+                && !this.isAtEnd()
+            ) {
+                this.advance();
+            }
+
+            if (this.isAtEnd()) {
+                this.deonError(this.line, 'Unterminated interpolation.');
+                return;
+            }
+
+            // The closing last bracket }.
+            this.advance();
+
+            // Extract the value without the initial hashbracket #{
+            // and without the last bracket }.
+            const value = this.source.substring(this.start + 2, this.current - 1);
+            this.addTokenLiteral(
+                TokenType.INTERPOLATE,
+                INTERNAL_INTERPOLATOR_SIGN + value,
+            );
+            return;
+        }
+
         if (this.match('\'')) {
             // Handle link string.
             while (this.peek() !== '\'' && !this.isAtEnd()) {
@@ -225,11 +254,11 @@ class Scanner {
                 return;
             }
 
-            // The closing '.
+            // The closing string mark '.
             this.advance();
 
-            // Extract the value without the initial hashstring (#')
-            // and without the last string mark.
+            // Extract the value without the initial hashstring #'
+            // and without the last string mark '.
             const value = this.source.substring(this.start + 2, this.current - 1);
             this.addTokenLiteral(TokenType.LINK, value);
             return;

@@ -38,6 +38,7 @@ class Identifier {
         let listItemLine = -1;
         let temporary: Token[] = [];
         let leaflinkIdentify = false;
+        const interpolators = [];
 
         const stringifyTemporary = () => {
             if (temporary.length > 0) {
@@ -113,6 +114,22 @@ class Identifier {
 
                 stringifyTemporary();
                 leaflinkIdentify = false;
+            }
+
+            if (
+                token.type === TokenType.INTERPOLATE
+            ) {
+                temporary.push(token);
+
+                const locatedInterpolatorToken = new Token(
+                    TokenType.INTERPOLATE,
+                    token.lexeme,
+                    token.literal,
+                    token.line,
+                );
+                interpolators.push(locatedInterpolatorToken);
+
+                continue;
             }
 
             if (
@@ -212,6 +229,7 @@ class Identifier {
         }
 
         return [
+            ...interpolators,
             ...tokens,
         ];
     }

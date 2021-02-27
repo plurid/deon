@@ -128,6 +128,12 @@ class Resolver implements Expression.Visitor<any>, Statement.Visitor<any> {
         return null;
     }
 
+    public visitInterpolateStatement(
+        statement: Statement.InterpolateStatement,
+    ) {
+        return null;
+    }
+
     public visitSpreadStatement(
         statement: Statement.SpreadStatement,
     ) {

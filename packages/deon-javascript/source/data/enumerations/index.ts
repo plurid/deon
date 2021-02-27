@@ -14,6 +14,7 @@ export enum TokenType {
     SIGNIFIER,
     STRING,
     LINK,
+    INTERPOLATE,
     IDENTIFIER,
 
     // Entities.

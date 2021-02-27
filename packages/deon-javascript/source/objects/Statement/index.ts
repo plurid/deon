@@ -31,6 +31,7 @@ export interface Visitor<T> {
     visitItemStatement: (itemStatement: ItemStatement) => T;
     visitLeaflinkStatement: (leaflinkStatement: LeaflinkStatement) => T;
     visitLinkStatement: (linkStatement: LinkStatement) => T;
+    visitInterpolateStatement: (interpolateStatement: InterpolateStatement) => T;
     visitSpreadStatement: (spreadStatement: SpreadStatement) => T;
 }
 
@@ -214,6 +215,25 @@ export class LinkStatement extends Statement {
         visitor: Visitor<T>,
     ) {
         return visitor.visitLinkStatement(this);
+    }
+}
+
+
+export class InterpolateStatement extends Statement {
+    public name: Token;
+
+    constructor(
+        name: Token,
+    ) {
+        super();
+
+        this.name = name;
+    }
+
+    accept<T>(
+        visitor: Visitor<T>,
+    ) {
+        return visitor.visitInterpolateStatement(this);
     }
 }
 
