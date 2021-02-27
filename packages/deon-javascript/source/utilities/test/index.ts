@@ -45,6 +45,7 @@ const suites = {
     template: 'Deon template literals',
     errors: 'Deon errors',
     environment: 'Deon environment',
+    interpolation: 'Deon interpolation',
 };
 // #endregion module
 
