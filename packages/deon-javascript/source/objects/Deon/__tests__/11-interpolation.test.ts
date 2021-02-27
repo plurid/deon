@@ -44,5 +44,39 @@ interpolation two
             `${suites.interpolation} - basic`,
         );
     });
+
+
+
+    it('nested', async () => {
+        const dataValues = `
+{
+    key one #{interpolation.having.levels} three
+}
+
+interpolation {
+    having {
+        levels two
+    }
+}
+        `;
+
+        const start = Date.now();
+        const deon = new Deon();
+        const data = await deon.parse(
+            dataValues,
+        );
+        const end = Date.now();
+        // log(data);
+
+
+        expect(data.key).toEqual('one two three');
+
+        compareTimeBenchmark(
+            start,
+            end,
+            'instant',
+            `${suites.interpolation} - nested`,
+        );
+    });
 });
 // #endregion module
