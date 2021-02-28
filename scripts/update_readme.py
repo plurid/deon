@@ -30,7 +30,7 @@ def main():
     root_path = os.path.split(os.path.dirname(__file__))[0]
 
     readme_paths = [
-        'packages/deon-grammar/vscode/README.md',
+        'packages/deon-grammar/vscode-language-server/README.md',
         'packages/deon-javascript/README.md',
         'packages/deon-rust/README.md',
     ]
