@@ -1,0 +1,34 @@
+// running `docker exfile ./exfile-source.deon ./path/to/root
+// will generate the files 'package.json', 'README.md', and 'tsconfig.json'
+
+{
+    exfiling {
+        // exfiling configuration
+    }
+    package.json {
+        // destination ./some/path
+        data `
+{
+    "name": "exfile",
+    "version": "0.0.0-0",
+    "description": "Exfile exmple"
+}
+        `
+    }
+    README.md {
+        data `
+# Exfile exmple
+        `
+    }
+    tsconfig.json `
+{
+    "compilerOptions": {
+        "sourceMap": true
+    },
+    "exclude": [
+        "node_modules",
+        "build"
+    ]
+}
+    `
+}
