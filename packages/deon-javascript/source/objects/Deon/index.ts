@@ -159,7 +159,7 @@ class Deon {
             .description('combine files into a single ".deon" file')
             .option(
                 '-d, --destination <file>',
-                'path to confiled file',
+                'path to confile',
                 'confile.deon',
             )
             .action(async (
@@ -180,7 +180,7 @@ class Deon {
 
         program
             .command('exfile <source>')
-            .description('extract files from a ".deon" confiled file')
+            .description('extract files from a ".deon" confile')
             .action(async (
                 source: string,
             ) => {
