@@ -43,4 +43,10 @@ export type FetcherType = 'inject' | 'import';
 
 
 export type ScanMode = 'MAP' | 'LIST' | '';
+
+
+
+export interface ConfiledFile {
+    data: string;
+}
 // #endregion module

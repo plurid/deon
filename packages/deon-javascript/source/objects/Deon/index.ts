@@ -42,6 +42,8 @@
     import {
         handleFileOutput,
         handleConvert,
+        handleConfile,
+        handleExfile,
     } from '../../utilities/cli';
 
     import {
@@ -152,6 +154,44 @@ class Deon {
                 );
             });
 
+        program
+            .command('confile <files...>')
+            .description('combine files into a single ".deon" file')
+            .option(
+                '-d, --destination <file>',
+                'path to confiled file',
+                'confile.deon',
+            )
+            .action(async (
+                files: string[],
+                options: any,
+            ) => {
+                const destination = options.destination;
+
+                try {
+                    await handleConfile(
+                        files,
+                        destination,
+                    );
+                } catch (error) {
+                    console.log(`Deon :: Could not confile '${destination}'.`);
+                }
+            });
+
+        program
+            .command('exfile <source>')
+            .description('extract files from a ".deon" confiled file')
+            .action(async (
+                source: string,
+            ) => {
+                try {
+                    await handleExfile(
+                        source,
+                    );
+                } catch (error) {
+                    console.log(`Deon :: Could not exfile '${source}'.`);
+                }
+            });
 
         await program.parseAsync(args);
 
