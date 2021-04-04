@@ -412,6 +412,8 @@ Options:
 Commands:
     convert <source> [destination]                  convert a ".json" file to ".deon"
     environment [options] <source> <command...>     loads environment variables from a ".deon" file and spawns a new command
+    confile [options] <files...>                    combine files into a single ".deon" file
+    exfile <source>                                 extract files from a ".deon" confile
 ```
 
 
