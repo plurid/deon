@@ -404,10 +404,12 @@ Usage: deon [options] [command] <file>
 read a ".deon" file and output the parsed result
 
 Options:
-    -v, --version                   output the version number
-    -o, --output <type>             output type: deon, json (default: "deon")
-    -t, --typed                     typed output (default: false)
-    -h, --help                      display help for command
+    -v, --version                                   output the version number
+    -o, --output <value>                            output type: deon, json (default: "deon")
+    -t, --typed <value>                             typed output (default: "false")
+    -f, --filesystem <value>                        allow filesystem (default: "true")
+    -n, --network <value>                           allow network (default: "true")
+    -h, --help                                      display help for command
 
 Commands:
     convert <source> [destination]                  convert a ".json" file to ".deon"
