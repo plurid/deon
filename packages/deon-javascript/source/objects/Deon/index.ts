@@ -77,7 +77,7 @@ class Deon {
             .arguments('<file>')
             .description('read a ".deon" file and output the parsed result')
             .option(
-                '-o, --output <type>',
+                '-o, --output <value>',
                 'output type: deon, json',
                 'deon',
             )
