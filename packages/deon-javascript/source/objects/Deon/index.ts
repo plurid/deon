@@ -82,16 +82,37 @@ class Deon {
                 'deon',
             )
             .option(
-                '-t, --typed',
+                '-t, --typed <value>',
                 'typed output',
-                false,
+                'false',
+            )
+            .option(
+                '-f, --filesystem <value>',
+                'allow filesystem',
+                'true',
+            )
+            .option(
+                '-n, --network <value>',
+                'allow network',
+                'true',
             ).action(async (
                 file: string,
                 options: any,
             ) => {
                 try {
+                    options = {
+                        ...options,
+                        typed: options.typed.trim().toLowerCase() === 'true',
+                        filesystem: options.filesystem.trim().toLowerCase() === 'true',
+                        network: options.network.trim().toLowerCase() === 'true',
+                    };
+
                     const data: any = await this.parseFile(
                         file,
+                        {
+                            allowFilesystem: options.filesystem,
+                            allowNetwork: options.network,
+                        },
                     );
 
                     handleFileOutput(
