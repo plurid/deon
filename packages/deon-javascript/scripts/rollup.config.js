@@ -1,11 +1,17 @@
-import { nodeResolve } from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import sourceMaps from 'rollup-plugin-sourcemaps';
-import typescript from 'rollup-plugin-typescript2';
+// #region imports
+    // #region libraries
+    import { nodeResolve } from '@rollup/plugin-node-resolve';
+    import commonjs from '@rollup/plugin-commonjs';
+    import sourceMaps from 'rollup-plugin-sourcemaps';
+    import typescript from 'rollup-plugin-typescript2';
+    import { terser } from 'rollup-plugin-terser';
+    // #endregion libraries
+// #endregion imports
 
 
 
-export default {
+// #region module
+const build = {
     input: `source/index.ts`,
     output: [
         {
@@ -38,5 +44,20 @@ export default {
             file: '../tsconfig.json',
             useTsconfigDeclarationDir: true,
         }),
+        terser({
+            mangle: false,
+            compress: false,
+            format: {
+                beautify: true,
+                comments: false,
+            },
+        }),
     ],
-}
+};
+// #endregion module
+
+
+
+// #region exports
+export default build;
+// #endregion exports
