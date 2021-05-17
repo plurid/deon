@@ -1,5 +1,7 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/plurid/deon/master/about/identity/deon-logo.png" height="250px">
+    <a target="_blank" href="https://deon.plurid.com">
+        <img src="https://raw.githubusercontent.com/plurid/deon/master/about/identity/deon-logo.png" height="250px">
+    </a>
     <br />
     <br />
     <a target="_blank" href="https://github.com/plurid/deon/blob/master/LICENSE">
