@@ -30,6 +30,11 @@
         typer,
     } from './utilities/typer';
 
+    import {
+        readDeonFile,
+        writeDeonFile,
+    } from './utilities/readwrite';
+
     import * as typings from './utilities/typer/typings';
     // #endregion internal
 // #endregion imports
@@ -70,6 +75,9 @@ export {
     customTyper,
     typer,
     typings,
+
+    readDeonFile,
+    writeDeonFile,
 
     internals,
 };
