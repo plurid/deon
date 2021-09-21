@@ -651,18 +651,14 @@ A `structure` is used to specify structured data
 {
     aStructure <
         // structure signature
-        id
-        value
+        id, value
     > [
         // first data entry
-        one
-        two
+        one, two
         // second data entry
-        three
-        four
+        three, four
         // third data entry
-        five
-        six
+        five, six
     ]
 }
 ```
