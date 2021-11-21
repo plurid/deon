@@ -7,6 +7,7 @@ export interface DeonParseOptions {
     datasignMap: Record<string, string>;
     allowFilesystem: boolean;
     allowNetwork: boolean;
+    cache: boolean;
 }
 
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;

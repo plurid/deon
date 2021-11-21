@@ -262,6 +262,20 @@ class Deon {
 
 
     /**
+     * Parse from link
+     *
+     * @param link
+     * @param options
+     */
+    public async parseLink(
+        link: string,
+        options?: PartialDeonParseOptions,
+    ) {
+
+    }
+
+
+    /**
      * Parse `deon` data.
      *
      * @param data
