@@ -8,6 +8,8 @@ export interface DeonParseOptions {
     allowFilesystem: boolean;
     allowNetwork: boolean;
     cache: boolean;
+    cacheDuration: number;
+    cacheDirectory: string;
 }
 
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;
