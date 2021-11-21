@@ -9,6 +9,8 @@
     import {
         program,
     } from 'commander';
+
+    import fetch from 'cross-fetch';
     // #endregion libraries
 
 
@@ -22,6 +24,7 @@
 
     import {
         DEON_CLI_VERSION,
+        DEON_MEDIA_TYPE,
     } from '../../data/constants';
 
     import {
@@ -239,7 +242,7 @@ class Deon {
                 'utf-8',
             );
 
-            const parsed: T = await this.parse(
+            const parsed = await this.parse<T>(
                 data,
                 {
                     ...options,
@@ -267,11 +270,34 @@ class Deon {
      * @param link
      * @param options
      */
-    public async parseLink(
+    public async parseLink<T>(
         link: string,
         options?: PartialDeonParseOptions,
     ) {
+        try {
+            const response = await fetch(
+                link,
+                {
+                    headers: {
+                        'Content-Type': DEON_MEDIA_TYPE,
+                    },
+                },
+            );
+            const data = await response.text();
 
+            const parsed = await this.parse<T>(
+                data,
+                {
+                    ...options,
+                },
+            );
+
+            return parsed;
+        } catch (error) {
+            console.log(`Deon :: Error parsing link: ${link}`);
+
+            return;
+        }
     }
 
 
