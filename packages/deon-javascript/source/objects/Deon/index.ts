@@ -275,12 +275,18 @@ class Deon {
         options?: PartialDeonParseOptions,
     ) {
         try {
+            const headers: Record<string, string> = {
+                'Content-Type': DEON_MEDIA_TYPE,
+            };
+
+            if (options?.token) {
+                headers['Deon-Token'] = options.token;
+            }
+
             const response = await fetch(
                 link,
                 {
-                    headers: {
-                        'Content-Type': DEON_MEDIA_TYPE,
-                    },
+                    headers,
                 },
             );
             const data = await response.text();

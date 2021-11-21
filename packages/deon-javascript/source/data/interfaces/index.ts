@@ -10,6 +10,7 @@ export interface DeonParseOptions {
     cache: boolean;
     cacheDuration: number;
     cacheDirectory: string;
+    token: string;
 }
 
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;

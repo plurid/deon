@@ -51,6 +51,7 @@ const deonParseOptions: DeonParseOptions = {
     cache: false,
     cacheDuration: defaultCacheDuration,
     cacheDirectory: defaultCacheDirectory,
+    token: '',
 };
 
 
