@@ -275,6 +275,12 @@ class Deon {
         options?: PartialDeonParseOptions,
     ) {
         try {
+            const cache = this.getCache(link);
+            if (cache) {
+                return cache;
+            }
+
+
             const headers: Record<string, string> = {
                 'Content-Type': DEON_MEDIA_TYPE,
             };
@@ -296,6 +302,12 @@ class Deon {
                 {
                     ...options,
                 },
+            );
+
+            this.setCache(
+                link,
+                parsed,
+                options,
             );
 
             return parsed;
@@ -447,6 +459,22 @@ class Deon {
         } catch (error) {
             console.log(`Deon :: Could not load environment '${source}'.`);
         }
+    }
+
+
+
+    private getCache(
+        name: string,
+    ) {
+        return '';
+    }
+
+    private setCache(
+        name: string,
+        data: any,
+        options?: PartialDeonParseOptions,
+    ) {
+        return true;
     }
 
 
