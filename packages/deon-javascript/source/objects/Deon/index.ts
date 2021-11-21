@@ -1,6 +1,6 @@
 // #region imports
     // #region libraries
-    import {
+    import fsSync, {
         promises as fs,
     } from 'fs';
 
@@ -25,6 +25,9 @@
     import {
         DEON_CLI_VERSION,
         DEON_MEDIA_TYPE,
+
+        defaultCacheDuration,
+        defaultCacheDirectory,
     } from '../../data/constants';
 
     import {
@@ -48,6 +51,8 @@
         handleConfile,
         handleExfile,
     } from '../../utilities/cli';
+
+    import sha from '../../utilities/sha';
 
     import {
         setEnvironment,
@@ -275,7 +280,10 @@ class Deon {
         options?: PartialDeonParseOptions,
     ) {
         try {
-            const cache = this.getCache(link);
+            const cache = await this.getCache(
+                link,
+                options,
+            );
             if (cache) {
                 return cache;
             }
@@ -463,17 +471,94 @@ class Deon {
 
 
 
-    private getCache(
+    private async getCache(
         name: string,
+        options?: PartialDeonParseOptions,
     ) {
-        return '';
+        if (typeof window !== 'undefined') {
+            return;
+        }
+
+        if (!options?.cache) {
+            return;
+        }
+
+        const cacheName = await sha.compute(name);
+        if (!cacheName) {
+            return;
+        }
+
+        const cacheDirectory = options.cacheDirectory || defaultCacheDirectory;
+        const cachePath = path.join(
+            cacheDirectory,
+            `./${cacheName}`,
+        );
+
+        if (!fsSync.existsSync(cachePath)) {
+            return;
+        }
+
+        const data = await fs.readFile(cachePath, 'utf-8');
+        const parsed = await this.parse(data);
+        if (
+            !parsed
+            || typeof parsed.cachedAt !== 'number'
+        ) {
+            return;
+        }
+
+        const cacheDuration = options.cacheDuration
+            ? options.cacheDuration
+            : parsed.cacheDuration
+                ? parseInt(parsed.cacheDuration)
+                : defaultCacheDuration;
+
+        const now = Date.now();
+
+        if ((parseInt(parsed.cachedAt) + cacheDuration) < now) {
+            return;
+        }
+
+        return parsed.data;
     }
 
-    private setCache(
+    private async setCache(
         name: string,
         data: any,
         options?: PartialDeonParseOptions,
     ) {
+        if (typeof window !== 'undefined') {
+            return;
+        }
+
+        if (!options?.cache) {
+            return;
+        }
+
+        const cacheName = await sha.compute(name);
+        if (!cacheName) {
+            return;
+        }
+
+        const cacheDirectory = options?.cacheDirectory || defaultCacheDirectory;
+        const cachePath = path.join(
+            cacheDirectory,
+            `./${cacheName}`,
+        );
+
+        const cacheDuration = options?.cacheDuration;
+
+        const cacheData = {
+            cachedAt: Date.now(),
+            cacheDuration,
+            data,
+        };
+
+        await fs.writeFile(
+            cachePath,
+            this.stringify(cacheData),
+        );
+
         return true;
     }
 

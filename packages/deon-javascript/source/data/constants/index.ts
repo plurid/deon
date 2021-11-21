@@ -91,6 +91,9 @@ export {
     fetcherDefaultImportHeaders,
     fetcherDefaultInjectHeaders,
 
+    defaultCacheDuration,
+    defaultCacheDirectory,
+
     deonParseOptions,
     deonStrigifyOptions,
 
