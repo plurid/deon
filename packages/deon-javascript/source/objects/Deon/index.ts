@@ -502,7 +502,7 @@ class Deon {
         const parsed = await this.parse(data);
         if (
             !parsed
-            || typeof parsed.cachedAt !== 'number'
+            || typeof parsed.cachedAt !== 'string'
         ) {
             return;
         }
@@ -553,6 +553,10 @@ class Deon {
             cacheDuration,
             data,
         };
+
+        if (!fsSync.existsSync(cacheDirectory)) {
+            fsSync.mkdirSync(cacheDirectory);
+        }
 
         await fs.writeFile(
             cachePath,
