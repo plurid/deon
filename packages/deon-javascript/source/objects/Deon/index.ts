@@ -516,6 +516,7 @@ class Deon {
         const now = Date.now();
 
         if ((parseInt(parsed.cachedAt) + cacheDuration) < now) {
+            await fs.unlink(cachePath);
             return;
         }
 
