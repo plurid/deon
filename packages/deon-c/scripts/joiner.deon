@@ -1,0 +1,18 @@
+{
+    #packages
+    #commands
+    #runFrom
+}
+
+
+packages [
+    ./
+]
+
+runFrom ../
+
+commands {
+    build [
+        ./scripts/build.sh
+    ]
+}
