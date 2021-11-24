@@ -1,5 +1,5 @@
-#ifndef CLI_H
-#define CLI_H
+#ifndef DEON_CLI_H
+#define DEON_CLI_H
 
 #include <stdio.h>
 #include <stdlib.h>

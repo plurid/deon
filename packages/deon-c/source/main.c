@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "cli/main.h"
+#include "deon/main.h"
 
 
 
