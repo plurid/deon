@@ -6,4 +6,4 @@ gcc \
     source/*.c \
     source/cli/*.c \
     source/deon/*.c \
-    -Wall -std=c99 -pedantic -o ./build/deon
+    -Wall -std=c17 -pedantic -o ./build/deon
