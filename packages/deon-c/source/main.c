@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "cli/main.c"
+#include "cli/main.h"
 
 
 
