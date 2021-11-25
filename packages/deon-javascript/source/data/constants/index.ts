@@ -10,7 +10,7 @@
 
 
 // #region module
-const DEON_CLI_VERSION = '0.0.0-4';
+const DEON_CLI_VERSION = '#DEON_CLI_VERSION';
 
 const DEON_FILENAME_EXTENSION = '.deon';
 const DEON_MEDIA_TYPE = 'application/deon';
@@ -54,7 +54,7 @@ const deonParseOptions: DeonParseOptions = {
     allowNetwork: true,
     cache: false,
     cacheDuration: defaultCacheDuration,
-    cacheDirectory: defaultCacheDirectory(),
+    cacheDirectory: '',
     token: '',
 };
 
