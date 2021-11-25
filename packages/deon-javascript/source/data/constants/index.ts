@@ -1,10 +1,4 @@
 // #region imports
-    // #region libraries
-    import os from 'os';
-    import path from 'path';
-    // #endregion libraries
-
-
     // #region internal
     import {
         DeonParseOptions,
@@ -34,10 +28,20 @@ const fetcherDefaultInjectHeaders = {
 
 const defaultCacheDuration = 1_000 * 60 * 60;
 
-const defaultCacheDirectory = path.join(
-    os.homedir(),
-    './.deon-cache',
-);
+const defaultCacheDirectory = () => {
+    if (typeof window !== 'undefined') {
+        // Browser not using cache.
+        return '';
+    }
+
+    const os = require('os');
+    const path = require('path');
+
+    return path.join(
+        os.homedir(),
+        './.deon-cache',
+    );
+}
 
 
 const deonParseOptions: DeonParseOptions = {
@@ -50,7 +54,7 @@ const deonParseOptions: DeonParseOptions = {
     allowNetwork: true,
     cache: false,
     cacheDuration: defaultCacheDuration,
-    cacheDirectory: defaultCacheDirectory,
+    cacheDirectory: defaultCacheDirectory(),
     token: '',
 };
 

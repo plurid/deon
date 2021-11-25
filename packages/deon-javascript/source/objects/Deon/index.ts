@@ -488,7 +488,7 @@ class Deon {
             return;
         }
 
-        const cacheDirectory = options.cacheDirectory || defaultCacheDirectory;
+        const cacheDirectory = options.cacheDirectory || defaultCacheDirectory();
         const cachePath = path.join(
             cacheDirectory,
             `./${cacheName}`,
@@ -541,7 +541,7 @@ class Deon {
             return;
         }
 
-        const cacheDirectory = options?.cacheDirectory || defaultCacheDirectory;
+        const cacheDirectory = options?.cacheDirectory || defaultCacheDirectory();
         const cachePath = path.join(
             cacheDirectory,
             `./${cacheName}`,
