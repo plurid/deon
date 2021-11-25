@@ -5,7 +5,13 @@
     import sourceMaps from 'rollup-plugin-sourcemaps';
     import typescript from 'rollup-plugin-typescript2';
     import { terser } from 'rollup-plugin-terser';
+    import replace from '@rollup/plugin-replace';
     // #endregion libraries
+
+
+    // #region external
+    import pkg from '../package.json';
+    // #endregion external
 // #endregion imports
 
 
@@ -51,6 +57,11 @@ const build = {
                 beautify: true,
                 comments: false,
             },
+        }),
+        replace({
+            "#DEON_CLI_VERSION": JSON.stringify(pkg.version),
+            delimiters: ["'", "';"],
+            preventAssignment: true,
         }),
     ],
 };
