@@ -36,7 +36,7 @@
 
 The `deon` filename extension is `.deon`, and the media type is `application/deon`.
 
-Why `deobject`? More of a play-on-words, although a case can be made considering the [linking](#linking) feature and the possible 'assembling' of the `root`, as if the object has been de-structured.
+Why `deobject`? More of a play-on-words, although a case can be made considering the [linking](#linking) feature and the possible 'assembling' of the `root`, as if the object has been de-structured. As an afterthought, `deon` could also be rooted into the greek word, [δέον](https://en.wiktionary.org/wiki/%CE%B4%CE%AD%CE%BF%CE%BD), that which is binding, such as how data binds functionality into code.
 
 
 ### Contents
