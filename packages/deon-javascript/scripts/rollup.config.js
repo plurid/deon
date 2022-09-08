@@ -17,31 +17,13 @@
 
 
 // #region module
-const build = {
-    input: `source/index.ts`,
-    output: [
-        {
-            file: './distribution/index.js',
-            format: 'cjs',
-            sourcemap: true,
-            exports: 'named',
-        },
-        {
-            file: './distribution/index.es.js',
-            format: 'es',
-            sourcemap: true,
-            exports: 'named',
-        },
-    ],
+const common = {
     external: [
         'commander',
         'cross-fetch',
         'encoding',
         'sync-fetch',
     ],
-    watch: {
-        include: 'source/**',
-    },
     plugins: [
         nodeResolve(),
         commonjs(),
@@ -65,10 +47,50 @@ const build = {
         }),
     ],
 };
+
+
+const node = {
+    input: 'source/index.ts',
+    output: [
+        {
+            file: './distribution/index.js',
+            format: 'cjs',
+            sourcemap: true,
+            exports: 'named',
+        },
+        {
+            file: './distribution/index.es.js',
+            format: 'es',
+            sourcemap: true,
+            exports: 'named',
+        },
+    ],
+    watch: {
+        include: 'source/**',
+    },
+    ...common,
+};
+
+
+const browser = {
+    input: `source/index.browser.ts`,
+    output: [
+        {
+            file: './distribution/browser.js',
+            format: 'cjs',
+            sourcemap: true,
+            exports: 'named',
+        },
+    ],
+    ...common,
+};
 // #endregion module
 
 
 
 // #region exports
-export default build;
+export default [
+    node,
+    browser,
+];
 // #endregion exports

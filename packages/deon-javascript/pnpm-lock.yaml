@@ -19,6 +19,7 @@ specifiers:
   rollup-plugin-typescript2: ^0.33.0
   sync-fetch: ^0.4.1
   ts-jest: ^28.0.8
+  tslib: ^2.4.0
   typescript: ^4.8.2
 
 dependencies:
@@ -42,6 +43,7 @@ devDependencies:
   rollup-plugin-terser: 7.0.2_rollup@2.79.0
   rollup-plugin-typescript2: 0.33.0_id3sp2lbl4kx3dskm7teaj32um
   ts-jest: 28.0.8_zdyhcbevkwd4nk5cau2hjnqbjq
+  tslib: 2.4.0
   typescript: 4.8.2
 
 packages:
