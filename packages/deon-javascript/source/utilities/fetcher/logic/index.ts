@@ -12,7 +12,7 @@
 
     import {
         solveExtensionName,
-    } from '../../general/pure';
+    } from '../../general';
     // #endregion external
 // #endregion imports
 

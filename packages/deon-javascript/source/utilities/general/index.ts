@@ -1,13 +1,12 @@
 // #region imports
-    // #region libraries
-    import path from 'path';
-    // #endregion libraries
-
-
     // #region external
     import {
         TokenType,
     } from '../../data/enumerations';
+
+    import {
+        DEON_FILENAME_EXTENSION,
+    } from '../../data/constants';
 
     import Token from '../../objects/Token';
     // #endregion external
@@ -95,18 +94,49 @@ const removeEndDoubleNewline = (
 }
 
 
-const resolveAbsolutePath = (
-    value: string,
+const isURL = (
+    path: string,
 ) => {
-    const absolutePath = path.isAbsolute(value);
-    const filepath = absolutePath
-        ? value
-        : path.join(
-            process.cwd(),
-            value,
-        );
+    return path.startsWith('http');
+}
 
-    return filepath;
+
+const solveExtensionName = (
+    type: string,
+    extname: string,
+) => {
+    if (type === 'inject') {
+        return {
+            filetype: extname,
+            concatenate: false,
+        };
+    }
+
+    if (type === 'import') {
+        if (extname === '.deon') {
+            return {
+                filetype: extname,
+                concatenate: false,
+            };
+        }
+
+        if (extname === '.json') {
+            return {
+                filetype: extname,
+                concatenate: false,
+            };
+        }
+
+        return {
+            filetype: DEON_FILENAME_EXTENSION,
+            concatenate: true,
+        };
+    }
+
+    return {
+        filetype: extname,
+        concatenate: false,
+    };
 }
 // #endregion module
 
@@ -117,6 +147,7 @@ export {
     mapToObject,
     inGroupClassify,
     removeEndDoubleNewline,
-    resolveAbsolutePath,
+    isURL,
+    solveExtensionName,
 };
 // #endregion exports

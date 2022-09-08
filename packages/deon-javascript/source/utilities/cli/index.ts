@@ -19,8 +19,11 @@
 
     import {
         removeEndDoubleNewline,
-        resolveAbsolutePath,
     } from '../general';
+
+    import {
+        resolveAbsolutePath,
+    } from '../general/impure';
 
     import {
         typer,

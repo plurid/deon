@@ -45,7 +45,7 @@
 
     import {
         resolveAbsolutePath,
-    } from '../../utilities/general';
+    } from '../../utilities/general/impure';
 
     import {
         handleFileOutput,
