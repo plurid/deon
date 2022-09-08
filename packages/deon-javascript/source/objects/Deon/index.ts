@@ -65,7 +65,7 @@
 
 // #region module
 class Deon {
-    private interpreter: Interpreter = new Interpreter();
+    private interpreter: Interpreter = new Interpreter(Deon);
     private hadError = false;
     private parsedFile = '';
 

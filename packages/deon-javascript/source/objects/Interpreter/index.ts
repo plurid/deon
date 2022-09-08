@@ -9,11 +9,9 @@
         INTERNAL_INTERPOLATOR_SIGN,
     } from '../../data/constants';
 
-    // TOFIX: circular dependency
-    import Deon from '../Deon';
-    import DeonPure from '../DeonPure';
-
     import * as Expression from '../Expression';
+    // import type Deon from '../Deon';
+    // import type DeonPure from '../DeonPure';
     import * as Statement from '../Statement';
     import Environment from '../Environment';
     import Token from '../Token';
@@ -38,6 +36,8 @@
 class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public globals: Environment = new Environment();
     public locals: Map<Expression.Expression, number> = new Map();
+
+    private Deon: any;
     private environment: Environment = this.globals;
     private leaflinks: Environment = new Environment();
     private rootEnvironment: Environment = new Environment();
@@ -55,10 +55,12 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
 
     constructor(
+        Deon: any,
         options?: {
             pure?: boolean,
         },
     ) {
+        this.Deon = Deon;
         this.pure = options?.pure || false;
     }
 
@@ -352,9 +354,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             } = result;
 
             let parsedData;
-            const deon = this.pure
-                ? new Deon()
-                : new DeonPure();
+            const deon = new this.Deon();
 
             switch (filetype) {
                 case '.deon':
@@ -409,9 +409,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
             } = result;
 
             let parsedData;
-            const deon = this.pure
-                ? new Deon()
-                : new DeonPure();
+            const deon = new this.Deon();
 
             switch (filetype) {
                 case '.deon':

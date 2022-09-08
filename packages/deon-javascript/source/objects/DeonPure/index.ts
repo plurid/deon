@@ -23,11 +23,15 @@
 
 // #region module
 class DeonPure {
-    private interpreter: Interpreter = new Interpreter({
-        pure: true,
-    });
+    private interpreter: Interpreter = new Interpreter(
+        DeonPure,
+        {
+            pure: true,
+        },
+    );
     private hadError = false;
     private parsedFile = '';
+
 
     /**
      * Parse `deon` data.
@@ -127,6 +131,7 @@ class DeonPure {
 
         return stringified;
     }
+
 
     /**
      * Log error.
