@@ -41,6 +41,8 @@
         DeonLoadEnvironmentOptions,
     } from '../../data/interfaces';
 
+    import fetcher from '../../utilities/fetcher';
+
     import {
         resolveAbsolutePath,
     } from '../../utilities/general';
@@ -65,7 +67,10 @@
 
 // #region module
 class Deon {
-    private interpreter: Interpreter = new Interpreter(Deon);
+    private interpreter: Interpreter = new Interpreter(
+        Deon,
+        fetcher,
+    );
     private hadError = false;
     private parsedFile = '';
 

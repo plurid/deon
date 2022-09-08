@@ -1,9 +1,5 @@
 // #region imports
     // #region libraries
-    import {
-        promises as fs,
-    } from 'fs';
-
     import path from 'path';
     // #endregion libraries
 

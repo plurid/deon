@@ -16,6 +16,8 @@
         PartialDeonStringifyOptions,
         DeonInterpreterOptions,
     } from '../../data/interfaces';
+
+    import fetcher from '../../utilities/fetcher/pure';
     // #endregion external
 // #endregion imports
 
@@ -25,6 +27,7 @@
 class DeonPure {
     private interpreter: Interpreter = new Interpreter(
         DeonPure,
+        fetcher,
         {
             pure: true,
         },

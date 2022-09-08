@@ -17,14 +17,6 @@
     import Token from '../Token';
 
     import {
-        fetcher as asynchronousFetcher,
-    } from '../../utilities/fetcher/asynchronous';
-
-    import {
-        fetcher as synchronousFetcher,
-    } from '../../utilities/fetcher/synchronous';
-
-    import {
         isURL,
     } from '../../utilities/general';
     // #endregion external
@@ -38,6 +30,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
     public locals: Map<Expression.Expression, number> = new Map();
 
     private Deon: any;
+    private fetcher: any;
     private environment: Environment = this.globals;
     private leaflinks: Environment = new Environment();
     private rootEnvironment: Environment = new Environment();
@@ -56,11 +49,13 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
     constructor(
         Deon: any,
+        fetcher: any,
         options?: {
             pure?: boolean,
         },
     ) {
         this.Deon = Deon;
+        this.fetcher = fetcher;
         this.pure = options?.pure || false;
     }
 
@@ -337,7 +332,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = await asynchronousFetcher(
+            const result = await this.fetcher.asynchronous(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
@@ -392,7 +387,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = synchronousFetcher(
+            const result = this.fetcher.synchronous(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
@@ -457,7 +452,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = await asynchronousFetcher(
+            const result = await this.fetcher.asynchronous(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
@@ -494,7 +489,7 @@ class Interpreter implements Expression.Visitor<any>, Statement.Visitor<any> {
 
             const authenticator = statement.authenticator?.lexeme;
 
-            const result = synchronousFetcher(
+            const result = this.fetcher.synchronous(
                 statement.path.lexeme,
                 this.options,
                 authenticator,
