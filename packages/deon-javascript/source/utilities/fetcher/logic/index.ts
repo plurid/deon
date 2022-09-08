@@ -91,6 +91,18 @@ const resolveFetchFile = (
 }
 
 
+const getExtname = (
+    value: string,
+) => {
+    const match = value.match(/\.\w*$/);
+    if (!match) {
+        return '';
+    }
+
+    return match[0];
+}
+
+
 const resolveFetchURL = (
     url: string,
     token?: string,
@@ -108,7 +120,7 @@ const resolveFetchURL = (
             ...defaultHeaders,
         };
 
-    const extname = path.extname(url);
+    const extname = getExtname(url);
     const {
         filetype,
     } = solveExtensionName(
