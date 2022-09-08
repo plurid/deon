@@ -72,11 +72,11 @@ const node = {
 };
 
 
-const browser = {
-    input: `source/index.browser.ts`,
+const pure = {
+    input: `source/index.pure.ts`,
     output: [
         {
-            file: './distribution/browser.js',
+            file: './distribution/pure.js',
             format: 'cjs',
             sourcemap: true,
             exports: 'named',
@@ -91,6 +91,6 @@ const browser = {
 // #region exports
 export default [
     node,
-    browser,
+    pure,
 ];
 // #endregion exports
