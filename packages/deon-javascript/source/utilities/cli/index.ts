@@ -26,7 +26,6 @@
         typer,
     } from '../typer';
 
-    import Deon from '../../objects/Deon';
     import Stringifier from '../../objects/Stringifier';
     // #endregion external
 // #endregion imports
@@ -137,10 +136,10 @@ const handleConfile = async (
 
 
 const handleExfile = async (
+    deon: any,
     source: string,
 ) => {
     try {
-        const deon = new Deon();
         const data: any = await deon.parseFile(source);
 
         for (const [filepath, confile] of Object.entries(data)) {

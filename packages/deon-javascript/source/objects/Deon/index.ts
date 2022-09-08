@@ -214,7 +214,10 @@ class Deon {
                 source: string,
             ) => {
                 try {
+                    const deon = new Deon();
+
                     await handleExfile(
+                        deon,
                         source,
                     );
                 } catch (error) {
