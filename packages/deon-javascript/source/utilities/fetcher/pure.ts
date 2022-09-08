@@ -7,7 +7,7 @@
 
     import {
         isURL,
-    } from '../general';
+    } from '../general/pure';
     // #endregion external
 
 

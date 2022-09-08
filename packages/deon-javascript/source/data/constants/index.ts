@@ -10,10 +10,10 @@
 
 
 // #region module
-const DEON_CLI_VERSION = '#DEON_CLI_VERSION';
+const DEON_CLI_VERSION = '#DEON_CLI_VERSION' as string;
 
-const DEON_FILENAME_EXTENSION = '.deon';
-const DEON_MEDIA_TYPE = 'application/deon';
+const DEON_FILENAME_EXTENSION = '.deon' as const;
+const DEON_MEDIA_TYPE = 'application/deon' as const;
 
 
 const fetcherDefaultImportHeaders = {

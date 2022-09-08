@@ -18,7 +18,7 @@
 
     import {
         isURL,
-    } from '../../utilities/general';
+    } from '../../utilities/general/pure';
     // #endregion external
 // #endregion imports
 

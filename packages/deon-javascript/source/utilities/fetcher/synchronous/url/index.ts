@@ -9,9 +9,7 @@
         FetcherType,
     } from '../../../../data/interfaces';
 
-    import {
-        resolveFetchURL,
-    } from '../../logic';
+    import resolveFetchURL from '../../logic/resolveFetchURL';
     // #endregion external
 // #endregion imports
 

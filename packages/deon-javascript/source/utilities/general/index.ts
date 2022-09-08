@@ -6,10 +6,6 @@
 
     // #region external
     import {
-        DEON_FILENAME_EXTENSION,
-    } from '../../data/constants';
-
-    import {
         TokenType,
     } from '../../data/enumerations';
 
@@ -30,52 +26,6 @@ const mapToObject = <K, V>(
     }
 
     return obj;
-}
-
-
-const isURL = (
-    path: string,
-) => {
-    return path.startsWith('http');
-}
-
-
-const solveExtensionName = (
-    type: string,
-    extname: string,
-) => {
-    if (type === 'inject') {
-        return {
-            filetype: extname,
-            concatenate: false,
-        };
-    }
-
-    if (type === 'import') {
-        if (extname === '.deon') {
-            return {
-                filetype: extname,
-                concatenate: false,
-            };
-        }
-
-        if (extname === '.json') {
-            return {
-                filetype: extname,
-                concatenate: false,
-            };
-        }
-
-        return {
-            filetype: DEON_FILENAME_EXTENSION,
-            concatenate: true,
-        };
-    }
-
-    return {
-        filetype: extname,
-        concatenate: false,
-    };
 }
 
 
@@ -165,8 +115,6 @@ const resolveAbsolutePath = (
 // #region exports
 export {
     mapToObject,
-    isURL,
-    solveExtensionName,
     inGroupClassify,
     removeEndDoubleNewline,
     resolveAbsolutePath,
