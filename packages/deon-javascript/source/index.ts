@@ -7,6 +7,7 @@
 
     import cli from './cli';
 
+
     import Deon from './objects/Deon';
     import DeonPure from './objects/DeonPure';
 
@@ -14,6 +15,7 @@
     import Parser from './objects/Parser';
     import Interpreter from './objects/Interpreter';
     import Stringifier from './objects/Stringifier';
+
 
     import {
         deon,
@@ -25,15 +27,16 @@
         deonPureSynchronous,
     } from './logics/template/deonPure';
 
-    import {
-        customTyper,
-        typer,
-    } from './utilities/typer';
 
     import {
         readDeonFile,
         writeDeonFile,
     } from './utilities/readwrite';
+
+    import {
+        customTyper,
+        typer,
+    } from './utilities/typer';
 
     import * as typings from './utilities/typer/typings';
     // #endregion internal
@@ -72,12 +75,12 @@ export {
     deonPure,
     deonPureSynchronous,
 
+    readDeonFile,
+    writeDeonFile,
+
     customTyper,
     typer,
     typings,
-
-    readDeonFile,
-    writeDeonFile,
 
     internals,
 };
