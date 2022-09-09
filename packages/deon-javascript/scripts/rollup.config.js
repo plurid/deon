@@ -73,7 +73,7 @@ const node = {
 
 
 const pure = {
-    input: `source/index.pure.ts`,
+    input: `source/pure.ts`,
     output: [
         {
             file: './distribution/pure.js',
