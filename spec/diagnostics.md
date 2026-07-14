@@ -2,6 +2,8 @@
 
 Diagnostics carry a stable code, severity, message, canonical source ID, UTF-8 byte offsets, one-based Unicode code-point line/column positions, related spans, and the resource import trace.
 
+The code, the severity, and the position are normative: two implementations given the same document MUST report the same code, at the same severity, at the same position, and conformance (§15) is tested on exactly that. The **message is not normative**. It is written for a person, it may be translated, and it will often quote the host — an operating system reports a missing file as `No such file or directory` or as `ENOENT: no such file or directory` depending on which one it is, and no implementation should invent a third answer to make the sentences match. A tool reading diagnostics MUST therefore key on the code and never on the message.
+
 | Code | Meaning |
 | --- | --- |
 | `DEON_LEX_UNTERMINATED` | Unterminated string, comment, escape, or interpolation |

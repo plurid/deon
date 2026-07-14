@@ -133,7 +133,7 @@ fn run(request: &Map) -> deon::DResult<String> {
             Ok(write_json(&list))
         }
         "lint" => {
-            let diagnostics = deon::lint(source)?;
+            let diagnostics = deon::lint(source, "<memory>")?;
 
             let list = Value::List(
                 diagnostics

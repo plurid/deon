@@ -130,7 +130,7 @@ fn parse(arguments: &[String]) -> Result<ExitCode, Failure> {
     // The file named on the command line is read either way — naming it is asking for it. What
     // `--filesystem` decides is whether *its imports* may reach the disk, which is why this reads the
     // file itself rather than going through `parse_file`, whose whole job is to grant that.
-    let source = deon::read_file(file)?;
+    let source = deon::read_file(&path)?;
 
     let options = ParseOptions::new()
         .source_name(&path)
@@ -378,13 +378,15 @@ fn lint(arguments: &[String]) -> Result<ExitCode, Failure> {
     let mut warnings = 0usize;
 
     for file in &files {
-        let source = read(file)?;
-
         // A diagnostic names the document by its resolved path, as the reference does, so that a
         // tool reading this output gets the same string from either implementation.
         let path = resolve(file);
 
-        for diagnostic in deon::lint(&source)? {
+        // `read_file` and not `read`: a document named on the command line that cannot be read is a
+        // `DEON_RESOURCE_IO` diagnostic, carrying a code and a position, rather than a sentence.
+        let source = deon::read_file(&path)?;
+
+        for diagnostic in deon::lint(&source, &path)? {
             println!(
                 "{}:{}:{} {} {} {}",
                 path,

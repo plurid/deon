@@ -16,6 +16,9 @@ requires-python = ">=3.10"
 # behind it is a notation format nobody can audit.
 dependencies = []
 
+[project.scripts]
+deon = "deon.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/plurid/deon"
 Repository = "https://github.com/plurid/deon"

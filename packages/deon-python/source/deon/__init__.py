@@ -28,6 +28,7 @@ from typing import Optional
 from .diagnostic import Diagnostic, DiagnosticCode, DeonError, Span
 from .interpreter import Interpreter, interpolations, parameters
 from .options import DEFAULT_SOURCE_NAME, ParseOptions, StringifyOptions
+from .network import parse_link
 from .parser import MAX_DEPTH, lint, parse_syntax
 from .resources import DenyAll, Fetched, InMemory, ResourceLoader, host_loader
 from .stringifier import canonical, stringify
@@ -80,8 +81,22 @@ def parse(source: str, options: Optional[ParseOptions] = None) -> Value:
 
 
 def read_file(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as handle:
-        return handle.read()
+    """A document, as text.
+
+    A document that cannot be read is a *diagnostic*, and not the host's `OSError`. The file was
+    named, so it was permitted, and it failed to load — which is exactly `DEON_RESOURCE_IO`. A caller
+    should never have to catch an operating-system exception to learn that a document was missing: it
+    would carry no code and no position, and nothing an editor could show.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return handle.read()
+    except (OSError, UnicodeDecodeError) as failure:
+        raise DeonError(
+            DiagnosticCode.RESOURCE_IO,
+            f"Unable to read '{path}': {failure}.",
+            Span.head(path),
+        ) from None
 
 
 def parse_file(path: str, options: Optional[ParseOptions] = None) -> Value:
@@ -173,6 +188,7 @@ __all__ = [
     "lint",
     "parse",
     "parse_file",
+    "parse_link",
     "parse_syntax",
     "parse_with",
     "parse_with_loader",

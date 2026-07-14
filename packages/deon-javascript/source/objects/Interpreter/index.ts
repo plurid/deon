@@ -1329,9 +1329,16 @@ class Interpreter {
         const remote = target.startsWith('http://') || target.startsWith('https://');
         const allowed = remote ? options.allowNetwork : options.allowFilesystem;
 
+        // Which capability was refused is known right here, and saying so is the difference between a
+        // reader who fixes it and one who goes looking. The code says a decision was taken; only the
+        // message can say which.
+        const capability = remote ? 'network' : 'filesystem';
+
         return deonError(
             allowed ? DiagnosticCode.RESOURCE_IO : DiagnosticCode.CAPABILITY_DENIED,
-            `Unable to load resource '${declaration.target}'.`,
+            allowed
+                ? `Unable to load resource '${declaration.target}'.`
+                : `The resource '${declaration.target}' was not permitted: ${capability} access is not allowed.`,
             declaration.token,
         );
     }

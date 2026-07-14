@@ -190,7 +190,7 @@ fn run(case: &Json, checked: &mut Checked) -> Result<(), String> {
             .as_array()
             .ok_or_else(|| "the fixture's lint is not a list".to_string())?;
 
-        let diagnostics = deon::lint(&source).map_err(|error| error.to_string())?;
+        let diagnostics = deon::lint(&source, "<memory>").map_err(|error| error.to_string())?;
 
         let codes: Vec<&str> = diagnostics
             .iter()

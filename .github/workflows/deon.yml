@@ -1,0 +1,117 @@
+name: deon
+
+# Two questions, and they are not the same one.
+#
+# Each implementation runs `spec/conformance/cases.json` for itself, and passing it proves that the
+# implementation agrees with the fixtures. The harness asks whether the implementations agree with
+# *each other*, which is a different claim — and the one that catches what the fixtures do not.
+#
+# `deon-python` once passed all 47 fixtures while indenting nested maps twice as far as its siblings,
+# because no fixture nested that deeply. A divergence check nobody runs is a divergence check that
+# does not exist, so it runs here.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+        working-directory: packages/deon-javascript
+      - run: npm test
+        working-directory: packages/deon-javascript
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      # The crate must stay dependency-free by default. `cargo tree --edges normal` printing anything
+      # but the crate itself is a regression, whatever the tests say.
+      - name: no default dependencies
+        working-directory: packages/deon-rust
+        run: |
+          tree=$(cargo tree --edges normal | grep -c .)
+          if [ "$tree" -ne 1 ]; then
+            echo "the default build gained a dependency:"
+            cargo tree --edges normal
+            exit 1
+          fi
+
+      - run: cargo test
+        working-directory: packages/deon-rust
+      - run: cargo test --features cli
+        working-directory: packages/deon-rust
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: packages/deon-rust
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Nothing is installed, on purpose: the package must import in a bare interpreter.
+      - name: no runtime dependencies
+        working-directory: packages/deon-python
+        run: |
+          python3 -c "
+          import tomllib
+          declared = tomllib.load(open('pyproject.toml','rb'))['project'].get('dependencies')
+          assert declared == [], f'the package declares dependencies: {declared}'
+          "
+
+      - name: tests
+        working-directory: packages/deon-python
+        run: PYTHONPATH=source python3 -m unittest discover -s tests -v
+
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+        working-directory: packages/deon-javascript
+      - run: npm install
+        working-directory: packages/tooling/deon-mcp
+      - run: npm test
+        working-directory: packages/tooling/deon-mcp
+
+  # The one that catches what the fixtures cannot.
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: npm install
+        working-directory: packages/deon-javascript
+
+      - name: every implementation, the same inputs, the same outputs
+        run: python3 scripts/harness.py
+
+      # The libraries agreeing does not make the tools agree. The tools have defaults, an argument
+      # grammar, an exit status, and a filesystem they write to, and none of that is in a fixture.
+      - name: every tool, the same arguments, the same behaviour
+        run: python3 scripts/cli-harness.py

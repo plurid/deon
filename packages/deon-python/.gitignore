@@ -1,0 +1,51 @@
+### PYTHON ###
+
+# Byte-code
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Installers
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing / coverage
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Type checkers and linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/

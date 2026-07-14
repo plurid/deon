@@ -118,8 +118,8 @@ pub fn parse_syntax(source: &str, source_name: &str) -> DResult<Document> {
 
 /// A key written twice is valid, and the last write is the one that holds, but it is almost always a
 /// mistake, so the linter says so.
-pub fn lint(source: &str) -> DResult<Vec<Diagnostic>> {
-    Ok(lint_document(&parse_syntax(source, "<memory>")?))
+pub fn lint(source: &str, source_name: &str) -> DResult<Vec<Diagnostic>> {
+    Ok(lint_document(&parse_syntax(source, source_name)?))
 }
 
 /// The evaluated declaration namespace. Editor tooling reads this to drive leaflink completion.

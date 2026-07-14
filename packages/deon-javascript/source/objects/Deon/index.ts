@@ -176,7 +176,7 @@ class Deon {
 
         const data = options?.resources?.[filepath]
             ?? options?.resources?.[file]
-            ?? await fs.readFile(filepath, 'utf8');
+            ?? await this.readSource(filepath);
 
         return this.parse<T>(data, {
             ...options,
@@ -195,7 +195,7 @@ class Deon {
 
         const data = options?.resources?.[filepath]
             ?? options?.resources?.[file]
-            ?? fsSync.readFileSync(filepath, 'utf8');
+            ?? this.readSourceSynchronous(filepath);
 
         return this.parseSynchronous<T>(data, {
             ...options,
@@ -203,6 +203,49 @@ class Deon {
             filebase: path.dirname(filepath),
             sourceName: filepath,
         });
+    }
+
+
+    /**
+     * A document that cannot be read is a diagnostic, and not the host's exception.
+     *
+     * The file was named, so it was permitted, and it failed to load — which is exactly what
+     * `DEON_RESOURCE_IO` is for. A caller should never have to catch an `ENOENT` to learn that a
+     * document was missing: it would have no code, no position, and nothing an editor could show.
+     */
+    private async readSource(
+        filepath: string,
+    ): Promise<string> {
+        try {
+            return await fs.readFile(filepath, 'utf8');
+        } catch (error: unknown) {
+            this.unreadable(filepath, error);
+        }
+    }
+
+
+    private readSourceSynchronous(
+        filepath: string,
+    ): string {
+        try {
+            return fsSync.readFileSync(filepath, 'utf8');
+        } catch (error: unknown) {
+            this.unreadable(filepath, error);
+        }
+    }
+
+
+    private unreadable(
+        filepath: string,
+        error: unknown,
+    ): never {
+        const reason = error instanceof Error ? error.message : String(error);
+
+        resourceError(
+            DiagnosticCode.RESOURCE_IO,
+            `Unable to read '${filepath}': ${reason}.`,
+            filepath,
+        );
     }
 
 

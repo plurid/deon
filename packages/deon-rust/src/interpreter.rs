@@ -516,13 +516,25 @@ impl<'a> Interpreter<'a> {
             options.allow_filesystem
         };
 
+        // Which capability was refused is known right here, and saying so is the difference between a
+        // reader who fixes it and one who goes looking. `DEON_CAPABILITY_DENIED` says a decision was
+        // taken; only the message can say which.
+        let capability = if remote { "network" } else { "filesystem" };
+
         err(
             if allowed {
                 DiagnosticCode::ResourceIo
             } else {
                 DiagnosticCode::CapabilityDenied
             },
-            format!("Unable to load resource '{}'.", resource.target),
+            if allowed {
+                format!("Unable to load resource '{}'.", resource.target)
+            } else {
+                format!(
+                    "The resource '{}' was not permitted: {capability} access is not allowed.",
+                    resource.target,
+                )
+            },
             &resource.span,
         )
     }

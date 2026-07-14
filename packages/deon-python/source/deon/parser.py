@@ -410,6 +410,7 @@ class Parser:
             return Scalar(raw=first.raw, token=first)
 
         last = first
+        started = False
 
         while self.peek().type not in stops:
             token = self.peek()
@@ -418,14 +419,24 @@ class Parser:
             # text makes it text. A value that wants one has to be quoted, and one written bare is a
             # value that would parse as something else — which is the error being reported, at the
             # character that would have done it.
+            #
+            # Which of the two things went wrong depends on whether anything was read. A delimiter
+            # *before* the first word means no value ever started — an unclosed list met the `}` of
+            # the map around it, and saying "inside an unquoted string" would name a string the
+            # author never wrote.
             if token.type not in (TokenType.WORD, TokenType.STRING):
                 raise self.fail(
                     DiagnosticCode.PARSE_EXPECTED,
-                    f"'{token.raw or token.type}' cannot appear inside an unquoted string.",
+                    (
+                        f"'{token.raw or token.type}' cannot appear inside an unquoted string."
+                        if started
+                        else "Expected a value."
+                    ),
                     token,
                 )
 
             last = self.advance()
+            started = True
 
         # An unquoted string is recovered from the source rather than rebuilt from its tokens, which
         # keeps the whitespace *between* its words exactly as it was written (specification 4.3) while

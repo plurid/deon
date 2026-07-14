@@ -29,6 +29,11 @@
         parseJSON,
     } from '../json';
 
+    import {
+        DiagnosticCode,
+        resourceError,
+    } from '../../objects/Diagnostic';
+
     import Stringifier from '../../objects/Stringifier';
 
     import {
@@ -71,6 +76,31 @@ const VALUED = new Set([
     '-n', '--network',
     '-t', '--typed',
 ]);
+
+
+/**
+ * A document named on the command line, read as a document.
+ *
+ * A failure is a `DEON_RESOURCE_IO` diagnostic and not the host's `ENOENT`: it was named, so it was
+ * permitted, and it failed to load. `fs.readFile` is used directly for everything that is *not* a
+ * document — a JSON source, a file being archived — because a failure there has no position, there
+ * being no document to have one in.
+ */
+const readDocument = async (
+    filepath: string,
+): Promise<string> => {
+    try {
+        return await fs.readFile(filepath, 'utf8');
+    } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+
+        resourceError(
+            DiagnosticCode.RESOURCE_IO,
+            `Unable to read '${filepath}': ${reason}.`,
+            filepath,
+        );
+    }
+}
 
 
 const handleFileOutput = (
@@ -363,7 +393,7 @@ const runCLI = async (
 
         for (const file of files) {
             const filepath = resolveAbsolutePath(file);
-            const source = await fs.readFile(filepath, 'utf8');
+            const source = await readDocument(filepath);
 
             for (const diagnostic of deon.lint(source, filepath)) {
                 warnings += 1;

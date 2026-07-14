@@ -60,6 +60,14 @@ This is the one entry where the specification, read literally, said something th
 
 Amended into `diagnostics.md`.
 
+## 8. Nothing said whether a diagnostic's message is normative
+
+The catalogue lists what a diagnostic carries — a code, a severity, a message, a position — and never says which of those two implementations must agree on. Read strictly, all of them; and that cannot be met. A missing file is `No such file or directory` to Rust, `ENOENT: no such file or directory` to Node, and `[Errno 2] No such file or directory` to Python, because each is quoting its own host, and an implementation that invented a fourth sentence to make them match would be hiding what the operating system actually said.
+
+So the code, the severity, and the position are normative and the message is not — which also settles the rule for anything reading diagnostics: key on the code, never on the message.
+
+Amended into `diagnostics.md`. Found by `scripts/cli-harness.py`, which had to decide what "the same result" means before it could compare anything.
+
 ---
 
 ## What the conformance suite could not see
@@ -71,3 +79,13 @@ Two bugs got through 47 passing fixtures and were caught only by running the thr
 **A document that imports itself looped forever** rather than reporting `DEON_CYCLE`, because the set of open resources held the documents *below* the root and not the root itself. `resource-cycle` passes through two files and never exercised the shortest cycle there is.
 
 The lesson is the same one both times: a suite of 47 fixtures written *alongside* an implementation tests what its author thought to test. A second implementation tests what the first one assumed.
+
+## What the library harness could not see either
+
+The same argument then applies one level up. `scripts/harness.py` proves the three *libraries* agree; it says nothing about the three *tools*, and a tool is where the defaults, the argument grammar, the exit status, and the writes to disk live — none of which is in a fixture. `scripts/cli-harness.py` asks the question of the tools, and found a divergence in each of the three:
+
+- **Python's argument parser ate the command's own options.** `deon environment app.deon sh -c 'echo hi'` dropped the `-c`, because the helper that skips the tool's flags skipped everything beginning with `-`. The same bug let `deon environment app.deon curl -n https://…` read `curl`'s `-n` as a grant of the network — a capability handed over by an argument that was never meant for Deon.
+- **`JavaScript` reported a missing document as a raw `ENOENT`**, with no code and no position, where Rust reported `DEON_RESOURCE_IO`. The file was named, so it was permitted, and it failed to load: that is a diagnostic, and it now is one in all three — including from `parse_file` in the library, which had been leaking the host's exception across the public boundary.
+- **Rust's `lint` named every document `<memory>`**, because `lint(source)` took no source name and defaulted to one. The signature now takes the name, as the other two always did.
+
+Each of these was invisible to 48 fixtures and to 73 differential probes, and each was a one-line fix once seen.

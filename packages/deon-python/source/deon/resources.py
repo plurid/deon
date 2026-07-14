@@ -28,6 +28,8 @@ INJECT = "inject"
 DEON_EXTENSION = ".deon"
 JSON_EXTENSION = ".json"
 
+DEON_MEDIA_TYPE = "application/deon"
+
 
 @dataclass(frozen=True)
 class Fetched:
@@ -222,7 +224,10 @@ class Chain:
 def host_loader() -> Chain:
     """What a document gets when a caller has said what it may reach.
 
-    Each loader gates itself on the capability it needs, so composing them grants nothing that was
-    not already granted.
+    Each loader gates itself on the capability it needs, so composing them grants nothing that was not
+    already granted. The in-memory resources come first, so a document handed its own resources never
+    reaches a disk or a network to find them.
     """
-    return Chain(InMemory(), Filesystem())
+    from .network import Http
+
+    return Chain(InMemory(), Http(), Filesystem())

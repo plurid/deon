@@ -124,6 +124,59 @@ deon.parse_with("{ home #$HOME }", ParseOptions(environment=dict(os.environ)))
 
 
 
+## The network
+
+A remote target is refused **before the request is made**, which is the whole difference between a decision and an accident: a denial that happened after the socket was opened would look the same from the outside and would not be the same thing.
+
+``` python
+deon.parse_with(
+    "import remote from https://example.com/schema.deon\n{ ...#remote }",
+    ParseOptions(allow_network=True),
+)
+```
+
+A credential is written in the document as a leaflink and sent as a bearer token, or supplied by the host for a whole host at once:
+
+``` deon
+token #$API_TOKEN
+
+import schema from https://example.com/schema.deon with #token
+```
+
+``` python
+ParseOptions(allow_network=True, authorization={"example.com": token})
+```
+
+An **empty** token sends no header at all, because `Bearer ` is a credential-shaped nothing that a server would be right to reject. A token never appears in a cache identifier, and a document fetched under one credential is never served to the holder of another: the cache key is a digest of the target *and* the token (§9).
+
+Two failures that must never be confused, and are not: `DEON_CAPABILITY_DENIED` means this was never allowed, and `DEON_RESOURCE_IO` means it was allowed and it failed.
+
+
+
+## The command line
+
+`pip install deon` puts a `deon` command on the path.
+
+``` bash
+deon configuration.deon                       # read it, write it back out
+deon configuration.deon -o json -t            # as typed JSON
+deon convert package.json package.deon        # 1.50 stays 1.50, not 1.5
+deon environment app.deon npm start           # the document as the process environment
+deon lint configuration.deon                  # what is legal and questionable
+deon confile a.deon b.deon                    # many files into one document
+deon exfile confile.deon                      # and back out again
+```
+
+Everything after the source of an `environment` is the command, verbatim: `deon environment app.deon curl -n https://…` passes that `-n` to `curl` and does not read it as a grant of the network.
+
+The defaults are **not** the library's, and the difference is deliberate: `--filesystem` is *true* and `--network` is *false*. A file named on a command line was named by a person, so it may read the disk; nothing said it may reach the network. A document handed to a library, by contrast, came from somewhere unknown, and is granted neither.
+
+`exfile` refuses to write an absolute path or one that climbs out with `..`, and checks every entry before writing any, so a document with one bad path writes nothing at all rather than leaving half an archive behind. A `.deon` file is data, and data must not be able to write wherever it likes.
+
+The three tools are the same program written three times, and `scripts/cli-harness.py` runs all of them against the same arguments and requires the same exit status, the same output, the same files written, and the same diagnostic code at the same position. It is what found that this one's argument parser was eating the `-c` out of `sh -c '…'`.
+
+
+
 ## Writing a value
 
 ``` python
