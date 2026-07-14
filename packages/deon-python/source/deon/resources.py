@@ -121,10 +121,10 @@ def resolve_target(target: str, options: ParseOptions) -> str:
     if base and is_url(base):
         return urljoin(base if base.endswith("/") else base + "/", target)
 
-    if base:
-        return posixpath.normpath(posixpath.join(base, target))
-
-    return target
+    # Normalised whether or not there is a base to resolve against. `./child` and `child` name the
+    # same resource, and a target that kept its `./` would miss a resource supplied under the plain
+    # name — which is a capability denial for a resource that was, in fact, handed over.
+    return posixpath.normpath(posixpath.join(base, target))
 
 
 class ResourceLoader(Protocol):

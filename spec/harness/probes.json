@@ -1,0 +1,87 @@
+[
+    { "id": "comment-inside-an-unquoted-value", "source": "{ a one /* c */ two }" },
+    { "id": "line-comment-after-a-value", "source": "{ a one // trailing\n}" },
+    { "id": "slashes-mid-word", "source": "{ a http://x//y }" },
+    { "id": "comment-marker-mid-word", "source": "{ a x/*y }" },
+    { "id": "value-with-parentheses", "source": "{ a (note) }" },
+    { "id": "value-with-a-brace", "source": "{ a x{y }" },
+    { "id": "value-with-an-angle", "source": "{ a x<y }" },
+    { "id": "link-inside-an-unquoted-value", "source": "{ a x #y }" },
+    { "id": "backtick-inside-an-unquoted-value", "source": "{ a x `q` }" },
+
+    { "id": "nested-containers", "source": "{ a { b { c d } }\nlist [[x, y]] }" },
+    { "id": "deeply-nested-list", "source": "{ a [[[[[[x]]]]]] }" },
+    { "id": "empty-containers", "source": "{ l []\nm {} }" },
+    { "id": "nesting-past-the-limit", "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ }" },
+
+    { "id": "repeated-key-moves", "source": "{ a 1\nb 2\na 3 }" },
+    { "id": "spread-then-rewrite", "source": "a { x 1 }\n{ ...#a, x 2 }" },
+    { "id": "rewrite-then-spread", "source": "a { x 1 }\n{ x 2, ...#a }" },
+    { "id": "string-spread-into-a-map", "source": "s ab\n{ ...#s }" },
+    { "id": "string-spread-into-a-list", "source": "s ab\n[ ...#s ]" },
+    { "id": "spread-of-a-spread", "source": "a { x 1 }\nb { ...#a, y 2 }\n{ ...#b }" },
+
+    { "id": "entity-call", "source": "t `#{n}`\n{ v #t(n one) }" },
+    { "id": "entity-extra-argument", "source": "t `#{n}`\n{ v #t(n one, m two) }" },
+    { "id": "entity-missing-argument", "source": "t `#{n}#{m}`\n{ v #t(n one) }" },
+    { "id": "entity-repeated-argument", "source": "t `#{n}`\n{ v #t(n one, n two) }" },
+    { "id": "entity-call-on-a-map", "source": "t { m `#{n}` }\n{ v #t(n one) }" },
+    { "id": "entity-argument-is-not-reinterpolated", "source": "s secret\nt `#{n}`\n{ v #t(n 'a #{s} b') }" },
+    { "id": "recursive-entity", "source": "t `#{n} #t`\n{ v #t(n one) }" },
+    { "id": "interpolation-naming-a-leaflink", "source": "voice terse\n{ v `#{voice}` }" },
+
+    { "id": "access-missing-member", "source": "a { b {} }\n{ v #a.b.c }" },
+    { "id": "access-out-of-range", "source": "l [x]\n{ v #l[3] }" },
+    { "id": "access-on-a-string", "source": "s abc\n{ v #s.x }" },
+    { "id": "bracket-access-by-index", "source": "l [x, y]\n{ v #l[1] }" },
+    { "id": "duplicate-declaration", "source": "a 1\na 2\n{ #a }" },
+    { "id": "leaflink-cycle", "source": "a #b\nb #a\n{ #a }" },
+
+    { "id": "escaped-interpolation", "source": "{ a `x \\#{y} z` }" },
+    { "id": "escaped-backslash-then-interpolation", "source": "n one\n{ a `x \\\\#{n} z` }" },
+    { "id": "backtick-trims-boundary-whitespace", "source": "{ a `  x  ` }" },
+    { "id": "escaped-newline-survives-the-trim", "source": "{ a `x\\n` }" },
+    { "id": "unknown-escape-is-preserved", "source": "{ a x\\qy }" },
+    { "id": "tab-inside-a-value", "source": "{ a x\ty }" },
+    { "id": "crlf-input", "source": "{\r\n    a one\r\n}\r\n" },
+    { "id": "unicode-key", "source": "{ 'ключ' значение }" },
+    { "id": "unicode-column", "source": "{\n    ключ value\n}" },
+    { "id": "quoted-key-with-a-comma", "source": "{ 'a,b' v }" },
+
+    { "id": "structure", "source": "{ p <id, name> [\n1, One\n2, Two\n] }" },
+    { "id": "structure-quoted-cell", "source": "{ p <id, name> [1, 'a, b'] }" },
+    { "id": "structure-short-row", "source": "{ p <id, name> [1] }" },
+    { "id": "structure-repeated-field", "source": "{ p <id, id> [1, 2] }" },
+
+    { "id": "environment-absent-is-empty", "source": "{ v #$NOPE }" },
+    { "id": "environment-present", "source": "{ v #$WHO }", "environment": { "WHO": "one" } },
+    { "id": "environment-in-an-interpolation", "source": "{ v `x#{$WHO}y` }", "environment": { "WHO": "one" } },
+
+    { "id": "import-is-denied-by-default", "source": "import x from ./x\n{ #x }" },
+    { "id": "network-is-denied-by-default", "source": "import x from https://example.invalid/x.deon\n{ #x }" },
+    { "id": "injection-keeps-its-text", "source": "inject t from ./t.txt\n{ #t }", "files": { "t.txt": "raw  text\n" }, "sourceName": "main.deon" },
+    { "id": "import-with-no-extension", "source": "import c from ./c\n{ #c.n }", "files": { "c.deon": "{ n one }" }, "sourceName": "main.deon" },
+    { "id": "import-json-keeps-number-spelling", "source": "import d from ./d.json\n{ ...#d }", "files": { "d.json": "{\"a\": 1.50, \"b\": 1e3}" }, "sourceName": "main.deon" },
+    { "id": "import-json-repeated-member", "source": "import d from ./d.json\n{ ...#d }", "files": { "d.json": "{\"a\": 1, \"b\": 2, \"a\": 3}" }, "sourceName": "main.deon" },
+    { "id": "import-json-bad-extension", "source": "import d from ./d.txt\n{ ...#d }", "files": { "d.txt": "x" }, "sourceName": "main.deon" },
+    { "id": "import-json-invalid", "source": "import d from ./d.json\n{ ...#d }", "files": { "d.json": "{ not json" }, "sourceName": "main.deon" },
+    { "id": "self-importing-document", "source": "import m from ./main\n{ #m }", "files": { "main.deon": "import m from ./main\n{ #m }" }, "sourceName": "main.deon" },
+
+    { "id": "typed-scalars", "source": "{ yes true\nno false\nint 42\nnegative -7\ndecimal 1.50\nexponent 1e3\nleadingZero 007\nempty ''\nnul null\nunsafe 9007199254740993\ntext hello }", "ops": ["typed", "canonical"] },
+    { "id": "typed-nested", "source": "{ l [1, true, x]\nm { n 2.5 } }", "ops": ["typed"] },
+
+    { "id": "lint-duplicate-key", "source": "{ k 1\nk 2 }", "ops": ["lint"] },
+    { "id": "lint-duplicate-nested", "source": "{ m { k 1\nk 2 } }", "ops": ["lint"] },
+    { "id": "lint-spread-does-not-warn", "source": "a { k 1 }\n{ ...#a, k 2 }", "ops": ["lint"] },
+
+    { "id": "entities-parameters", "source": "greet `Hi #{name}, you are #{role}.`\n{ a b }", "ops": ["entities"] },
+    { "id": "entities-link-is-not-a-parameter", "source": "voice terse\nask [{ role a, content #voice }]\n{ a b }", "ops": ["entities"] },
+    { "id": "entities-kinds", "source": "import r from ./r\ns text\nm { a b }\nl [x]\nk #s\n{ a b }", "ops": ["entities"] },
+
+    { "id": "stringify-inline", "source": "{ a one\nlist [x\ny]\nmap { k v } }", "ops": ["stringify"], "stringifyOptions": { "readable": "false" } },
+    { "id": "stringify-leaflinks", "source": "{ entity { name One }\nplain x }", "ops": ["stringify"], "stringifyOptions": { "leaflinks": "true", "leaflinkLevel": "1" } },
+    { "id": "stringify-header-and-comments", "source": "{ a one }", "ops": ["stringify"], "stringifyOptions": { "generatedHeader": "true", "generatedComments": "true" } },
+    { "id": "stringify-indentation-two", "source": "{ a { b c } }", "ops": ["stringify"], "stringifyOptions": { "indentation": "2" } },
+
+    { "id": "awkward-strings-round-trip", "source": "{\n a 'trailing '\n b ' leading'\n c ''\n d 'quote''\n e 'line\\nbreak'\n f 'tab\\there'\n g 'brace{inside'\n h 'paren(inside)'\n i 'back\\\\slash'\n}" }
+]

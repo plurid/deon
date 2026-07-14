@@ -49,3 +49,9 @@ serde_json = "1"
 name = "deon"
 path = "src/bin/deon.rs"
 required-features = ["cli"]
+
+# The cross-implementation harness adapter. It uses only the crate and its own JSON reader, so it
+# builds with no features and adds no dependency.
+[[bin]]
+name = "deon-harness"
+path = "src/bin/harness.rs"
