@@ -95,11 +95,23 @@ const CALL_STOPS = new Set([
 const BARE_NAME = /^[A-Za-z0-9_-]+$/;
 
 
+/**
+ * How deeply a document may nest before the parser refuses to follow it.
+ *
+ * The same limit the `Rust` implementation keeps, so that a document is either read by both or
+ * refused by both. The number is what the smaller of the two hosts will bear — a 2 MiB stack, which
+ * is what a spawned thread is given by default — with a wide margin, and it is far past any nesting a
+ * person would write.
+ */
+const MAX_DEPTH = 128;
+
+
 
 class Parser {
     private readonly tokens: Token[];
     private readonly sourceName: string;
     private current = 0;
+    private depth = 0;
 
     constructor(
         tokens: Token[],
@@ -397,7 +409,37 @@ class Parser {
     }
 
 
+    /**
+     * A value may contain a value, so the parser recurses as deeply as the document nests — and a
+     * document is data, which means it can come from somewhere that does not wish the reader well.
+     * Past the limit, the parser stops and says so.
+     *
+     * The refusal has to be a `deon` diagnostic, carrying a code and a position, rather than whatever
+     * the host does when its stack runs out: a caller can act on `DEON_PARSE_EXPECTED`, and cannot act
+     * on a `RangeError`. The limit is far above any document a person would write, and far below the
+     * depth at which the recursion would take the process down with it.
+     */
     private value(
+        stops: Set<TokenType>,
+    ): ValueNode {
+        this.depth += 1;
+
+        try {
+            if (this.depth > MAX_DEPTH) {
+                this.fail(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    'The document nests more deeply than the parser will follow.',
+                );
+            }
+
+            return this.valueInner(stops);
+        } finally {
+            this.depth -= 1;
+        }
+    }
+
+
+    private valueInner(
         stops: Set<TokenType>,
     ): ValueNode {
         if (this.check(TokenType.LEFT_CURLY_BRACKET)) {

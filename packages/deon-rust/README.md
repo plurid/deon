@@ -1707,7 +1707,7 @@ match deon::parse(source) {
 
 #### Conformance
 
-`cargo test` runs the 46 language-neutral fixtures in `spec/conformance/cases.json`, the same manifest the other implementations read. An implementation conforms only when it passes every one of them, reporting the specified diagnostic code *and* the position it was written at.
+`cargo test` runs the 47 language-neutral fixtures in `spec/conformance/cases.json`, the same manifest the other implementations read. An implementation conforms only when it passes every one of them, reporting the specified diagnostic code *and* the position it was written at — every one of the 23 fixtures which expect a failure now asserts both, so a diagnostic which drifts to the wrong line is a failing test rather than a passing one.
 
 
 

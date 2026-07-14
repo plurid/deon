@@ -87,7 +87,11 @@
             "id": "leaflink-cycle",
             "required": true,
             "source": "a #b\nb #a\n{ #a }",
-            "error": "DEON_CYCLE"
+            "error": "DEON_CYCLE",
+            "position": {
+                "line": 2,
+                "column": 3
+            }
         },
         {
             "id": "virtual-import",
@@ -128,19 +132,31 @@
             "id": "root-missing",
             "required": true,
             "source": "name value",
-            "error": "DEON_PARSE_ROOT"
+            "error": "DEON_PARSE_ROOT",
+            "position": {
+                "line": 1,
+                "column": 11
+            }
         },
         {
             "id": "root-duplicate",
             "required": true,
             "source": "{ a one }\n{ b two }",
-            "error": "DEON_PARSE_ROOT"
+            "error": "DEON_PARSE_ROOT",
+            "position": {
+                "line": 2,
+                "column": 1
+            }
         },
         {
             "id": "parse-expected-unclosed-map",
             "required": true,
             "source": "{ key value",
-            "error": "DEON_PARSE_EXPECTED"
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 12
+            }
         },
         {
             "id": "lex-unterminated-string",
@@ -153,13 +169,21 @@
             "id": "lex-unterminated-block-comment",
             "required": true,
             "source": "{ a one }\n/* never closed",
-            "error": "DEON_LEX_UNTERMINATED"
+            "error": "DEON_LEX_UNTERMINATED",
+            "position": {
+                "line": 2,
+                "column": 1
+            }
         },
         {
             "id": "lex-invalid-unquoted-name",
             "required": true,
             "source": "{ a.b value }",
-            "error": "DEON_LEX_INVALID"
+            "error": "DEON_LEX_INVALID",
+            "position": {
+                "line": 1,
+                "column": 3
+            }
         },
         {
             "id": "structure-row-arity",
@@ -172,31 +196,51 @@
             "id": "structure-repeated-field",
             "required": true,
             "source": "{ people <id, id> [1, 2] }",
-            "error": "DEON_STRUCTURE_ARITY"
+            "error": "DEON_STRUCTURE_ARITY",
+            "position": {
+                "line": 1,
+                "column": 10
+            }
         },
         {
             "id": "type-mismatch-list-spread-into-map",
             "required": true,
             "source": "items [one\ntwo]\n{ ...#items }",
-            "error": "DEON_TYPE_MISMATCH"
+            "error": "DEON_TYPE_MISMATCH",
+            "position": {
+                "line": 3,
+                "column": 3
+            }
         },
         {
             "id": "type-mismatch-interpolation-not-string",
             "required": true,
             "source": "entity { a one }\n{ value hello #{entity} }",
-            "error": "DEON_TYPE_MISMATCH"
+            "error": "DEON_TYPE_MISMATCH",
+            "position": {
+                "line": 2,
+                "column": 9
+            }
         },
         {
             "id": "entity-argument-mismatch",
             "required": true,
             "source": "template { message Hello #{name} }\n{ result #template(other One) }",
-            "error": "DEON_ENTITY_ARGUMENT"
+            "error": "DEON_ENTITY_ARGUMENT",
+            "position": {
+                "line": 2,
+                "column": 19
+            }
         },
         {
             "id": "entity-argument-repeated",
             "required": true,
             "source": "template { message Hello #{name} }\n{ result #template(name One, name Two) }",
-            "error": "DEON_ENTITY_ARGUMENT"
+            "error": "DEON_ENTITY_ARGUMENT",
+            "position": {
+                "line": 2,
+                "column": 30
+            }
         },
         {
             "id": "capability-denied-filesystem",
@@ -209,7 +253,11 @@
             "id": "capability-denied-network",
             "required": true,
             "source": "import remote from https://example.com/remote.deon\n{ #remote }",
-            "error": "DEON_CAPABILITY_DENIED"
+            "error": "DEON_CAPABILITY_DENIED",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
         },
         {
             "id": "resource-format-unsupported-extension",
@@ -219,7 +267,11 @@
                 "/project/main.deon": "import data from ./data.txt\n{ ...#data }",
                 "/project/data.txt": "{ a one }"
             },
-            "error": "DEON_RESOURCE_FORMAT"
+            "error": "DEON_RESOURCE_FORMAT",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
         },
         {
             "id": "resource-format-invalid-json",
@@ -229,14 +281,22 @@
                 "/project/main.deon": "import data from ./data.json\n{ ...#data }",
                 "/project/data.json": "{ not json"
             },
-            "error": "DEON_RESOURCE_FORMAT"
+            "error": "DEON_RESOURCE_FORMAT",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
         },
         {
             "id": "resource-io-unreadable",
             "required": true,
             "source": "import child from /deon-conformance/absent/child.deon\n{ #child }",
             "options": { "allowFilesystem": true },
-            "error": "DEON_RESOURCE_IO"
+            "error": "DEON_RESOURCE_IO",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
         },
         {
             "id": "resource-cycle",
@@ -246,7 +306,11 @@
                 "/project/main.deon": "import a from ./a\n{ #a }",
                 "/project/a.deon": "import main from ./main\n{ #main }"
             },
-            "error": "DEON_CYCLE"
+            "error": "DEON_CYCLE",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
         },
         {
             "id": "authenticator-must-be-a-string",
@@ -256,7 +320,11 @@
                 "/project/main.deon": "secret { a one }\nimport child from ./child with #secret\n{ #child }",
                 "/project/child.deon": "{ name x }"
             },
-            "error": "DEON_TYPE_MISMATCH"
+            "error": "DEON_TYPE_MISMATCH",
+            "position": {
+                "line": 2,
+                "column": 1
+            }
         },
 
         {
@@ -361,6 +429,16 @@
                 "nul": "null",
                 "unsafe": "9007199254740993",
                 "text": "hello"
+            }
+        },
+        {
+            "id": "nesting-depth-limit",
+            "required": true,
+            "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 133
             }
         }
     ]

@@ -36,10 +36,21 @@ impl Stops {
     }
 }
 
-/// Both the parser and the evaluator recurse on how deeply a document nests, and a host that dies on
-/// hostile input is not a library. The reference implementation has no such guard; this is the one
-/// place the port is deliberately stricter than it.
-const MAX_DEPTH: usize = 512;
+/// How deeply a document may nest before the parser refuses to follow it.
+///
+/// Both the parser and the evaluator recurse on the nesting, and a host that dies on hostile input is
+/// not a library. The refusal must be a diagnostic, carrying a code and a position — a caller can act
+/// on a `DEON_PARSE_EXPECTED`, and can do nothing at all with a stack overflow.
+///
+/// The number is what a *2 MiB* stack will bear, which is what a spawned thread gets by default and
+/// so the least a caller is likely to have. A debug build overflowed such a stack somewhere past 400
+/// frames, which left 512 — the first choice here — with no margin at all and made the guard a
+/// decoration. 128 has a wide margin, and is far past any nesting a person would write; it is also
+/// what `serde_json` limits itself to, for exactly this reason.
+///
+/// The `JavaScript` implementation keeps the same number, so that a document is either read by both
+/// or refused by both.
+const MAX_DEPTH: usize = 128;
 
 pub struct Parser {
     tokens: Vec<Token>,
