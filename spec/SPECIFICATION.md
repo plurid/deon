@@ -44,9 +44,13 @@ Both LF and CRLF input are accepted. Semantic multiline strings and generated ou
 
 `//` begins a comment at a token boundary and continues to the line end. `/*` begins a block comment and the next `*/` ends it. Block comments do not nest. Comment markers inside strings are literal text.
 
+A token boundary is a position at which a token may begin. A comment marker *within* a token is ordinary text and begins nothing: `https://example.com/a` is one unquoted string, and the `//` in it is two slashes. A comment written between the words of an unquoted string is trivia, and is removed from the string; the whitespace around it belongs to the string and remains. `a one /* two */ three` is therefore the value `a one  three`.
+
 ### 4.3 Strings
 
 An unquoted string continues until an unnested comma, newline, or enclosing delimiter. Leading separator whitespace is excluded; other internal whitespace is retained as single source characters.
+
+An unquoted string MUST NOT contain a newline, a comma, or any of the delimiters `{`, `}`, `[`, `]`, `(`, `)`, `<`, `>`, `'`, and `` ` ``. These are delimiters wherever they occur and no surrounding text makes them ordinary: a value that requires one of them must be quoted, and one written bare is `DEON_PARSE_EXPECTED` at the delimiter. Every other character may appear, which is what allows a path, a URL, or a flag to be written with no quotes at all.
 
 A single-quoted string is confined to one logical line. A backtick string may span lines. Boundary whitespace in a backtick string is removed through the first and last non-whitespace character; whitespace between those characters is preserved. Trimming applies to the source text before escapes are decoded, so an escaped line break is content rather than layout and is never trimmed.
 
@@ -166,11 +170,27 @@ entity calls;
 
 Declaration source order does not affect dependency resolution. A declaration is evaluated at most once per evaluation, except for separately parameterized entity calls.
 
+### 11.1 Nesting
+
+A value nests when it contains another value. An implementation MUST refuse a document that nests more than **128** values deep, reporting `DEON_PARSE_EXPECTED` at the opening token of the value that exceeds the limit. Spreading and entity calls compose depth: a value assembled from others is as deep as the result, not as deep as any part of it, and the limit applies to the result.
+
+The limit is a requirement rather than a permission. A document is data, and data arrives from places that do not wish the reader well; an implementation that recursed as deeply as it was asked to would exhaust its host's stack and fail in a way that carries no code and no position, which a caller can do nothing with. 128 is far past any nesting a document has cause to contain.
+
+A value handed to a stringifier or to the typer by a host, rather than by the parser, is subject to the same limit.
+
+### 11.2 Where a diagnostic points
+
+A cycle is reported at the **reference that closes it**, not at the declaration that opens it: the declaration is well-formed on its own, and it is the reference back into it that made the loop.
+
+A diagnostic arising from an imported or injected resource — a syntax error inside it, an unreadable target, a denied capability, an authenticator that is not a string — is reported at the span of the **statement that imported it**, and the resource's own location appears in the import trace. The document a caller is holding is the importing one, and the line they can go and look at is the import.
+
 ## 12. Stringification
 
 Ordinary stringification preserves list and final map write order. Defaults are readable output, four spaces, inline values, no generated header, and no generated section comments. Unsafe or ambiguous strings MUST be quoted.
 
 A string MUST be emitted in a form that reads back unchanged. A backtick string therefore carries a value only when that value begins and ends with a non-whitespace character and contains no carriage return; every other string that cannot stand unquoted is single-quoted, with its line breaks, tabs, and carriage returns written as escapes.
+
+A string MUST be quoted when it is empty, when it begins or ends with whitespace, when it begins with `#`, when it contains a delimiter of section 4.3, when it contains `#{`, or when it contains a comment marker (`//` or `/*`). The comment marker is quoted even though a marker inside a token is ordinary text and would read back unchanged: two implementations may not disagree about the canonical form of a value (section 13), so where a shorter form and a safer one both read back correctly, the safer one is the form.
 
 With `readable: false` a map or list is emitted on one line, its entries separated by the comma that the grammar accepts wherever it accepts a newline. Canonical output is always readable.
 

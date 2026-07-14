@@ -440,6 +440,14 @@
                 "line": 1,
                 "column": 133
             }
+        },
+        {
+            "id": "stringify-nested-indentation",
+            "required": true,
+            "source": "{ a { b { c d } }\nlist [[x, y]] }",
+            "stringify": {
+                "expected": "{\n    a {\n        b {\n            c d\n        }\n    }\n    list [\n        [\n            x\n            y\n        ]\n    ]\n}\n"
+            }
         }
     ]
 }

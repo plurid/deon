@@ -366,7 +366,8 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 `deon` is implemented for:
 
 + [`JavaScript/TypeScript`](https://github.com/plurid/deon/tree/master/packages/deon-javascript)
-+ [`Rust`](https://github.com/plurid/deon/tree/master/packages/deon-rust) - in progress
++ [`Rust`](https://github.com/plurid/deon/tree/master/packages/deon-rust)
++ [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
 
 and will be implemented for:
 
@@ -376,7 +377,6 @@ and will be implemented for:
 + [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
 + [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
 + [`PHP`](https://github.com/plurid/deon/tree/master/packages/deon-php)
-+ [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
 + [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
 
 See [specifics](#specifics) for implementation details.
@@ -1831,6 +1831,15 @@ fn main() {
 [@plurid/deon-rust][deon-rust] • `Rust` implementation
 
 [deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
+
+
+<a target="_blank" href="https://pypi.org/project/deon">
+    <img src="https://img.shields.io/pypi/v/deon.svg?logo=python&colorB=1380C3&style=for-the-badge" alt="PyPI">
+</a>
+
+[@plurid/deon-python][deon-python] • `Python` implementation
+
+[deon-python]: https://github.com/plurid/deon/tree/master/packages/deon-python
 
 
 

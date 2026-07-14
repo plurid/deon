@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "deon"
+version = "0.0.0-11"
+description = "DeObject Notation Format"
+readme = "README.md"
+license = { text = "DEL" }
+requires-python = ">=3.10"
+
+# Deon ships nothing at runtime, and the list below is a promise rather than an oversight: the
+# language is the standard library and nothing else. A notation format that drags a dependency tree
+# behind it is a notation format nobody can audit.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/plurid/deon"
+Repository = "https://github.com/plurid/deon"
+
+
+[tool.setuptools]
+package-dir = { "" = "source" }
+
+[tool.setuptools.packages.find]
+where = ["source"]

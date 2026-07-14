@@ -20,3 +20,5 @@ Diagnostics carry a stable code, severity, message, canonical source ID, UTF-8 b
 | `DEON_LINT_DUPLICATE_KEY` | Explicit map key is written more than once |
 
 All codes except `DEON_LINT_DUPLICATE_KEY` have error severity. A parser throws or returns one `DeonError` containing every diagnostic it could collect without performing unsafe or ambiguous evaluation. A linter returns diagnostics without throwing. CLI lint exits successfully for warnings unless `--warnings-as-errors` is set.
+
+`DEON_LEX_INVALID` also covers a sequence that forms a perfectly good token and is illegal in the position it was written in — specifically, a name. `a.b` is a valid unquoted string anywhere a value is wanted, and no name at all: the character class of a name (section 4.4) is narrower than that of a string. A key or a declaration name that is outside it reports `DEON_LEX_INVALID`, and not `DEON_PARSE_EXPECTED`, because what is wrong is the sequence rather than the absence of something the grammar required.
