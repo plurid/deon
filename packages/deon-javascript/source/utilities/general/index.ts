@@ -97,7 +97,7 @@ const removeEndDoubleNewline = (
 const isURL = (
     path: string,
 ) => {
-    return path.startsWith('http');
+    return /^https?:\/\//i.test(path);
 }
 
 
@@ -127,9 +127,16 @@ const solveExtensionName = (
             };
         }
 
+        if (!extname) {
+            return {
+                filetype: DEON_FILENAME_EXTENSION,
+                concatenate: true,
+            };
+        }
+
         return {
-            filetype: DEON_FILENAME_EXTENSION,
-            concatenate: true,
+            filetype: extname,
+            concatenate: false,
         };
     }
 
@@ -137,6 +144,54 @@ const solveExtensionName = (
         filetype: extname,
         concatenate: false,
     };
+}
+
+
+/**
+ * Absolute in the sense the language means it, rather than the sense a particular host means it: a
+ * rooted path, or a path on a named drive.
+ */
+const isAbsolutePath = (
+    value: string,
+) => value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
+
+
+/**
+ * Maps a logical absolute target onto the host path that actually holds it (specification 9).
+ *
+ * An exact key wins before any wildcard. Among the wildcards, which end in `/*`, the longest prefix
+ * wins, and whatever of the target the prefix did not match is appended to the mapped directory.
+ *
+ * This lives here, rather than beside the filesystem that reads the file, because the mapping is a
+ * property of the target and not of whoever resolves it: a resource handed over through `resources`
+ * must map exactly as one read from the disk, or the same document would mean two different things.
+ */
+const resolveMappedAbsolutePath = (
+    file: string,
+    mappings: Record<string, string>,
+) => {
+    // Only an absolute target is logical. A relative one resolves against the document holding it.
+    if (!isAbsolutePath(file)) {
+        return file;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(mappings, file)) {
+        return mappings[file];
+    }
+
+    const wildcard = Object.keys(mappings)
+        .filter(key => key.endsWith('/*') && file.startsWith(key.slice(0, -1)))
+        .sort((left, right) => right.length - left.length)[0];
+
+    if (!wildcard) {
+        return file;
+    }
+
+    const prefix = wildcard.slice(0, -1);
+    const suffix = file.slice(prefix.length);
+    const directory = mappings[wildcard].replace(/\/+$/, '');
+
+    return `${directory}/${suffix}`;
 }
 // #endregion module
 
@@ -148,6 +203,8 @@ export {
     inGroupClassify,
     removeEndDoubleNewline,
     isURL,
+    isAbsolutePath,
     solveExtensionName,
+    resolveMappedAbsolutePath,
 };
 // #endregion exports

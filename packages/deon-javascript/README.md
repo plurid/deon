@@ -410,7 +410,7 @@ Options:
     -o, --output <value>                            output type: deon, json (default: "deon")
     -t, --typed <value>                             typed output (default: "false")
     -f, --filesystem <value>                        allow filesystem (default: "true")
-    -n, --network <value>                           allow network (default: "true")
+    -n, --network <value>                           allow network (default: "false")
     -h, --help                                      display help for command
 
 Commands:
@@ -418,7 +418,10 @@ Commands:
     environment [options] <source> <command...>     loads environment variables from a ".deon" file and spawns a new command
     confile [options] <files...>                    combine files into a single ".deon" file
     exfile <source>                                 extract files from a ".deon" confile
+    lint <files...> [--warnings-as-errors]          report the diagnostics of a ".deon" file
 ```
+
+Network access is off unless it is asked for. A `.deon` file is data, and reading it should not by itself reach out over the network, so `import`s and `inject`s from an `URL` require `--network true`.
 
 
 
@@ -478,6 +481,20 @@ The per `map` `key` names and the `leaflink`s names are expected to be unique.
 
 When parsed or imported, a `.deon` file will allow access only to the `root`. The `leaflink`s are private as data-details at the file level. By convention, a `__leaflinks__` key can be manually added to the `root` to allow access to the `leaflink`s if absolutely needed.
 
+Tooling that needs to see the `leaflink`s themselves — an editor offering completions, say — can ask for them directly, without them leaking into the parsed data:
+
+``` typescript
+await deon.leaflinks(`
+{
+    #a
+}
+
+a one
+b two
+`);
+// { a: 'one', b: 'two' }
+```
+
 
 
 ## Values
@@ -536,6 +553,38 @@ string
 value
 `
 ```
+
+
+### Escapes
+
+The same escapes are read in all three forms of `value`:
+
+| escape | character |
+| --- | --- |
+| `\\` | a single backslash |
+| `\'` | a singlequote, inside a singlequoted `value` |
+| `` \` `` | a backtick, inside a backticked `value` |
+| `\#{` | the literal characters `#{` |
+| `\n` `\r` `\t` | a newline, a carriage return, a tab |
+
+Any other backslash is kept as it is written.
+
+The `\n` escape is what lets a `value` end in a newline. A backticked `value` strips the whitespace around its text, which is what makes it pleasant to indent in a file, but it also means the backticks alone cannot say "this text ends with a newline". The escape can:
+
+``` deon
+{
+    // 'alpha' followed by a newline
+    file 'alpha\n'
+
+    // 'a', newline, 'b' — the indentation is layout, and is stripped
+    text `
+        a
+        b
+    `
+}
+```
+
+Because of this, every `value` can be written down, and `stringify` and `parse` are exact inverses of each other.
 
 
 
@@ -1163,15 +1212,40 @@ A `stringify` method is implemented in order to convert an in-memory data repres
 
 ``` typescript
 interface DeonStringifyOptions {
+    // one line per entry, or the whole value on a single line (default: true)
     readable: boolean;
     indentation: number;
+    // extract the maps and lists at `leaflinkLevel` into leaflinks after the root
     leaflinks: boolean;
     leaflinkLevel: number;
+    // write `#name` when the receiving key is the name of the leaflink
     leaflinkShortening: boolean;
     generatedHeader: boolean;
     generatedComments: boolean;
+    // sorted, inlined, comment-free — see below
+    canonical: boolean;
 }
 ```
+
+With `readable: false` the value is written on one line, the entries separated by the comma that `deon` accepts wherever it accepts a newline:
+
+``` deon
+{a b, c [d, e], f {g h}}
+```
+
+
+### Canonical
+
+A `canonical` method writes the one form of a value that every implementation agrees on: the maps sorted by code point, the lists left in their order, four spaces, no comments, no leaflinks, and a single closing newline.
+
+``` typescript
+const deon = new Deon();
+
+deon.canonical('{ z last\na first }');
+// '{\n    a first\n    z last\n}\n'
+```
+
+For every value, `parse(canonical(value))` returns that same value.
 
 
 
@@ -1183,9 +1257,76 @@ The `parse` method can receive the following partial options:
 interface DeonParseOptions {
     absolutePaths: Record<string, string>,
     authorization: Record<string, string>,
+
     datasignFiles: string[];
     datasignMap: Record<string, string>;
+    // read a datasign contract with something other than the built-in reader
+    datasignReader?: (source: string) => DatasignSignatures;
+
+    // capabilities, both off unless asked for — a raw-text parse reaches nowhere
+    allowFilesystem: boolean;
+    allowNetwork: boolean;
+
+    // resolve `import`s and `inject`s from these, instead of the filesystem or the network
+    resources: Record<string, string>;
+
+    // read by `#$NAME`, in preference to the process environment
+    environment: Record<string, string>;
+
+    // the name the document is known by, and what its relative targets resolve against;
+    // both are set for you by `parseFile`, and are what a diagnostic points at
+    sourceName: string;
+    filebase: string;
+
+    // sent as `Authorization: Bearer <token>`, and part of the cache key
+    token: string;
+
+    cache: boolean;
+    cacheDuration: number;
+    cacheDirectory: string;
+
+    // threaded through nested imports to catch a resource cycle; set by the evaluator, not by you
+    resourceStack: string[];
 }
+```
+
+`parseFile` turns on `allowFilesystem`, since it was handed a file to begin with. `parse` is given text and reaches nowhere on its own.
+
+The `resources` map resolves an `import` or an `inject` from memory, keyed by its target. It is how a test exercises importing without touching the filesystem or the network:
+
+``` typescript
+const data = await deon.parse(
+    `import config from https://example.com/config.deon\n{ #config.key }`,
+    {
+        resources: {
+            'https://example.com/config.deon': '{ key value }',
+        },
+    },
+);
+// { key: 'value' }
+```
+
+
+### Diagnostics
+
+A failed `parse` throws a `DeonError`, which carries every diagnostic it could collect. Each one has a stable code, a severity, the source it came from, and a position.
+
+``` typescript
+try {
+    await deon.parse('{ key #missing }');
+} catch (error) {
+    // 'DEON_UNRESOLVED_LINK'
+    console.log(error.code);
+    // '<memory>:1:7 error DEON_UNRESOLVED_LINK Unknown leaflink 'missing'.'
+    console.log(error.diagnostics[0]);
+}
+```
+
+A `lint` method returns the diagnostics without throwing, which is what the `deon lint` command reports.
+
+``` typescript
+deon.lint('{ key first\nkey second }');
+// [ DEON_LINT_DUPLICATE_KEY: Map key 'key' is written more than once. ]
 ```
 
 
@@ -1285,10 +1426,13 @@ import Deon from '@plurid/deon';
 const deonFile = './entity.deon';
 const datasignFile = './Entity.datasign';
 
-const data = Deon.parse(
+const deon = new Deon();
+
+const data = await deon.parseFile(
     deonFile,
     {
         // pass an array of all the .datasign files to be considered for type handling
+        // (relative paths resolve against the `.deon` file)
         datasignFiles: [
             datasignFile,
         ],
@@ -1299,7 +1443,18 @@ const data = Deon.parse(
         },
     },
 );
+
+// {
+//     entities: [
+//         { name: 'Entity One', age: 1 },    // `age` is a number, not a string
+//         { name: 'Entity Two', age: 1.3 },
+//     ],
+// }
 ```
+
+The typing is applied after the data is evaluated, so the `.deon` file is parsed into `string`s, `list`s, and `map`s as usual, and the `.datasign` contract then converts the fields it declares. A field the contract does not mention is passed through untouched, an optional field (`nickname?: string`) may be absent, and a value that contradicts its declared type raises a `DEON_TYPE_MISMATCH`.
+
+A declaration is what a value cannot be: `1.0` stays the `string` `'1.0'` when declared `string`, where the standalone [`typer`](#typing) would guess it into the number `1`.
 
 
 
@@ -1456,6 +1611,41 @@ const main = async () => {
 ```
 
 The `deon` `Pure` implementation does not have access to the file system for `import` and `inject` features.
+
+
+#### The methods
+
+| Method | Reads | What it may reach |
+| --- | --- | --- |
+| `parse(text, options)` | a string | nothing, unless asked |
+| `parseSynchronous(text, options)` | a string | nothing, unless asked |
+| `parseFile(file, options)` | a file | the filesystem |
+| `parseFileSynchronous(file, options)` | a file | the filesystem |
+| `parseLink(link, options)` | a URL | the network, once `allowNetwork` says so |
+| `leaflinks(text, options)` | a string | nothing, unless asked |
+| `parseSyntax(text, sourceName)` | a string | nothing |
+| `lint(text, sourceName)` | a string | nothing |
+| `stringify(value, options)` | a value | nothing |
+| `canonical(value)` | a value, or a string | nothing |
+| `loadEnvironment(file, options)` | a file | the filesystem |
+
+The capabilities are not granted alike, and the difference is the whole of the security model: handing over a *string* grants nothing at all, while handing over a *file* grants the filesystem, because you have already named a file. `parseFile` therefore turns on `allowFilesystem` for that file and for whatever it imports.
+
+The network is never opened by any of them. It is opened by `allowNetwork`, and by nothing else — it is the option that grants the capability, never the method that was called. `parseLink` is no exception: naming a link is not the same as being allowed to reach it, so a `parseLink` without `allowNetwork` fails with `DEON_CAPABILITY_DENIED`, before any request is made.
+
+``` typescript
+// denied — the link was named, but the network was never asked for
+await deon.parseLink('https://example.com/config.deon');
+
+// allowed, and the document that comes back may import over the network in its turn
+await deon.parseLink('https://example.com/config.deon', {
+    allowNetwork: true,
+});
+```
+
+`parseLink` caches according to `cache`, `cacheDuration`, and `cacheDirectory`, and sends `token` as a bearer credential. An empty token sends no header at all. The credential is part of the cache key, so a document read with one token is never handed to a reader holding another. A non-success status fails with `DEON_RESOURCE_IO`.
+
+`parseSyntax` returns the syntax tree rather than the value, and `leaflinks` returns the declaration namespace already evaluated. Neither is needed to read data; they are what an editor reads to know where a thing is written and what a name would resolve to. `getSyntax` is an alias of `parseSyntax`.
 
 #### Typing
 

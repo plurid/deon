@@ -21,7 +21,8 @@
 const getExtname = (
     value: string,
 ) => {
-    const match = value.match(/\.\w*$/);
+    const pathname = new URL(value).pathname;
+    const match = pathname.match(/\.[A-Za-z0-9]+$/);
     if (!match) {
         return '';
     }

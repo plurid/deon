@@ -46,8 +46,11 @@ describe(suites.synchronous, () => {
 
 
     it('simple import', () => {
+        // Specification 15: resources resolve through an injected resolver, never the public network.
+        const keyValueURL = 'https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon';
+
         const dataValues = `
-import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packages/deon-javascript/tests/simple/key-value.deon
+import keyValue from ${keyValueURL}
 
 {
     key #keyValue.aKey
@@ -58,6 +61,11 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
         const deon = new Deon();
         const data = deon.parseSynchronous<{key: string}>(
             dataValues,
+            {
+                resources: {
+                    [keyValueURL]: `{\n    aKey aValue\n}\n`,
+                },
+            },
         );
         const end = Date.now();
         // log(data);
@@ -68,7 +76,7 @@ import keyValue from https://raw.githubusercontent.com/plurid/deon/master/packag
         compareTimeBenchmark(
             start,
             end,
-            'network',
+            'fast',
             `${suites.synchronous} - simple import`,
         );
     });

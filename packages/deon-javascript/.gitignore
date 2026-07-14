@@ -77,6 +77,8 @@ jspm_packages/
 # rollup.js default build output
 dist/
 distribution/
+.build/
+.test-build/
 
 # Storybook build outputs
 .out

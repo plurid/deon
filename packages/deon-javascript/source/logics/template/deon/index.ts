@@ -7,40 +7,38 @@
 
 
 // #region module
+/**
+ * Writes the interpolated values back out as Deon, so that a host value handed to the tag is read
+ * as the value it is rather than as whatever its `toString` would have made of it.
+ *
+ * The trailing newline of the stringified value is dropped: it is the layout of a document, and
+ * what is being written here is a fragment of one.
+ */
+const source = (
+    strings: TemplateStringsArray,
+    values: unknown[],
+) => {
+    const serializer = new Deon();
+
+    return strings.reduce(
+        (result, string, index) => result + string + (index < values.length
+            ? serializer.stringify(values[index]).replace(/\n$/, '')
+            : ''),
+        '',
+    );
+}
+
+
 const deon = async <T = any>(
     strings: TemplateStringsArray,
-    ...values: any[]
-): Promise<T> => {
-    let raw = '';
-
-    strings.forEach((value, index) => {
-        raw += value + (values[index] || '');
-    });
-
-    const deonObject = new Deon();
-
-    const result: T = await deonObject.parse(raw);
-
-    return result;
-}
+    ...values: unknown[]
+): Promise<T> => new Deon().parse<T>(source(strings, values));
 
 
 const deonSynchronous = <T = any>(
     strings: TemplateStringsArray,
-    ...values: any[]
-) => {
-    let raw = '';
-
-    strings.forEach((value, index) => {
-        raw += value + (values[index] || '');
-    });
-
-    const deonObject = new Deon();
-
-    const result: T = deonObject.parseSynchronous(raw);
-
-    return result;
-}
+    ...values: unknown[]
+): T => new Deon().parseSynchronous<T>(source(strings, values));
 // #endregion module
 
 

@@ -1,410 +1,594 @@
 // #region imports
     // #region external
-    import Token from '../Token';
-    import * as Expression from '../Expression';
-    import * as Statement from '../Statement';
-
     import {
         TokenType,
     } from '../../data/enumerations';
+
+    import type {
+        CallArgumentNode,
+        CallNode,
+        DeclarationNode,
+        DocumentNode,
+        LinkNode,
+        ListNode,
+        MapNode,
+        Reference,
+        StructureNode,
+        ValueNode,
+    } from '../../data/syntax';
+
+    import {
+        scalarNode,
+    } from '../../data/syntax';
+
+    import {
+        deonError,
+        DeonDiagnostic,
+        DiagnosticCode,
+    } from '../Diagnostic';
+
+    import {
+        decodeMinimal,
+    } from '../Scanner';
+
+    import Token from '../Token';
     // #endregion external
 // #endregion imports
 
 
 
 // #region module
-class Parser {
-    private tokens: Token[];
-    private current = 0;
-    private ParseError = class ParseError extends Error {};
-    private deonError: any;
+/**
+ * The tokens a value may be made of. A keyword is only a keyword where a declaration may begin, so
+ * `import` is an ordinary word anywhere else.
+ */
+const VALUE_TOKENS = new Set([
+    TokenType.SIGNIFIER,
+    TokenType.STRING,
+    TokenType.INTERPOLATE,
+    TokenType.IDENTIFIER,
+    TokenType.IMPORT,
+    TokenType.INJECT,
+    TokenType.FROM,
+    TokenType.WITH,
+]);
 
+
+/**
+ * A newline and a comma separate alike, so either ends an entry, an item, a cell, or an argument.
+ */
+const BOUNDARY_TOKENS = new Set([
+    TokenType.NEWLINE,
+    TokenType.COMMA,
+]);
+
+
+/**
+ * Where an unquoted value ends. It runs to a separator or to the delimiter of whatever encloses
+ * it, so the enclosing group is what decides.
+ */
+const DECLARATION_STOPS = new Set([
+    TokenType.NEWLINE,
+    TokenType.COMMA,
+    TokenType.EOF,
+]);
+
+const MAP_STOPS = new Set([
+    TokenType.NEWLINE,
+    TokenType.COMMA,
+    TokenType.RIGHT_CURLY_BRACKET,
+]);
+
+const LIST_STOPS = new Set([
+    TokenType.NEWLINE,
+    TokenType.COMMA,
+    TokenType.RIGHT_SQUARE_BRACKET,
+]);
+
+const CALL_STOPS = new Set([
+    TokenType.NEWLINE,
+    TokenType.COMMA,
+    TokenType.RIGHT_PARENTHESIS,
+]);
+
+
+const BARE_NAME = /^[A-Za-z0-9_-]+$/;
+
+
+
+class Parser {
+    private readonly tokens: Token[];
+    private readonly sourceName: string;
+    private current = 0;
 
     constructor(
         tokens: Token[],
-        error: any,
+        _error?: unknown,
+        sourceName?: string,
     ) {
         this.tokens = tokens;
-        this.deonError = error;
+        this.sourceName = sourceName ?? tokens[0]?.source ?? '<memory>';
     }
 
 
-    public parse() {
-        const statements: (Statement.Statement | Expression.Expression)[] = [];
+    /**
+     * A document is any number of declarations around exactly one root. They may be written in any
+     * order, so the root is not known to be missing until the end.
+     */
+    public parse(): DocumentNode {
+        const declarations: DeclarationNode[] = [];
+        let root: MapNode | ListNode | null = null;
 
-        while (!this.isAtEnd()) {
-            const declaration = this.declaration();
-            if (declaration) {
-                statements.push(declaration);
-            }
-        }
+        this.skipSeparators();
 
-        return statements;
-    }
-
-    private declaration() {
-        try {
-            const current = this.peek();
-
-            if (
-                current.type === TokenType.IMPORT
+        while (!this.check(TokenType.EOF)) {
+            if (this.check(TokenType.IMPORT) || this.check(TokenType.INJECT)) {
+                declarations.push(this.resource());
+            } else if (
+                this.check(TokenType.LEFT_CURLY_BRACKET)
+                || this.check(TokenType.LEFT_SQUARE_BRACKET)
             ) {
-                return this.importStatement();
-            }
-
-            if (
-                current.type === TokenType.INJECT
-            ) {
-                return this.injectStatement();
-            }
-
-            if (
-                current.type === TokenType.STRING
-            ) {
-                return this.handleString();
-            }
-
-            if (
-                current.type === TokenType.IDENTIFIER
-            ) {
-                return this.handleIdentifier();
-            }
-
-            if (
-                current.type === TokenType.LINK
-            ) {
-                return this.handleLink();
-            }
-
-            if (
-                current.type === TokenType.INTERPOLATE
-            ) {
-                return this.handleInterpolate();
-            }
-
-            if (
-                current.type == TokenType.SPREAD
-            ) {
-                return this.handleSpread();
-            }
-
-            if (
-                current.type === TokenType.LEFT_CURLY_BRACKET
-            ) {
-                return this.handleMap();
-            }
-
-            if (
-                current.type === TokenType.LEFT_SQUARE_BRACKET
-            ) {
-                return this.handleList();
-            }
-
-            this.advance();
-            return;
-        } catch (error) {
-            this.synchronize();
-            return null;
-        }
-    }
-
-    private handleIdentifier() {
-        const name = this.peek();
-        this.advance();
-        const value = this.peek();
-
-        const nestLevel = this.nestLevel(this.current - 1);
-        const nested = nestLevel === 'NESTED_LIST'
-            || nestLevel === 'NESTED_MAP';
-
-        const rootKind = nestLevel === 'NESTED_LIST'
-            ? 'list'
-            : 'map';
-
-        switch (value.type) {
-            case TokenType.STRING: {
-                const expression = new Expression.LiteralExpression(value.literal);
-                this.advance();
-                if (nested) {
-                    return new Statement.KeyStatement(name, expression);
-                } else {
-                    return new Statement.LeaflinkStatement(name, expression);
-                }
-            }
-            case TokenType.LINK: {
-                if (nested) {
-                    const expression = new Expression.LiteralExpression(value.literal);
-                    this.advance();
-                    return new Statement.LinkStatement(
-                        name,
-                        expression,
-                        rootKind,
-                    );
-                } else {
-                    const expression = new Expression.LinkExpression(value.literal);
-                    this.advance();
-                    return new Statement.LeaflinkStatement(
-                        name,
-                        expression,
+                if (root) {
+                    this.fail(
+                        DiagnosticCode.PARSE_ROOT,
+                        'A document may contain only one root map or list.',
                     );
                 }
+
+                root = this.check(TokenType.LEFT_CURLY_BRACKET)
+                    ? this.map()
+                    : this.list();
+            } else {
+                declarations.push(this.leaflink());
             }
-            case TokenType.LEFT_CURLY_BRACKET: {
-                const expression = this.handleMap();
-                if (expression instanceof Expression.MapExpression) {
-                    if (nested) {
-                        return new Statement.KeyStatement(name, expression);
-                    } else {
-                        return new Statement.LeaflinkStatement(name, expression);
-                    }
+
+            this.skipSeparators();
+        }
+
+        if (!root) {
+            this.fail(
+                DiagnosticCode.PARSE_ROOT,
+                'A document requires one root map or list.',
+            );
+        }
+
+        return {
+            type: 'document',
+            declarations,
+            root,
+            source: this.sourceName,
+        };
+    }
+
+
+    private resource(): DeclarationNode {
+        const keyword = this.advance();
+        const name = this.name('Expected a resource declaration name.');
+
+        this.consume(TokenType.FROM, "Expected 'from' in resource declaration.");
+
+        const target = this.atom('Expected a resource target.');
+
+        let authenticator: ValueNode | null = null;
+
+        if (this.match(TokenType.WITH)) {
+            authenticator = this.value(DECLARATION_STOPS);
+        }
+
+        return {
+            type: keyword.type === TokenType.IMPORT ? 'import' : 'inject',
+            name: this.tokenValue(name),
+            target: this.tokenValue(target),
+            authenticator,
+            token: keyword,
+        };
+    }
+
+
+    private leaflink(): DeclarationNode {
+        const name = this.name('Expected a leaflink declaration name.');
+
+        // A declaration with nothing after it holds the empty string.
+        const value = this.isBoundary(this.peek()) || this.check(TokenType.EOF)
+            ? scalarNode('', name)
+            : this.value(DECLARATION_STOPS);
+
+        return {
+            type: 'leaflink',
+            name: this.tokenValue(name),
+            value,
+            token: name,
+        };
+    }
+
+
+    private map(): MapNode {
+        const open = this.consume(TokenType.LEFT_CURLY_BRACKET, "Expected '{'.");
+        const entries: MapNode['entries'] = [];
+
+        this.skipSeparators();
+
+        while (
+            !this.check(TokenType.RIGHT_CURLY_BRACKET)
+            && !this.check(TokenType.EOF)
+        ) {
+            if (this.match(TokenType.SPREAD)) {
+                const token = this.previous();
+
+                entries.push({
+                    type: 'spread-entry',
+                    reference: token.literal as Reference,
+                    token,
+                });
+            } else if (this.match(TokenType.LINK)) {
+                // The shortened form: the link names the key it is received under.
+                const token = this.previous();
+
+                const link: LinkNode = {
+                    type: 'link',
+                    reference: token.literal as Reference,
+                    token,
+                };
+
+                entries.push({
+                    type: 'link-entry',
+                    value: this.check(TokenType.LEFT_PARENTHESIS) ? this.call(link) : link,
+                    token,
+                });
+            } else {
+                const name = this.name('Expected a map key.');
+
+                let value: ValueNode;
+
+                if (this.check(TokenType.LEFT_ANGLE_BRACKET)) {
+                    value = this.structure();
+                } else if (
+                    this.isBoundary(this.peek())
+                    || this.check(TokenType.RIGHT_CURLY_BRACKET)
+                ) {
+                    value = scalarNode('', name);
+                } else {
+                    value = this.value(MAP_STOPS);
                 }
+
+                entries.push({
+                    type: 'entry',
+                    name: this.tokenValue(name),
+                    value,
+                    token: name,
+                });
+            }
+
+            if (!this.check(TokenType.RIGHT_CURLY_BRACKET)) {
+                this.requireBoundary('map entry');
+            }
+
+            this.skipSeparators();
+        }
+
+        this.consume(TokenType.RIGHT_CURLY_BRACKET, "Expected '}' after map.");
+
+        return {
+            type: 'map',
+            entries,
+            token: open,
+        };
+    }
+
+
+    private list(): ListNode {
+        const open = this.consume(TokenType.LEFT_SQUARE_BRACKET, "Expected '['.");
+        const items: ListNode['items'] = [];
+
+        this.skipSeparators();
+
+        while (
+            !this.check(TokenType.RIGHT_SQUARE_BRACKET)
+            && !this.check(TokenType.EOF)
+        ) {
+            if (this.match(TokenType.SPREAD)) {
+                const token = this.previous();
+
+                items.push({
+                    type: 'spread-item',
+                    reference: token.literal as Reference,
+                    token,
+                });
+            } else {
+                items.push(this.value(LIST_STOPS));
+            }
+
+            if (!this.check(TokenType.RIGHT_SQUARE_BRACKET)) {
+                this.requireBoundary('list item');
+            }
+
+            this.skipSeparators();
+        }
+
+        this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']' after list.");
+
+        return {
+            type: 'list',
+            items,
+            token: open,
+        };
+    }
+
+
+    /**
+     * A structure is a signature and the rows under it. A row ends at a newline, so a cell may hold
+     * anything that does not itself cross one.
+     */
+    private structure(): StructureNode {
+        const open = this.consume(TokenType.LEFT_ANGLE_BRACKET, "Expected '<'.");
+        const fields: string[] = [];
+
+        this.skipNewlines();
+
+        while (
+            !this.check(TokenType.RIGHT_ANGLE_BRACKET)
+            && !this.check(TokenType.EOF)
+        ) {
+            fields.push(this.tokenValue(this.name('Expected a structure field.')));
+            this.skipNewlines();
+
+            if (!this.match(TokenType.COMMA)) {
                 break;
             }
-            case TokenType.LEFT_SQUARE_BRACKET: {
-                const expression = this.handleList();
-                if (expression instanceof Expression.ListExpression) {
-                    if (nested) {
-                        return new Statement.KeyStatement(name, expression);
-                    } else {
-                        return new Statement.LeaflinkStatement(name, expression);
-                    }
+
+            this.skipNewlines();
+        }
+
+        this.consume(
+            TokenType.RIGHT_ANGLE_BRACKET,
+            "Expected '>' after structure signature.",
+        );
+
+        this.skipNewlines();
+
+        this.consume(
+            TokenType.LEFT_SQUARE_BRACKET,
+            "Expected '[' after structure signature.",
+        );
+
+        const rows: ValueNode[][] = [];
+
+        this.skipNewlines();
+
+        while (
+            !this.check(TokenType.RIGHT_SQUARE_BRACKET)
+            && !this.check(TokenType.EOF)
+        ) {
+            const row: ValueNode[] = [this.value(LIST_STOPS)];
+
+            while (this.match(TokenType.COMMA)) {
+                this.skipNewlines();
+
+                if (this.check(TokenType.RIGHT_SQUARE_BRACKET)) {
+                    break;
                 }
+
+                row.push(this.value(LIST_STOPS));
             }
+
+            rows.push(row);
+
+            if (
+                !this.check(TokenType.RIGHT_SQUARE_BRACKET)
+                && !this.check(TokenType.NEWLINE)
+            ) {
+                this.fail(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    'Expected a newline after a structure row.',
+                );
+            }
+
+            this.skipNewlines();
         }
 
-        if (nested) {
-            return new Statement.KeyStatement(name, null);
-        } else {
-            return new Statement.LeaflinkStatement(name, null);
-        }
+        this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']' after structure rows.");
+
+        return {
+            type: 'structure',
+            fields,
+            rows,
+            token: open,
+        };
     }
 
-    private handleLink() {
-        const link = this.peek();
 
-        const nestLevel = this.nestLevel(this.current);
-        const rootKind = nestLevel === 'NESTED_LIST'
-            ? 'list'
-            : 'map';
-
-        // TODO
-        // handle dot-access/name-access
-        const lexeme = link.lexeme.replace('#', '');
-
-        const linkName: Token = new Token(
-            TokenType.IDENTIFIER,
-            lexeme,
-            link.literal,
-            link.line,
-        );
-
-        const expression = new Expression.LiteralExpression(link.literal);
-        this.advance();
-        return new Statement.LinkStatement(
-            linkName,
-            expression,
-            rootKind,
-        );
-    }
-
-    private handleInterpolate() {
-        const interpolate = this.peek();
-        this.advance();
-        return new Statement.InterpolateStatement(
-            interpolate,
-        );
-    }
-
-    private handleSpread() {
-        const spread = this.peek();
-        this.advance();
-
-        return new Statement.SpreadStatement(spread);
-    }
-
-    private handleMap() {
-        const nestLevel = this.nestLevel(this.current);
-        // console.log('nestLevel', nestLevel);
-
-        const previous = this.tokens[this.current - 1];
-        // console.log('previous', previous);
-
-        const isLeaflink = nestLevel === 'ROOT' && (
-            previous && previous.type === TokenType.IDENTIFIER
-        );
-
-        const nested = nestLevel === 'NESTED_LIST'
-            || nestLevel === 'NESTED_MAP';
-
-        if (nested) {
-            return new Expression.MapExpression(
-                this.block(
-                    TokenType.LEFT_CURLY_BRACKET,
-                ),
-            );
+    private value(
+        stops: Set<TokenType>,
+    ): ValueNode {
+        if (this.check(TokenType.LEFT_CURLY_BRACKET)) {
+            return this.map();
         }
 
-        if (isLeaflink) {
-            return new Expression.MapExpression(
-                this.block(
-                    TokenType.LEFT_CURLY_BRACKET,
-                ),
-            );
+        if (this.check(TokenType.LEFT_SQUARE_BRACKET)) {
+            return this.list();
         }
 
-        return new Statement.RootStatement(
-            'map',
-            this.block(
-                TokenType.LEFT_CURLY_BRACKET,
-            ),
-        )
+        if (this.check(TokenType.LEFT_ANGLE_BRACKET)) {
+            return this.structure();
+        }
+
+        if (this.match(TokenType.LINK)) {
+            const token = this.previous();
+
+            const link: LinkNode = {
+                type: 'link',
+                reference: token.literal as Reference,
+                token,
+            };
+
+            return this.check(TokenType.LEFT_PARENTHESIS) ? this.call(link) : link;
+        }
+
+        return this.scalar(stops);
     }
 
-    private handleList() {
-        const nestLevel = this.nestLevel(this.current);
 
-        const previous = this.tokens[this.current - 1];
+    private call(
+        link: LinkNode,
+    ): CallNode {
+        const open = this.consume(TokenType.LEFT_PARENTHESIS, "Expected '('.");
+        const args: CallArgumentNode[] = [];
 
-        const isLeaflink = nestLevel === 'ROOT' && (
-            previous && previous.type === TokenType.IDENTIFIER
-        );
+        this.skipSeparators();
 
-        const nested = nestLevel === 'NESTED_LIST'
-            || nestLevel === 'NESTED_MAP';
+        while (
+            !this.check(TokenType.RIGHT_PARENTHESIS)
+            && !this.check(TokenType.EOF)
+        ) {
+            const name = this.name('Expected an entity argument name.');
 
-        if (nested) {
-            return new Expression.ListExpression(
-                this.block(
-                    TokenType.LEFT_SQUARE_BRACKET,
-                ),
-            );
+            const value = this.isBoundary(this.peek())
+                || this.check(TokenType.RIGHT_PARENTHESIS)
+                ? scalarNode('', name)
+                : this.value(CALL_STOPS);
+
+            args.push({
+                name: this.tokenValue(name),
+                value,
+                token: name,
+            });
+
+            if (!this.check(TokenType.RIGHT_PARENTHESIS)) {
+                this.requireBoundary('entity argument');
+            }
+
+            this.skipSeparators();
         }
 
-        if (isLeaflink) {
-            return new Expression.ListExpression(
-                this.block(
-                    TokenType.LEFT_SQUARE_BRACKET,
-                ),
-            );
-        }
+        this.consume(TokenType.RIGHT_PARENTHESIS, "Expected ')' after entity arguments.");
 
-        return new Statement.RootStatement(
-            'list',
-            this.block(
-                TokenType.LEFT_SQUARE_BRACKET,
-            ),
-        )
+        return {
+            type: 'call',
+            reference: link.reference,
+            arguments: args,
+            token: open,
+        };
     }
 
-    private handleString() {
-        const current = this.peek();
-        const nestLevel = this.nestLevel(this.current);
 
-        this.advance();
-
-        const inList = nestLevel === 'NESTED_LIST';
-
-        const expression = new Expression.LiteralExpression(current.literal);
-
-        if (inList) {
-            const listIndex = this.listIndex();
-
-            return new Statement.ItemStatement(listIndex, expression);
-        }
-
-        return expression;
-    }
-
-    private importStatement() {
-        this.advance();
-        const importName = this.consume(TokenType.IDENTIFIER, "Expect name for import.");
-        this.consume(TokenType.FROM, "Expect 'from' for import.");
-        const importPath = this.consume(TokenType.SIGNIFIER, "Expect path for import.");
-
-        let importToken;
-
-        if (this.peek().type === TokenType.WITH) {
-            this.advance();
-            importToken = this.consume(TokenType.IDENTIFIER, 'Expect token for import.');
-        }
-
-        return new Statement.ImportStatement(
-            importName,
-            importPath,
-            importToken,
-        );
-    }
-
-    private injectStatement() {
-        this.advance();
-        const injectName = this.consume(TokenType.IDENTIFIER, "Expect name for inject.");
-        this.consume(TokenType.FROM, "Expect 'from' for inject.");
-        const injectPath = this.consume(TokenType.SIGNIFIER, "Expect path for inject.");
-
-        let injectToken;
-
-        if (this.peek().type === TokenType.WITH) {
-            this.advance();
-            injectToken = this.consume(TokenType.IDENTIFIER, 'Expect token for inject.');
-        }
-
-        return new Statement.InjectStatement(
-            injectName,
-            injectPath,
-            injectToken,
-        );
-    }
-
-    private block(
-        tokenType: TokenType,
+    /**
+     * An unquoted value is made of every token up to its boundary, put back together with the
+     * whitespace that separated them, so that `two words` stays two words.
+     */
+    private scalar(
+        stops: Set<TokenType>,
     ) {
-        this.advance();
+        // A string is quoted only when the value begins with the quote. Anywhere else the quote is
+        // an ordinary character of an unquoted string, which runs to the boundary (4.3).
+        if (this.check(TokenType.STRING)) {
+            const quoted = this.advance();
 
-        switch (tokenType) {
-            case TokenType.LEFT_CURLY_BRACKET: {
-                const statements: any[] = [];
+            return scalarNode(this.tokenValue(quoted), quoted);
+        }
 
-                while (
-                    !this.check(TokenType.RIGHT_CURLY_BRACKET)
-                    && !this.isAtEnd()
-                ) {
-                    const declaration = this.declaration();
-                    if (declaration) {
-                        statements.push(declaration);
-                    }
-                }
+        const fragments: string[] = [];
+        let token: Token | null = null;
 
-                this.consume(
-                    TokenType.RIGHT_CURLY_BRACKET,
-                    "Expect '}' after block.",
-                );
+        while (
+            !this.check(TokenType.EOF)
+            && !stops.has(this.peek().type)
+            && VALUE_TOKENS.has(this.peek().type)
+        ) {
+            const current = this.advance();
+            token ??= current;
 
-                return statements;
+            // `leading` is the whitespace read before the token, and the first token of a value has
+            // none of its own: what came before it separated it from the key.
+            fragments.push(`${fragments.length ? current.leading : ''}${current.lexeme}`);
+        }
+
+        if (!token) {
+            this.fail(DiagnosticCode.PARSE_EXPECTED, 'Expected a value.');
+        }
+
+        return scalarNode(decodeMinimal(fragments.join('')), token);
+    }
+
+
+    private tokenValue(
+        token: Token,
+    ) {
+        return typeof token.literal === 'string' ? token.literal : token.lexeme;
+    }
+
+
+    /**
+     * A name is a bare word or a singlequoted string. A backticked string may span lines, which a
+     * name may not.
+     */
+    private name(
+        message: string,
+    ) {
+        if (
+            VALUE_TOKENS.has(this.peek().type)
+            && this.peek().type !== TokenType.INTERPOLATE
+        ) {
+            const token = this.advance();
+
+            const singlequoted = token.type === TokenType.STRING
+                && token.lexeme.startsWith("'");
+            const bare = token.type !== TokenType.STRING
+                && BARE_NAME.test(this.tokenValue(token));
+
+            if (singlequoted || bare) {
+                return token;
             }
-            case TokenType.LEFT_SQUARE_BRACKET: {
-                const statements: any[] = [];
 
-                while (
-                    !this.check(TokenType.RIGHT_SQUARE_BRACKET)
-                    && !this.isAtEnd()
-                ) {
-                    const declaration = this.declaration();
-                    if (declaration) {
-                        statements.push(declaration);
-                    }
-                }
+            return deonError(
+                DiagnosticCode.LEX_INVALID,
+                `Invalid unquoted name '${this.tokenValue(token)}'.`,
+                token,
+            );
+        }
 
-                this.consume(
-                    TokenType.RIGHT_SQUARE_BRACKET,
-                    "Expect ']' after block.",
-                );
+        this.fail(DiagnosticCode.PARSE_EXPECTED, message);
+    }
 
-                return statements;
+
+    /**
+     * A resource target is one token, and it may not be a backticked string, whose trimming would
+     * make the target something other than what was written.
+     */
+    private atom(
+        message: string,
+    ) {
+        if (
+            VALUE_TOKENS.has(this.peek().type)
+            && this.peek().type !== TokenType.INTERPOLATE
+        ) {
+            const token = this.advance();
+
+            if (token.type !== TokenType.STRING || token.lexeme.startsWith("'")) {
+                return token;
             }
-            default:
-                return [];
+
+            return deonError(
+                DiagnosticCode.LEX_INVALID,
+                'A resource target cannot be a multiline string.',
+                token,
+            );
+        }
+
+        this.fail(DiagnosticCode.PARSE_EXPECTED, message);
+    }
+
+
+    private requireBoundary(
+        entity: string,
+    ) {
+        if (!this.isBoundary(this.peek())) {
+            this.fail(
+                DiagnosticCode.PARSE_EXPECTED,
+                `Expected a comma or newline after ${entity}.`,
+            );
         }
     }
+
 
     private consume(
         type: TokenType,
@@ -414,208 +598,160 @@ class Parser {
             return this.advance();
         }
 
-        throw this.error(this.peek(), message);
+        this.fail(DiagnosticCode.PARSE_EXPECTED, message);
     }
 
-    private error(
-        token: Token,
-        message: string,
-    ) {
-        this.deonError(token, message);
 
-        return new this.ParseError();
-    }
-
-    private synchronize() {
-        this.advance();
-
-        while(
-            !this.isAtEnd()
-        ) {
-            // if (this.previous().type === TokenType.SEMICOLON) {
-            //     return;
-            // }
-
-            // switch (this.peek().type) {
-            //     case TokenType.CLASS:
-            //     case TokenType.FUN:
-            //     case TokenType.VAR:
-            //     case TokenType.FOR:
-            //     case TokenType.IF:
-            //     case TokenType.WHILE:
-            //     case TokenType.PRINT:
-            //     case TokenType.RETURN:
-            //         return;
-            // }
-
-            this.advance();
+    private skipSeparators() {
+        while (this.match(TokenType.NEWLINE) || this.match(TokenType.COMMA)) {
+            // The separators carry no meaning of their own.
         }
     }
+
+
+    private skipNewlines() {
+        while (this.match(TokenType.NEWLINE)) {
+            // As above.
+        }
+    }
+
+
+    private isBoundary(
+        token: Token,
+    ) {
+        return BOUNDARY_TOKENS.has(token.type);
+    }
+
+
+    private match(
+        type: TokenType,
+    ) {
+        if (!this.check(type)) {
+            return false;
+        }
+
+        this.advance();
+
+        return true;
+    }
+
 
     private check(
         type: TokenType,
     ) {
-        if (this.isAtEnd()) {
-            return false;
-        }
-
         return this.peek().type === type;
     }
 
-    private advance() {
-        // console.log('CURRENT TOKEN', this.tokens[this.current]);
 
-        if (!this.isAtEnd()) {
+    private advance() {
+        if (!this.check(TokenType.EOF)) {
             this.current += 1;
         }
 
-        return this.previous();
+        return this.tokens[this.current - 1];
     }
 
-    private isAtEnd() {
-        return this.peek().type === TokenType.EOF;
-    }
-
-    private peek() {
-        return this.tokens[this.current];
-    }
 
     private previous() {
         return this.tokens[this.current - 1];
     }
 
-    private nestLevel(
-        position: number,
-    ) {
-        const tokens = this.tokens
-            .slice(0, position)
-            .reverse();
 
-        if (tokens.length === 0) {
-            return 'ROOT';
-        }
-
-        const curlyBrackets = {
-            left: 0,
-            right: 0,
-        };
-        const squareBrackets = {
-            left: 0,
-            right: 0,
-        };
-
-        for (const token of tokens) {
-            switch (token.type) {
-                case TokenType.LEFT_CURLY_BRACKET:
-                    curlyBrackets.left += 1;
-                    break;
-                case TokenType.RIGHT_CURLY_BRACKET:
-                    curlyBrackets.right += 1;
-                    break;
-                case TokenType.LEFT_SQUARE_BRACKET:
-                    squareBrackets.left += 1;
-                    break;
-                case TokenType.RIGHT_SQUARE_BRACKET:
-                    squareBrackets.right += 1;
-                    break;
-            }
-
-            if (curlyBrackets.left > curlyBrackets.right) {
-                return 'NESTED_MAP';
-            }
-
-            if (squareBrackets.left > squareBrackets.right) {
-                return 'NESTED_LIST';
-            }
-        }
-
-        /**
-         * TODO
-         * to find a less expensive way to check for leaflinks
-         */
-        if (
-            curlyBrackets.left === curlyBrackets.right
-            && squareBrackets.left === squareBrackets.right
-        ) {
-            return 'ROOT';
-        }
-
-        return;
+    private peek() {
+        return this.tokens[this.current];
     }
 
-    private listIndex() {
-        const tokens = this.tokens
-            .slice(0, this.current)
-            .reverse();
 
-        if (tokens.length === 0) {
-            return '0';
-        }
-
-        const curlyBrackets = {
-            left: 0,
-            right: 0,
-        };
-        const squareBrackets = {
-            left: 0,
-            right: 0,
-        };
-
-        const atListRoot = () => {
-            if (
-                curlyBrackets.left === curlyBrackets.right
-                && squareBrackets.left === squareBrackets.right
-            ) {
-                return true;
-            }
-
-            return false;
-        }
-
-        let listIndex = -1;
-
-        // console.log('listIndex tokens', tokens);
-        // console.log('listIndex', listIndex);
-
-        for (const token of tokens) {
-            // console.log('token', token);
-            // console.log('atListRoot()', atListRoot());
-
-            if (token.type === TokenType.COMMA) {
-                continue;
-            }
-
-            if (
-                token.type === TokenType.LEFT_SQUARE_BRACKET
-                && atListRoot()
-            ) {
-                break;
-            }
-
-            switch (token.type) {
-                case TokenType.LEFT_CURLY_BRACKET:
-                    curlyBrackets.left += 1;
-                    break;
-                case TokenType.RIGHT_CURLY_BRACKET:
-                    curlyBrackets.right += 1;
-                    break;
-                case TokenType.LEFT_SQUARE_BRACKET:
-                    squareBrackets.left += 1;
-                    break;
-                case TokenType.RIGHT_SQUARE_BRACKET:
-                    squareBrackets.right += 1;
-                    break;
-            }
-
-            if (atListRoot()) {
-                listIndex += 1;
-            }
-        }
-
-        // console.log('listIndex', listIndex);
-
-        return listIndex + '';
+    private fail(
+        code: Parameters<typeof deonError>[0],
+        message: string,
+    ): never {
+        return deonError(code, message, this.peek());
     }
+}
+
+
+
+/**
+ * A key written twice is valid, and the last write is the one that holds, but it is almost always
+ * a mistake, so the linter says so. A key replaced by a spread is not reported.
+ */
+const lintValue = (
+    value: ValueNode,
+    diagnostics: DeonDiagnostic[],
+) => {
+    if (value.type === 'map') {
+        const names = new Set<string>();
+
+        for (const entry of value.entries) {
+            if (entry.type === 'entry') {
+                if (names.has(entry.name)) {
+                    diagnostics.push(new DeonDiagnostic(
+                        DiagnosticCode.LINT_DUPLICATE_KEY,
+                        `Map key '${entry.name}' is written more than once.`,
+                        entry.token,
+                        'warning',
+                    ));
+                }
+
+                names.add(entry.name);
+                lintValue(entry.value, diagnostics);
+            } else if (entry.type === 'link-entry') {
+                const segment = entry.value.reference[entry.value.reference.length - 1] ?? '';
+                const name = segment.startsWith('$') ? segment.slice(1) : segment;
+
+                if (names.has(name)) {
+                    diagnostics.push(new DeonDiagnostic(
+                        DiagnosticCode.LINT_DUPLICATE_KEY,
+                        `Map key '${name}' is written more than once.`,
+                        entry.token,
+                        'warning',
+                    ));
+                }
+
+                names.add(name);
+
+                if (entry.value.type === 'call') {
+                    for (const argument of entry.value.arguments) {
+                        lintValue(argument.value, diagnostics);
+                    }
+                }
+            }
+        }
+    } else if (value.type === 'list') {
+        for (const item of value.items) {
+            if (item.type !== 'spread-item') {
+                lintValue(item, diagnostics);
+            }
+        }
+    } else if (value.type === 'structure') {
+        for (const row of value.rows) {
+            for (const cell of row) {
+                lintValue(cell, diagnostics);
+            }
+        }
+    } else if (value.type === 'call') {
+        for (const argument of value.arguments) {
+            lintValue(argument.value, diagnostics);
+        }
+    }
+}
+
+
+export const lintDocument = (
+    document: DocumentNode,
+) => {
+    const diagnostics: DeonDiagnostic[] = [];
+
+    lintValue(document.root, diagnostics);
+
+    for (const declaration of document.declarations) {
+        if (declaration.type === 'leaflink') {
+            lintValue(declaration.value, diagnostics);
+        }
+    }
+
+    return diagnostics;
 }
 // #endregion module
 

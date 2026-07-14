@@ -39,41 +39,15 @@ const fetcher = (
                 return;
             }
 
-            const {
-                data,
-                filetype,
-            } = fetchFromURL(
-                file,
-                token,
-                type,
-            );
-
-            return {
-                data,
-                filetype,
-            };
+            return fetchFromURL(file, token, type);
         }
 
         if (!options.parseOptions?.allowFilesystem) {
             return;
         }
 
-        const {
-            data,
-            filetype,
-            filebase,
-        } = fetchFromFile(
-            file,
-            options,
-            type,
-        );
-
-        return {
-            data,
-            filetype,
-            filebase,
-        };
-    } catch (error) {
+        return fetchFromFile(file, options, type);
+    } catch {
         return;
     }
 }

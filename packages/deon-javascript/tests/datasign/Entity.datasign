@@ -1,0 +1,5 @@
+// ./Entity.datasign
+data Entity {
+    name: string;
+    age: number;
+}

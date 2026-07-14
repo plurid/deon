@@ -1,0 +1,63 @@
+document          = trivia, { top-level, trivia }, EOF ;
+top-level         = import | inject | root | declaration ;
+root              = map | list ;
+declaration       = name, required-space, value ;
+
+import            = "import", required-space, name, required-space,
+                    "from", required-space, target, [ required-space,
+                    "with", required-space, authenticator ] ;
+inject            = "inject", required-space, name, required-space,
+                    "from", required-space, target, [ required-space,
+                    "with", required-space, authenticator ] ;
+authenticator     = string | link ;
+target            = unquoted-string | single-string ;
+
+value             = structure | map | list | call | spread | link | string ;
+map               = "{", trivia, { map-entry, separator, trivia }, "}" ;
+map-entry         = spread | name, [ required-space, value ] ;
+list              = "[", trivia, { list-item, separator, trivia }, "]" ;
+list-item         = spread | value ;
+
+structure         = "<", trivia, name, { trivia, ",", trivia, name }, trivia,
+                    ">", trivia, "[", trivia, structure-row,
+                    { newline, trivia, structure-row }, trivia, "]" ;
+structure-row     = value, { trivia, ",", trivia, value } ;
+
+link              = "#", reference ;
+spread            = "...#", reference ;
+call              = "#", reference, "(", trivia,
+                    [ call-entry, { separator, trivia, call-entry } ], trivia,
+                    ")" ;
+call-entry        = name, required-space, value ;
+reference         = environment-reference | reference-head,
+                    { dot-access | bracket-access } ;
+environment-reference = "$", bare-name ;
+reference-head    = bare-name | quoted-name ;
+dot-access        = ".", bare-name ;
+bracket-access    = "[", ( bare-name | quoted-name | digits ), "]" ;
+
+string            = unquoted-string | single-string | multiline-string ;
+single-string     = "'", { single-character | escape | interpolation }, "'" ;
+multiline-string  = "`", { multiline-character | escape | interpolation }, "`" ;
+unquoted-string   = unquoted-character,
+                    { unquoted-character | space | escape | interpolation } ;
+interpolation     = "#{", reference, "}" ;
+escape            = "\\", ( "\\" | "'" | "`" | "#{" | "n" | "r" | "t" ) ;
+
+name              = bare-name | quoted-name ;
+bare-name         = name-character, { name-character } ;
+quoted-name       = single-string ;
+name-character    = letter | digit | "_" | "-" ;
+
+separator         = trivia, ( "," | newline ), trivia ;
+trivia            = { space | newline | line-comment | block-comment } ;
+required-space    = space, { space } ;
+space             = " " | "\t" ;
+newline           = "\n" | "\r\n" ;
+line-comment      = "//", { any-character - newline }, [ newline ] ;
+block-comment     = "/*", { any-character - "*/" }, "*/" ;
+
+letter            = "A"…"Z" | "a"…"z" ;
+digit             = "0"…"9" ;
+digits            = digit, { digit } ;
+EOF               = ? end of input ? ;

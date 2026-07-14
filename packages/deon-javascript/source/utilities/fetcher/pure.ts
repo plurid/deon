@@ -1,6 +1,6 @@
 // #region imports
     // #region external
-    import {
+    import type {
         DeonInterpreterOptions,
         FetcherType,
     } from '../../data/interfaces';
@@ -8,102 +8,53 @@
     import {
         isURL,
     } from '../general';
-    // #endregion external
-
-
-    // #region internal
-    import {
-        fetchFromURL as fetchFromURLSynchronous,
-    } from './synchronous/url';
 
     import {
-        fetchFromURL as fetchFromURLAsynchronous,
+        fetchFromURL,
     } from './asynchronous/url';
-    // #endregion internal
+    // #endregion external
 // #endregion imports
 
 
 
 // #region module
-export const pureSynchronousFetcher = (
+/**
+ * The fetcher of a pure evaluator. It has no filesystem at all, and it reaches the network only
+ * when the network has been explicitly asked for (specification 9).
+ */
+
+
+/**
+ * Reading a file synchronously means reading it from a filesystem, which is precisely what a pure
+ * evaluator does not have.
+ */
+const synchronous = (
+    _file: string,
+    _options: DeonInterpreterOptions,
+    _token?: string,
+    _type?: FetcherType,
+) => undefined;
+
+
+const asynchronous = async (
     file: string,
     options: DeonInterpreterOptions,
     token?: string,
     type?: FetcherType,
 ) => {
-    try {
-        const fileIsUrl = isURL(file);
-
-        if (fileIsUrl) {
-            if (!options.parseOptions?.allowNetwork) {
-                return;
-            }
-
-            const {
-                data,
-                filetype,
-            } = fetchFromURLSynchronous(
-                file,
-                token,
-                type,
-            );
-
-            return {
-                data,
-                filetype,
-            };
-        }
-
-        return;
-    } catch (error) {
-        return;
+    if (!isURL(file) || !options.parseOptions?.allowNetwork) {
+        return undefined;
     }
+
+    return fetchFromURL(file, token, type);
 }
-
-export const pureAsynchronousFetcher = async (
-    file: string,
-    options: DeonInterpreterOptions,
-    token?: string,
-    type?: FetcherType,
-) => {
-    try {
-        const fileIsUrl = isURL(file);
-
-        if (fileIsUrl) {
-            if (!options.parseOptions?.allowNetwork) {
-                return;
-            }
-
-            const {
-                data,
-                filetype,
-            } = await fetchFromURLAsynchronous(
-                file,
-                token,
-                type,
-            );
-
-            return {
-                data,
-                filetype,
-            };
-        }
-
-        return;
-    } catch (error) {
-        return;
-    }
-}
-
-
-const fetcher = {
-    synchronous: pureSynchronousFetcher,
-    asynchronous: pureAsynchronousFetcher,
-};
 // #endregion module
 
 
 
 // #region exports
-export default fetcher;
+export default {
+    asynchronous,
+    synchronous,
+};
 // #endregion exports

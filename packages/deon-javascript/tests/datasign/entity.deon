@@ -1,0 +1,13 @@
+// ./entity.deon
+{
+    entities [
+        {
+            name Entity One
+            age 1
+        }
+        {
+            name Entity Two
+            age 1.3
+        }
+    ]
+}

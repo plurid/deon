@@ -4,7 +4,9 @@ export enum TokenType {
     LEFT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET,
     LEFT_CURLY_BRACKET, RIGHT_CURLY_BRACKET,
     LEFT_PARENTHESIS, RIGHT_PARENTHESIS,
-    COMMA, DOT,
+    LEFT_ANGLE_BRACKET, RIGHT_ANGLE_BRACKET,
+    COMMA,
+    NEWLINE,
 
     // Multi-character tokens.
     SPREAD,
@@ -16,10 +18,6 @@ export enum TokenType {
     LINK,
     INTERPOLATE,
     IDENTIFIER,
-
-    // Entities.
-    MAP,
-    LIST,
 
     EOF,
 }

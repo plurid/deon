@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-const deon = require('../distribution/index.js');
+const deon = require('../distribution/index.cjs');
 
 deon.cli();

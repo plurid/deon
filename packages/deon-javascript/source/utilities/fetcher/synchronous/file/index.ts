@@ -43,6 +43,7 @@ const fetchFromFile = (
         data,
         filetype,
         filebase,
+        resourceId: filepath,
     };
 }
 // #endregion module

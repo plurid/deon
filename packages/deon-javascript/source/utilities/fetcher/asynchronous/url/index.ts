@@ -1,9 +1,4 @@
 // #region imports
-    // #region libraries
-    import fetch from 'cross-fetch';
-    // #endregion libraries
-
-
     // #region external
     import {
         FetcherType,
@@ -36,11 +31,15 @@ const fetchFromURL = async (
             headers,
         },
     );
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} while loading '${url}'.`);
+    }
     const data = await response.text();
 
     return {
         data,
         filetype,
+        resourceId: url,
     };
 }
 // #endregion module

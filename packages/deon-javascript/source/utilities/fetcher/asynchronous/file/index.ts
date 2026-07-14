@@ -45,6 +45,7 @@ const fetchFromFile = async (
         data,
         filetype,
         filebase,
+        resourceId: filepath,
     };
 }
 // #endregion module

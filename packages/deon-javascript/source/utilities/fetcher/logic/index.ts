@@ -11,6 +11,7 @@
     } from '../../../data/interfaces';
 
     import {
+        resolveMappedAbsolutePath,
         solveExtensionName,
     } from '../../general';
     // #endregion external
@@ -71,11 +72,15 @@ const resolveFetchFile = (
     const resolvedFile = concatenate
         ? file + filetype
         : file;
-    const filepath = path.isAbsolute(resolvedFile)
-        ? resolvedFile
+    const mappedFile = resolveMappedAbsolutePath(
+        resolvedFile,
+        parseOptions?.absolutePaths || {},
+    );
+    const filepath = path.isAbsolute(mappedFile)
+        ? mappedFile
         : path.join(
             basePath,
-            resolvedFile,
+            mappedFile,
         );
 
     return {
@@ -84,6 +89,8 @@ const resolveFetchFile = (
         filebase: path.dirname(filepath),
     };
 }
+
+
 // #endregion module
 
 

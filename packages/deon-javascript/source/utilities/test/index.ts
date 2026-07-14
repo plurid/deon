@@ -46,6 +46,7 @@ const suites = {
     errors: 'Deon errors',
     environment: 'Deon environment',
     interpolation: 'Deon interpolation',
+    datasign: 'Deon datasign',
 };
 // #endregion module
 

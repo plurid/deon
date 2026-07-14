@@ -28,45 +28,35 @@ const fetcherDefaultInjectHeaders = {
 
 const defaultCacheDuration = 1_000 * 60 * 60;
 
-const defaultCacheDirectory = () => {
-    if (typeof window !== 'undefined') {
-        // Browser not using cache.
-        return '';
-    }
-
-    const os = require('os');
-    const path = require('path');
-
-    return path.join(
-        os.homedir(),
-        './.deon-cache',
-    );
-}
-
 
 const deonParseOptions: DeonParseOptions = {
+    sourceName: '<memory>',
     filebase: '',
     absolutePaths: {},
     authorization: {},
     datasignFiles: [],
     datasignMap: {},
-    allowFilesystem: true,
-    allowNetwork: true,
+    allowFilesystem: false,
+    allowNetwork: false,
     cache: false,
     cacheDuration: defaultCacheDuration,
     cacheDirectory: '',
     token: '',
+    environment: {},
+    resources: {},
+    resourceStack: [],
 };
 
 
 const deonStrigifyOptions: DeonStringifyOptions = {
+    canonical: false,
     readable: true,
     indentation: 4,
-    leaflinks: true,
+    leaflinks: false,
     leaflinkLevel: 1,
     leaflinkShortening: true,
-    generatedHeader: true,
-    generatedComments: true,
+    generatedHeader: false,
+    generatedComments: false,
 };
 
 
@@ -96,7 +86,6 @@ export {
     fetcherDefaultInjectHeaders,
 
     defaultCacheDuration,
-    defaultCacheDirectory,
 
     deonParseOptions,
     deonStrigifyOptions,

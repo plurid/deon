@@ -320,7 +320,10 @@ list [
         // log(data);
 
 
-        expect(data.key).toEqual('valu\\\'e');
+        // Specification 4.3: inside a single-quoted string a backslash before the active delimiter
+        // decodes to that delimiter, so `\'` is a quote. (In the backtick form below, `'` is not the
+        // active delimiter, so the backslash there is preserved literally.)
+        expect(data.key).toEqual('valu\'e');
 
         compareTimeBenchmark(
             start,

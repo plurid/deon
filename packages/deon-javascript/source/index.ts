@@ -38,6 +38,13 @@
         typer,
     } from './utilities/typer';
 
+    import {
+        applyDatasign,
+        parseDatasign,
+        readDatasign,
+        typeDatasign,
+    } from './utilities/datasign';
+
     import * as typings from './utilities/typer/typings';
     // #endregion internal
 // #endregion imports
@@ -57,6 +64,9 @@ const internals = {
 
 // #region exports
 export * from './data/interfaces';
+export * from './data/syntax';
+export * from './objects/Diagnostic';
+export type { DatasignField, DatasignReader, DatasignSignatures } from './utilities/datasign';
 
 
 export {
@@ -81,6 +91,12 @@ export {
     customTyper,
     typer,
     typings,
+
+    // datasign, usable standalone and swappable for `@plurid/datasign`'s own reader
+    applyDatasign,
+    parseDatasign,
+    readDatasign,
+    typeDatasign,
 
     internals,
 };

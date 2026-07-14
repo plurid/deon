@@ -2,63 +2,70 @@
     // #region libraries
     import fsSync, {
         promises as fs,
-    } from 'fs';
+    } from 'node:fs';
 
-    import path from 'path';
-
-    import {
-        program,
-    } from 'commander';
-
-    import fetch from 'cross-fetch';
+    import path from 'node:path';
     // #endregion libraries
 
 
     // #region external
     import Scanner from '../Scanner';
-    import Token from '../Token';
-    import Parser from '../Parser';
-    // import Resolver from '../Resolver';
+
+    import Parser, {
+        lintDocument,
+    } from '../Parser';
+
     import Interpreter from '../Interpreter';
+
     import Stringifier from '../Stringifier';
 
-    import {
-        DEON_CLI_VERSION,
-        DEON_MEDIA_TYPE,
+    import type {
+        DocumentNode,
+        DeonValue,
+    } from '../../data/syntax';
 
-        defaultCacheDuration,
-        defaultCacheDirectory,
-    } from '../../data/constants';
-
-    import {
-        TokenType,
-    } from '../../data/enumerations';
+    import type {
+        DeonDiagnostic,
+    } from '../Diagnostic';
 
     import {
-        PartialDeonParseOptions,
-        PartialDeonStringifyOptions,
+        DiagnosticCode,
+        resourceError,
+    } from '../Diagnostic';
+
+    import {
+        applyDatasign,
+        datasignError,
+        readDatasign,
+    } from '../../utilities/datasign';
+
+    import type {
         DeonInterpreterOptions,
         DeonLoadEnvironmentOptions,
+        PartialDeonParseOptions,
+        PartialDeonStringifyOptions,
     } from '../../data/interfaces';
+
+    import {
+        DEON_MEDIA_TYPE,
+        defaultCacheDuration,
+    } from '../../data/constants';
 
     import fetcher from '../../utilities/fetcher';
 
     import {
+        defaultCacheDirectory,
         resolveAbsolutePath,
     } from '../../utilities/general/impure';
 
     import {
-        handleFileOutput,
-        handleConvert,
-        handleConfile,
-        handleExfile,
+        runCLI,
     } from '../../utilities/cli';
 
     import sha from '../../utilities/sha';
 
     import {
         setEnvironment,
-        spawnEnvironmentCommand,
     } from '../../utilities/environment';
     // #endregion external
 // #endregion imports
@@ -66,558 +73,445 @@
 
 
 // #region module
+/**
+ * Deon on a host that has a filesystem and a network.
+ *
+ * The capabilities are not granted alike: `parseFile` opens the filesystem, for the file it is
+ * given and for what that file imports, while a string handed to `parse` grants nothing at all.
+ * The network is never opened unless it is asked for (specification 9).
+ */
 class Deon {
-    private interpreter: Interpreter = new Interpreter(
-        Deon,
-        fetcher,
-    );
-    private hadError = false;
-    private parsedFile = '';
-
-
-
-    /**
-     * Parse based on arguments passed as command line.
-     *
-     * @param args
-     */
-    public async demand(
+    public demand(
         args: string[],
     ) {
-        program
-            .name('deon')
-            .version(DEON_CLI_VERSION, '-v, --version')
-            .arguments('<file>')
-            .description('read a ".deon" file and output the parsed result')
-            .option(
-                '-o, --output <value>',
-                'output type: deon, json',
-                'deon',
-            )
-            .option(
-                '-t, --typed <value>',
-                'typed output',
-                'false',
-            )
-            .option(
-                '-f, --filesystem <value>',
-                'allow filesystem',
-                'true',
-            )
-            .option(
-                '-n, --network <value>',
-                'allow network',
-                'true',
-            ).action(async (
-                file: string,
-                options: any,
-            ) => {
-                try {
-                    options = {
-                        ...options,
-                        typed: options.typed.trim().toLowerCase() === 'true',
-                        filesystem: options.filesystem.trim().toLowerCase() === 'true',
-                        network: options.network.trim().toLowerCase() === 'true',
-                    };
-
-                    const data: any = await this.parseFile(
-                        file,
-                        {
-                            allowFilesystem: options.filesystem,
-                            allowNetwork: options.network,
-                        },
-                    );
-
-                    handleFileOutput(
-                        data,
-                        this.stringify(data),
-                        options,
-                    );
-                } catch (error) {
-                    console.log(`Deon :: Something went wrong.`);
-                }
-            });
-
-        program
-            .command('convert <source> [destination]')
-            .description('convert a ".json" file to ".deon"')
-            .action(async (
-                source: string,
-                destination: string | undefined,
-            ) => {
-                try {
-                    const filepath = resolveAbsolutePath(source);
-                    const data = await fs.readFile(
-                        filepath,
-                        'utf-8',
-                    );
-                    const parsedData = JSON.parse(data);
-                    const deonString = this.stringify(
-                        parsedData,
-                    );
-
-                    await handleConvert(
-                        destination,
-                        deonString,
-                    );
-                } catch (error) {
-                    console.log(`Deon :: Could not convert '${source}'.`);
-                }
-            });
-
-        program
-            .command('environment <source> <command...>')
-            .description('loads environment variables from a ".deon" file and spawns a new command')
-            .option(
-                '-w, --writeover',
-                'overwrite keys if already defined',
-                false,
-            )
-            .action(async (
-                source: string,
-                command: string[],
-                options,
-            ) => {
-                const data = await this.parseFile<any>(source);
-                spawnEnvironmentCommand(
-                    command,
-                    data,
-                    {
-                        overwrite: options.writeover,
-                    },
-                );
-            });
-
-        program
-            .command('confile <files...>')
-            .description('combine files into a single ".deon" file')
-            .option(
-                '-d, --destination <file>',
-                'path to confile',
-                'confile.deon',
-            )
-            .action(async (
-                files: string[],
-                options: any,
-            ) => {
-                const destination = options.destination;
-
-                try {
-                    await handleConfile(
-                        files,
-                        destination,
-                    );
-                } catch (error) {
-                    console.log(`Deon :: Could not confile '${destination}'.`);
-                }
-            });
-
-        program
-            .command('exfile <source>')
-            .description('extract files from a ".deon" confile')
-            .action(async (
-                source: string,
-            ) => {
-                try {
-                    const deon = new Deon();
-
-                    await handleExfile(
-                        deon,
-                        source,
-                    );
-                } catch (error) {
-                    console.log(`Deon :: Could not exfile '${source}'.`);
-                }
-            });
-
-        await program.parseAsync(args);
-
-        return;
+        return runCLI(this, args);
     }
 
 
-    /**
-     * Parse from file
-     *
-     * @param file
-     * @param options
-     */
-    public async parseFile<T>(
-        file: string,
-        options?: PartialDeonParseOptions,
+    public parseSyntax(
+        data: string,
+        sourceName = '<memory>',
+    ): DocumentNode {
+        const scanner = new Scanner(data, undefined, sourceName);
+        const parser = new Parser(scanner.scanTokens(), undefined, sourceName);
+
+        return parser.parse();
+    }
+
+
+    public getSyntax(
+        data: string,
+        sourceName = '<memory>',
     ) {
-        try {
-            this.parsedFile = file;
-            const filepath = resolveAbsolutePath(file);
-
-            const data = await fs.readFile(
-                filepath,
-                'utf-8',
-            );
-
-            const parsed = await this.parse<T>(
-                data,
-                {
-                    ...options,
-                    filebase: path.dirname(filepath),
-                },
-            );
-
-            if (this.hadError) {
-                console.log(`Deon :: Error parsing file: ${file}`);
-                return;
-            }
-
-            return parsed;
-        } catch (error) {
-            console.log(`Deon :: Error reading file: ${file}`);
-
-            return;
-        }
+        return this.parseSyntax(data, sourceName);
     }
 
 
-    /**
-     * Parse from link
-     *
-     * @param link
-     * @param options
-     */
-    public async parseLink<T>(
-        link: string,
-        options?: PartialDeonParseOptions,
-    ) {
-        try {
-            const cache = await this.getCache(
-                link,
-                options,
-            );
-            if (cache) {
-                return cache;
-            }
-
-
-            const headers: Record<string, string> = {
-                'Content-Type': DEON_MEDIA_TYPE,
-            };
-
-            if (options?.token) {
-                headers['Deon-Token'] = options.token;
-            }
-
-            const response = await fetch(
-                link,
-                {
-                    headers,
-                },
-            );
-            const data = await response.text();
-
-            const parsed = await this.parse<T>(
-                data,
-                {
-                    ...options,
-                },
-            );
-
-            this.setCache(
-                link,
-                parsed,
-                options,
-            );
-
-            return parsed;
-        } catch (error) {
-            console.log(`Deon :: Error parsing link: ${link}`);
-
-            return;
-        }
-    }
-
-
-    /**
-     * Parse `deon` data.
-     *
-     * @param data
-     * @param options
-     */
     public async parse<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
-    ) {
-        const scanner = new Scanner(
-            data,
-            this.error,
-        );
-        const tokens = scanner.scanTokens();
-        // console.log('tokens', tokens);
+    ): Promise<T> {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const document = this.parseSyntax(data, sourceName);
+        const interpreter = new Interpreter(Deon, fetcher);
 
-        const parser = new Parser(
-            tokens,
-            this.error,
-        );
-        const statements = parser.parse();
-        // console.log('statements', statements);
+        const root = await interpreter.interpret(
+            document,
+            this.interpreterOptions(sourceName, options),
+        ) as DeonValue;
 
-        // // Stop if there was a syntax error.
-        // if (this.hadError) {
-        //     return;
-        // }
+        const files = this.datasignFiles(options);
 
-        // const resolver = new Resolver(
-        //     this.interpreter,
-        //     this.error,
-        // );
-        // await resolver.resolve(statements);
+        if (!files) {
+            return root as T;
+        }
 
-        // // Stop if there was a resolution error.
-        // if (this.hadError) {
-        //     return;
-        // }
-
-        const interpretOptions: DeonInterpreterOptions = {
-            file: this.parsedFile,
-            parseOptions: options,
-        };
-        const interpretedData: T = await this.interpreter.interpret(
-            statements,
-            interpretOptions,
+        const sources = await Promise.all(
+            files.map(file => this.readDatasignSource(file, options)),
         );
 
-        return interpretedData;
+        return this.applyDatasignSources(root, sources, options) as T;
     }
 
 
-    /**
-     * Parse `deon` data synchronously.
-     *
-     * @param data
-     * @param options
-     */
     public parseSynchronous<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
-    ) {
-        const scanner = new Scanner(
-            data,
-            this.error,
-        );
-        const tokens = scanner.scanTokens();
+    ): T {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const document = this.parseSyntax(data, sourceName);
+        const interpreter = new Interpreter(Deon, fetcher);
 
-        const parser = new Parser(
-            tokens,
-            this.error,
-        );
-        const statements = parser.parse();
+        const root = interpreter.interpretSynchronous(
+            document,
+            this.interpreterOptions(sourceName, options),
+        ) as DeonValue;
 
-        const interpretOptions: DeonInterpreterOptions = {
-            file: this.parsedFile,
-            parseOptions: options,
-        };
-        const interpretedData: T = this.interpreter.interpretSynchronous(
-            statements,
-            interpretOptions,
+        const files = this.datasignFiles(options);
+
+        if (!files) {
+            return root as T;
+        }
+
+        const sources = files.map(
+            file => this.readDatasignSourceSynchronous(file, options),
         );
 
-        return interpretedData;
+        return this.applyDatasignSources(root, sources, options) as T;
     }
 
 
     /**
-     * Transform in-memory `data` into a deon string.
-     *
-     * @param data
-     * @param options
+     * Reading a file grants the filesystem, to this document and to what it imports, unless the
+     * caller says otherwise.
      */
+    public async parseFile<T = any>(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ): Promise<T> {
+        const filepath = resolveAbsolutePath(file);
+
+        const data = options?.resources?.[filepath]
+            ?? options?.resources?.[file]
+            ?? await fs.readFile(filepath, 'utf8');
+
+        return this.parse<T>(data, {
+            ...options,
+            allowFilesystem: options?.allowFilesystem ?? true,
+            filebase: path.dirname(filepath),
+            sourceName: filepath,
+        });
+    }
+
+
+    public parseFileSynchronous<T = any>(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ): T {
+        const filepath = resolveAbsolutePath(file);
+
+        const data = options?.resources?.[filepath]
+            ?? options?.resources?.[file]
+            ?? fsSync.readFileSync(filepath, 'utf8');
+
+        return this.parseSynchronous<T>(data, {
+            ...options,
+            allowFilesystem: options?.allowFilesystem ?? true,
+            filebase: path.dirname(filepath),
+            sourceName: filepath,
+        });
+    }
+
+
+    /**
+     * Reads a document from a link.
+     *
+     * Naming the link is not the same as being allowed to reach it: network access always requires
+     * an explicit option (specification 9), and it is the option that grants the capability, never
+     * the method that was called. So `allowNetwork` must be given, and because it is given it is
+     * carried into the document that comes back, whose own imports may then reach the network too.
+     */
+    public async parseLink<T = any>(
+        link: string,
+        options?: PartialDeonParseOptions,
+    ): Promise<T> {
+        if (!options?.allowNetwork) {
+            resourceError(
+                DiagnosticCode.CAPABILITY_DENIED,
+                `Reading '${link}' requires network access.`,
+                link,
+            );
+        }
+
+        const cached = await this.getCache<T>(link, options);
+
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        const headers: Record<string, string> = {
+            Accept: DEON_MEDIA_TYPE,
+        };
+
+        // An empty token sends no header at all.
+        if (options.token) {
+            headers.Authorization = `Bearer ${options.token}`;
+        }
+
+        const response = await fetch(link, { headers });
+
+        if (!response.ok) {
+            resourceError(
+                DiagnosticCode.RESOURCE_IO,
+                `Unable to read '${link}': HTTP ${response.status}.`,
+                link,
+            );
+        }
+
+        const parsed = await this.parse<T>(await response.text(), {
+            ...options,
+            sourceName: link,
+        });
+
+        await this.setCache(link, parsed, options);
+
+        return parsed;
+    }
+
+
+    public async leaflinks(
+        data: string,
+        options?: PartialDeonParseOptions,
+    ): Promise<Record<string, DeonValue>> {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const interpreter = new Interpreter(Deon, fetcher);
+
+        await interpreter.interpret(
+            this.parseSyntax(data, sourceName),
+            this.interpreterOptions(sourceName, options),
+        );
+
+        return interpreter.getLeaflinks();
+    }
+
+
     public stringify(
-        data: any,
+        data: unknown,
         options?: PartialDeonStringifyOptions,
     ) {
-        const stringifier = new Stringifier(
-            options,
-        );
-
-        return stringifier.stringify(data);
+        return new Stringifier(options).stringify(data);
     }
 
 
-    /**
-     * Formats deon data to the canonical shape.
-     *
-     * @param data
-     */
     public canonical(
-        data: string,
+        data: string | DeonValue,
     ) {
-        const parsed = this.parse(data);
-        const stringified = this.stringify(parsed);
+        const value = typeof data === 'string'
+            ? this.parseSynchronous<DeonValue>(data)
+            : data;
 
-        return stringified;
+        return new Stringifier({ canonical: true }).stringify(value);
     }
 
 
-    /**
-     * Loads environment variables from a ".deon" file.
-     *
-     * @param source
-     */
+    public lint(
+        data: string,
+        sourceName = '<memory>',
+    ): DeonDiagnostic[] {
+        return lintDocument(this.parseSyntax(data, sourceName));
+    }
+
+
     public async loadEnvironment(
         source: string,
         options?: DeonLoadEnvironmentOptions,
     ) {
-        try {
-            const data = await this.parseFile<any>(source);
+        const data = await this.parseFile<Record<string, string>>(source);
 
-            setEnvironment(
-                data,
-                options?.overwrite,
+        setEnvironment(data, options?.overwrite);
+
+        return data;
+    }
+
+
+    private interpreterOptions(
+        sourceName: string,
+        options?: PartialDeonParseOptions,
+    ): DeonInterpreterOptions {
+        return {
+            file: sourceName === '<memory>' ? undefined : sourceName,
+            parseOptions: options,
+        };
+    }
+
+
+    /**
+     * Typing is outside the Deon data model, so a document is evaluated to strings, lists, and maps
+     * first, and the datasign contract is applied to the finished root (specification 14). Without
+     * a map there is nothing to apply, and the files are not read at all.
+     */
+    private datasignFiles(
+        options?: PartialDeonParseOptions,
+    ) {
+        const map = options?.datasignMap;
+
+        if (!map || !Object.keys(map).length) {
+            return undefined;
+        }
+
+        return options?.datasignFiles ?? [];
+    }
+
+
+    private applyDatasignSources(
+        root: DeonValue,
+        sources: string[],
+        options?: PartialDeonParseOptions,
+    ) {
+        const signatures = readDatasign(sources, options?.datasignReader);
+
+        return applyDatasign(root, signatures, options?.datasignMap ?? {});
+    }
+
+
+    private datasignTarget(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ) {
+        const base = options?.filebase || process.cwd();
+
+        return path.isAbsolute(file) ? file : path.join(base, file);
+    }
+
+
+    private datasignVirtual(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ) {
+        const target = this.datasignTarget(file, options);
+        const virtual = options?.resources?.[target] ?? options?.resources?.[file];
+
+        // Reading a datasign file is filesystem access, and a raw-text parser grants none.
+        if (virtual === undefined && !options?.allowFilesystem) {
+            datasignError(
+                DiagnosticCode.CAPABILITY_DENIED,
+                `Reading the datasign file '${file}' requires filesystem access.`,
+                file,
             );
-        } catch (error) {
-            console.log(`Deon :: Could not load environment '${source}'.`);
+        }
+
+        return {
+            target,
+            virtual,
+        };
+    }
+
+
+    private async readDatasignSource(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ) {
+        const { target, virtual } = this.datasignVirtual(file, options);
+
+        if (virtual !== undefined) {
+            return virtual;
+        }
+
+        try {
+            return await fs.readFile(target, 'utf8');
+        } catch {
+            return datasignError(
+                DiagnosticCode.RESOURCE_IO,
+                `Unable to read the datasign file '${file}'.`,
+                file,
+            );
         }
     }
 
 
+    private readDatasignSourceSynchronous(
+        file: string,
+        options?: PartialDeonParseOptions,
+    ) {
+        const { target, virtual } = this.datasignVirtual(file, options);
 
-    private async getCache(
+        if (virtual !== undefined) {
+            return virtual;
+        }
+
+        try {
+            return fsSync.readFileSync(target, 'utf8');
+        } catch {
+            return datasignError(
+                DiagnosticCode.RESOURCE_IO,
+                `Unable to read the datasign file '${file}'.`,
+                file,
+            );
+        }
+    }
+
+
+    /**
+     * The credential is part of the cache key, so a document read with one token can never be
+     * served to a reader holding another (specification 9).
+     */
+    private async cacheKey(
         name: string,
         options?: PartialDeonParseOptions,
     ) {
-        if (typeof window !== 'undefined') {
-            return;
+        return sha.compute(`${name}\u0000${options?.token ?? ''}`);
+    }
+
+
+    private async getCache<T>(
+        name: string,
+        options?: PartialDeonParseOptions,
+    ): Promise<T | undefined> {
+        if (!options?.cache || typeof window !== 'undefined') {
+            return undefined;
         }
 
-        if (!options?.cache) {
-            return;
+        const key = await this.cacheKey(name, options);
+
+        if (!key) {
+            return undefined;
         }
 
-        const cacheName = await sha.compute(name);
-        if (!cacheName) {
-            return;
-        }
-
-        const cacheDirectory = options.cacheDirectory || defaultCacheDirectory();
-        const cachePath = path.join(
-            cacheDirectory,
-            `./${cacheName}`,
-        );
+        const directory = options.cacheDirectory || defaultCacheDirectory();
+        const cachePath = path.join(directory, key);
 
         if (!fsSync.existsSync(cachePath)) {
-            return;
+            return undefined;
         }
 
-        const data = await fs.readFile(cachePath, 'utf-8');
-        const parsed = await this.parse(data);
-        if (
-            !parsed
-            || typeof parsed.cachedAt !== 'string'
-        ) {
-            return;
+        try {
+            const cached = JSON.parse(await fs.readFile(cachePath, 'utf8')) as {
+                cachedAt: number;
+                cacheDuration: number;
+                data: T;
+            };
+
+            if (cached.cachedAt + cached.cacheDuration < Date.now()) {
+                await fs.unlink(cachePath);
+
+                return undefined;
+            }
+
+            return cached.data;
+        } catch {
+            return undefined;
         }
-
-        const cacheDuration = options.cacheDuration
-            ? options.cacheDuration
-            : parsed.cacheDuration
-                ? parseInt(parsed.cacheDuration)
-                : defaultCacheDuration;
-
-        const now = Date.now();
-
-        if ((parseInt(parsed.cachedAt) + cacheDuration) < now) {
-            await fs.unlink(cachePath);
-            return;
-        }
-
-        return parsed.data;
     }
+
 
     private async setCache(
         name: string,
-        data: any,
+        data: unknown,
         options?: PartialDeonParseOptions,
     ) {
-        if (typeof window !== 'undefined') {
+        if (!options?.cache || typeof window !== 'undefined') {
             return;
         }
 
-        if (!options?.cache) {
+        const key = await this.cacheKey(name, options);
+
+        if (!key) {
             return;
         }
 
-        const cacheName = await sha.compute(name);
-        if (!cacheName) {
-            return;
-        }
+        const directory = options.cacheDirectory || defaultCacheDirectory();
 
-        const cacheDirectory = options?.cacheDirectory || defaultCacheDirectory();
-        const cachePath = path.join(
-            cacheDirectory,
-            `./${cacheName}`,
-        );
-
-        const cacheDuration = options?.cacheDuration;
-
-        const cacheData = {
-            cachedAt: Date.now(),
-            cacheDuration,
-            data,
-        };
-
-        if (!fsSync.existsSync(cacheDirectory)) {
-            fsSync.mkdirSync(cacheDirectory);
-        }
+        await fs.mkdir(directory, { recursive: true });
 
         await fs.writeFile(
-            cachePath,
-            this.stringify(cacheData),
+            path.join(directory, key),
+            JSON.stringify({
+                cachedAt: Date.now(),
+                cacheDuration: options.cacheDuration ?? defaultCacheDuration,
+                data,
+            }),
+            'utf8',
         );
-
-        return true;
-    }
-
-
-
-    /**
-     * Log error.
-     *
-     * @param entity
-     * @param message
-     */
-    private error(
-        entity: number | Token,
-        message: string,
-    ) {
-        if (typeof entity === 'number') {
-            // entity is a line number
-            // this.report(entity, '', message);
-            return;
-        }
-
-        // entity is a Token
-        if (entity.type === TokenType.EOF) {
-            // this.report(entity.line, ' at end', message);
-        } else {
-            // this.report(entity.line, " at '" + entity.lexeme + "'", message);
-        }
-    }
-
-
-    /**
-     * Logs to console a static error.
-     *
-     * @param line
-     * @param where
-     * @param message
-     */
-    private report(
-        line: number,
-        where: string,
-        message: string,
-    ) {
-        const value = 'Deon :: [line ' + line + '] Error' + where + ': ' + message;
-        console.log(value);
-
-        this.hadError = true;
     }
 }
 // #endregion module

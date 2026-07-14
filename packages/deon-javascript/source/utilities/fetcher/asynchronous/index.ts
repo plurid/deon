@@ -39,42 +39,15 @@ const fetcher = async (
                 return;
             }
 
-            const {
-                data,
-                filetype,
-            } = await fetchFromURL(
-                file,
-                token,
-                type,
-            );
-
-            return {
-                data,
-                filetype,
-            };
+            return await fetchFromURL(file, token, type);
         }
 
         if (!options.parseOptions?.allowFilesystem) {
             return;
         }
 
-        const {
-            data,
-            filetype,
-            filebase,
-        } = await fetchFromFile(
-            file,
-            options,
-            type,
-        );
-
-        return {
-            data,
-            filetype,
-            filebase,
-        };
-    } catch (error) {
-        console.log('error', error);
+        return await fetchFromFile(file, options, type);
+    } catch {
         return;
     }
 }

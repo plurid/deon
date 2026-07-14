@@ -1,6 +1,8 @@
 // #region imports
     // #region libraries
-    import fetch from 'sync-fetch';
+    import {
+        execFileSync,
+    } from 'node:child_process';
     // #endregion libraries
 
 
@@ -30,20 +32,35 @@ const fetchFromURL = (
         type,
     );
 
-    const response = fetch(
-        url,
+    // The platform has no synchronous fetch, so a child process performs the request and hands the
+    // text back. The request is written to its input rather than onto its command line, so that an
+    // authenticator never appears in the process list.
+    const script = `
+        const chunks = [];
+        for await (const chunk of process.stdin) chunks.push(chunk);
+
+        const { url, headers } = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        process.stdout.write(await response.text());
+    `;
+
+    const data = execFileSync(
+        process.execPath,
+        ['--input-type=module', '--eval', script],
         {
-            headers,
+            encoding: 'utf8',
+            input: JSON.stringify({ url, headers }),
+            maxBuffer: 64 * 1024 * 1024,
         },
     );
-    const body = response.text();
-    const data = typeof body === 'string'
-        ? body
-        : body.toString('utf-8');
 
     return {
         data,
         filetype,
+        resourceId: url,
     };
 }
 // #endregion module

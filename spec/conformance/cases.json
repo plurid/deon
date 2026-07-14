@@ -1,0 +1,367 @@
+{
+    "version": "1.0",
+    "cases": [
+        {
+            "id": "empty-map-value",
+            "required": true,
+            "source": "{ key }",
+            "expected": { "key": "" }
+        },
+        {
+            "id": "null-is-string",
+            "required": true,
+            "source": "{ key null }",
+            "expected": { "key": "null" }
+        },
+        {
+            "id": "last-write-wins",
+            "required": true,
+            "source": "{ key first\nkey second }",
+            "expected": { "key": "second" },
+            "lint": ["DEON_LINT_DUPLICATE_KEY"]
+        },
+        {
+            "id": "nested-values",
+            "required": true,
+            "source": "{ map { key value }\nlist [one\ntwo words] }",
+            "expected": { "map": { "key": "value" }, "list": ["one", "two words"] }
+        },
+        {
+            "id": "leaflink-access",
+            "required": true,
+            "source": "{ #entity.name }\nentity { name One }",
+            "expected": { "name": "One" }
+        },
+        {
+            "id": "map-spread-order",
+            "required": true,
+            "source": "base { key base\nother yes }\n{ key local\n...#base\nlast final }",
+            "expected": { "key": "base", "other": "yes", "last": "final" }
+        },
+        {
+            "id": "list-and-string-spread",
+            "required": true,
+            "source": "letters abc\nitems [one\ntwo]\n{ chars [...#letters]\nall [...#items\nthree] }",
+            "expected": { "chars": ["a", "b", "c"], "all": ["one", "two", "three"] }
+        },
+        {
+            "id": "missing-environment-is-empty",
+            "required": true,
+            "source": "{ value #$NOT_PRESENT }",
+            "environment": {},
+            "expected": { "value": "" }
+        },
+        {
+            "id": "interpolation-all-forms",
+            "required": true,
+            "source": "name world\n{ a hello #{name}\nb 'hello #{name}'\nc `hello #{name}`\nd '\\#{name}' }",
+            "expected": { "a": "hello world", "b": "hello world", "c": "hello world", "d": "#{name}" }
+        },
+        {
+            "id": "structure-list-of-maps",
+            "required": true,
+            "source": "{ people <id, name> [1, One\n2, Two] }",
+            "expected": { "people": [{ "id": "1", "name": "One" }, { "id": "2", "name": "Two" }] }
+        },
+        {
+            "id": "entity-call",
+            "required": true,
+            "source": "template { message Hello #{name} }\n{ result #template(name One) }",
+            "expected": { "result": { "message": "Hello One" } }
+        },
+        {
+            "id": "duplicate-declaration",
+            "required": true,
+            "source": "value one\nvalue two\n{ #value }",
+            "error": "DEON_DUPLICATE_DECLARATION",
+            "position": { "line": 2, "column": 1 }
+        },
+        {
+            "id": "unresolved-link",
+            "required": true,
+            "source": "{ #missing }",
+            "error": "DEON_UNRESOLVED_LINK",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "leaflink-cycle",
+            "required": true,
+            "source": "a #b\nb #a\n{ #a }",
+            "error": "DEON_CYCLE"
+        },
+        {
+            "id": "virtual-import",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import child from ./child\n{ #child.name }",
+                "/project/child.deon": "{ name imported }"
+            },
+            "expected": { "name": "imported" }
+        },
+        {
+            "id": "canonical-map-order",
+            "required": true,
+            "source": "{ z last\na first }",
+            "canonical": "{\n    a first\n    z last\n}\n"
+        },
+        {
+            "id": "control-escapes",
+            "required": true,
+            "source": "{ a 'alpha\\n'\nb 'x\\ty'\nc `line\\none` }",
+            "expected": { "a": "alpha\n", "b": "x\ty", "c": "line\none" }
+        },
+        {
+            "id": "backtick-trims-layout-not-escapes",
+            "required": true,
+            "source": "{ laid `\n    a\n    b\n    `\nwritten `a\\nb\\n` }",
+            "expected": { "laid": "a\n    b", "written": "a\nb\n" }
+        },
+        {
+            "id": "canonical-round-trip-boundary-whitespace",
+            "required": true,
+            "source": "{ file 'alpha\\n' }",
+            "canonical": "{\n    file 'alpha\\n'\n}\n"
+        },
+
+        {
+            "id": "root-missing",
+            "required": true,
+            "source": "name value",
+            "error": "DEON_PARSE_ROOT"
+        },
+        {
+            "id": "root-duplicate",
+            "required": true,
+            "source": "{ a one }\n{ b two }",
+            "error": "DEON_PARSE_ROOT"
+        },
+        {
+            "id": "parse-expected-unclosed-map",
+            "required": true,
+            "source": "{ key value",
+            "error": "DEON_PARSE_EXPECTED"
+        },
+        {
+            "id": "lex-unterminated-string",
+            "required": true,
+            "source": "{ key 'unterminated }",
+            "error": "DEON_LEX_UNTERMINATED",
+            "position": { "line": 1, "column": 7 }
+        },
+        {
+            "id": "lex-unterminated-block-comment",
+            "required": true,
+            "source": "{ a one }\n/* never closed",
+            "error": "DEON_LEX_UNTERMINATED"
+        },
+        {
+            "id": "lex-invalid-unquoted-name",
+            "required": true,
+            "source": "{ a.b value }",
+            "error": "DEON_LEX_INVALID"
+        },
+        {
+            "id": "structure-row-arity",
+            "required": true,
+            "source": "{ people <id, name> [1, One\n2] }",
+            "error": "DEON_STRUCTURE_ARITY",
+            "position": { "line": 1, "column": 10 }
+        },
+        {
+            "id": "structure-repeated-field",
+            "required": true,
+            "source": "{ people <id, id> [1, 2] }",
+            "error": "DEON_STRUCTURE_ARITY"
+        },
+        {
+            "id": "type-mismatch-list-spread-into-map",
+            "required": true,
+            "source": "items [one\ntwo]\n{ ...#items }",
+            "error": "DEON_TYPE_MISMATCH"
+        },
+        {
+            "id": "type-mismatch-interpolation-not-string",
+            "required": true,
+            "source": "entity { a one }\n{ value hello #{entity} }",
+            "error": "DEON_TYPE_MISMATCH"
+        },
+        {
+            "id": "entity-argument-mismatch",
+            "required": true,
+            "source": "template { message Hello #{name} }\n{ result #template(other One) }",
+            "error": "DEON_ENTITY_ARGUMENT"
+        },
+        {
+            "id": "entity-argument-repeated",
+            "required": true,
+            "source": "template { message Hello #{name} }\n{ result #template(name One, name Two) }",
+            "error": "DEON_ENTITY_ARGUMENT"
+        },
+        {
+            "id": "capability-denied-filesystem",
+            "required": true,
+            "source": "import child from ./child\n{ #child }",
+            "error": "DEON_CAPABILITY_DENIED",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "capability-denied-network",
+            "required": true,
+            "source": "import remote from https://example.com/remote.deon\n{ #remote }",
+            "error": "DEON_CAPABILITY_DENIED"
+        },
+        {
+            "id": "resource-format-unsupported-extension",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import data from ./data.txt\n{ ...#data }",
+                "/project/data.txt": "{ a one }"
+            },
+            "error": "DEON_RESOURCE_FORMAT"
+        },
+        {
+            "id": "resource-format-invalid-json",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import data from ./data.json\n{ ...#data }",
+                "/project/data.json": "{ not json"
+            },
+            "error": "DEON_RESOURCE_FORMAT"
+        },
+        {
+            "id": "resource-io-unreadable",
+            "required": true,
+            "source": "import child from /deon-conformance/absent/child.deon\n{ #child }",
+            "options": { "allowFilesystem": true },
+            "error": "DEON_RESOURCE_IO"
+        },
+        {
+            "id": "resource-cycle",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import a from ./a\n{ #a }",
+                "/project/a.deon": "import main from ./main\n{ #main }"
+            },
+            "error": "DEON_CYCLE"
+        },
+        {
+            "id": "authenticator-must-be-a-string",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "secret { a one }\nimport child from ./child with #secret\n{ #child }",
+                "/project/child.deon": "{ name x }"
+            },
+            "error": "DEON_TYPE_MISMATCH"
+        },
+
+        {
+            "id": "json-conversion",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import data from ./data.json\n{ ...#data }",
+                "/project/data.json": "{\"int\":1,\"decimal\":1.50,\"exponent\":1e3,\"nul\":null,\"yes\":true,\"no\":false,\"list\":[1,\"a\"],\"map\":{\"k\":\"v\"}}"
+            },
+            "expected": {
+                "int": "1",
+                "decimal": "1.50",
+                "exponent": "1e3",
+                "nul": "",
+                "yes": "true",
+                "no": "false",
+                "list": ["1", "a"],
+                "map": { "k": "v" }
+            }
+        },
+        {
+            "id": "json-repeated-member-last-write-wins",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import data from ./data.json\n{ ...#data }",
+                "/project/data.json": "{\"a\":\"first\",\"b\":\"kept\",\"a\":\"second\"}"
+            },
+            "expected": { "a": "second", "b": "kept" }
+        },
+        {
+            "id": "inject-retains-the-target",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "inject notes from ./notes.txt\n{ #notes }",
+                "/project/notes.txt": "line one\nline two"
+            },
+            "expected": { "notes": "line one\nline two" }
+        },
+        {
+            "id": "absolute-paths-exact-and-wildcard",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import a from /logical/a.deon\nimport b from /logical/b.deon\nimport c from /logical/deep/c.deon\n{ a #a.n\nb #b.n\nc #c.n }",
+                "/host/exact.deon": "{ n exact }",
+                "/host/short/b.deon": "{ n short }",
+                "/host/long/c.deon": "{ n long }"
+            },
+            "options": {
+                "absolutePaths": {
+                    "/logical/a.deon": "/host/exact.deon",
+                    "/logical/*": "/host/short",
+                    "/logical/deep/*": "/host/long"
+                }
+            },
+            "expected": { "a": "exact", "b": "short", "c": "long" }
+        },
+
+        {
+            "id": "stringify-not-readable",
+            "required": true,
+            "source": "{ a one\nlist [x\ny]\nmap { k v } }",
+            "stringify": {
+                "options": { "readable": false },
+                "expected": "{a one, list [x, y], map {k v}}\n"
+            }
+        },
+        {
+            "id": "stringify-leaflinks",
+            "required": true,
+            "source": "{ entity { name One }\nplain x }",
+            "stringify": {
+                "options": { "leaflinks": true, "leaflinkLevel": 1 },
+                "expected": "{\n    #entity\n    plain x\n}\n\nentity {\n    name One\n}\n"
+            }
+        },
+        {
+            "id": "stringify-generated-header-and-comments",
+            "required": true,
+            "source": "{ a one }",
+            "stringify": {
+                "options": { "generatedHeader": true, "generatedComments": true },
+                "expected": "// Generated by Deon.\n\n// Root.\n\n{\n    a one\n}\n"
+            }
+        },
+        {
+            "id": "conservative-typer",
+            "required": true,
+            "source": "{ yes true\nno false\nint 42\nnegative -7\ndecimal 1.50\nexponent 1e3\nleadingZero 007\nempty ''\nnul null\nunsafe 9007199254740993\ntext hello }",
+            "typed": {
+                "yes": true,
+                "no": false,
+                "int": 42,
+                "negative": -7,
+                "decimal": 1.5,
+                "exponent": 1000,
+                "leadingZero": "007",
+                "empty": "",
+                "nul": "null",
+                "unsafe": "9007199254740993",
+                "text": "hello"
+            }
+        }
+    ]
+}

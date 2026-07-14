@@ -20,6 +20,13 @@
         typer,
     } from './utilities/typer';
 
+    import {
+        applyDatasign,
+        parseDatasign,
+        readDatasign,
+        typeDatasign,
+    } from './utilities/datasign';
+
     import * as typings from './utilities/typer/typings';
     // #endregion internal
 // #endregion imports
@@ -28,6 +35,9 @@
 
 // #region exports
 export * from './data/interfaces';
+export * from './data/syntax';
+export * from './objects/Diagnostic';
+export type { DatasignField, DatasignReader, DatasignSignatures } from './utilities/datasign';
 
 
 export {
@@ -41,5 +51,10 @@ export {
     customTyper,
     typer,
     typings,
+
+    applyDatasign,
+    parseDatasign,
+    readDatasign,
+    typeDatasign,
 };
 // #endregion exports

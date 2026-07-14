@@ -1,21 +1,39 @@
 // #region imports
     // #region external
     import Scanner from '../Scanner';
-    import Token from '../Token';
-    import Parser from '../Parser';
-    // import Resolver from '../Resolver';
+
+    import Parser, {
+        lintDocument,
+    } from '../Parser';
+
     import Interpreter from '../Interpreter';
+
     import Stringifier from '../Stringifier';
 
-    import {
-        TokenType,
-    } from '../../data/enumerations';
+    import type {
+        DeonValue,
+        DocumentNode,
+    } from '../../data/syntax';
+
+    import type {
+        DeonDiagnostic,
+    } from '../Diagnostic';
 
     import {
+        DiagnosticCode,
+    } from '../Diagnostic';
+
+    import type {
+        DeonInterpreterOptions,
         PartialDeonParseOptions,
         PartialDeonStringifyOptions,
-        DeonInterpreterOptions,
     } from '../../data/interfaces';
+
+    import {
+        applyDatasign,
+        datasignError,
+        readDatasign,
+    } from '../../utilities/datasign';
 
     import fetcher from '../../utilities/fetcher/pure';
     // #endregion external
@@ -24,158 +42,163 @@
 
 
 // #region module
+/**
+ * Deon without a host. It never reaches for the filesystem, whatever it is asked for, so it runs
+ * wherever a string can be handed to it: a browser, a worker, a sandbox.
+ *
+ * A resource can still be resolved, but only through the `resources` option, which hands over the
+ * document rather than a path to go and read.
+ */
 class DeonPure {
-    private interpreter: Interpreter = new Interpreter(
-        DeonPure,
-        fetcher,
-        {
-            pure: true,
-        },
-    );
-    private hadError = false;
-    private parsedFile = '';
+    public parseSyntax(
+        data: string,
+        sourceName = '<memory>',
+    ): DocumentNode {
+        const scanner = new Scanner(data, undefined, sourceName);
+
+        return new Parser(scanner.scanTokens(), undefined, sourceName).parse();
+    }
 
 
-    /**
-     * Parse `deon` data.
-     *
-     * @param data
-     * @param options
-     */
+    public getSyntax(
+        data: string,
+        sourceName = '<memory>',
+    ) {
+        return this.parseSyntax(data, sourceName);
+    }
+
+
     public async parse<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
-    ) {
-        const scanner = new Scanner(
-            data,
-            this.error,
-        );
-        const tokens = scanner.scanTokens();
+    ): Promise<T> {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const interpreter = this.interpreter();
 
-        const parser = new Parser(
-            tokens,
-            this.error,
-        );
-        const statements = parser.parse();
+        const root = await interpreter.interpret(
+            this.parseSyntax(data, sourceName),
+            this.interpreterOptions(sourceName, options),
+        ) as DeonValue;
 
-        const interpretOptions: DeonInterpreterOptions = {
-            file: this.parsedFile,
-            parseOptions: options,
-        };
-        const interpretedData: T = await this.interpreter.interpret(
-            statements,
-            interpretOptions,
-        );
-
-        return interpretedData;
+        return this.datasign(root, options) as T;
     }
 
-    /**
-     * Parse `deon` data synchronously.
-     *
-     * @param data
-     * @param options
-     */
+
     public parseSynchronous<T = any>(
         data: string,
         options?: PartialDeonParseOptions,
-    ) {
-        const scanner = new Scanner(
-            data,
-            this.error,
-        );
-        const tokens = scanner.scanTokens();
+    ): T {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const interpreter = this.interpreter();
 
-        const parser = new Parser(
-            tokens,
-            this.error,
-        );
-        const statements = parser.parse();
+        const root = interpreter.interpretSynchronous(
+            this.parseSyntax(data, sourceName),
+            this.interpreterOptions(sourceName, options),
+        ) as DeonValue;
 
-        const interpretOptions: DeonInterpreterOptions = {
-            file: this.parsedFile,
-            parseOptions: options,
-        };
-        const interpretedData: T = this.interpreter.interpretSynchronous(
-            statements,
-            interpretOptions,
-        );
-
-        return interpretedData;
+        return this.datasign(root, options) as T;
     }
 
-    /**
-     * Transform in-memory `data` into a deon string.
-     *
-     * @param data
-     * @param options
-     */
+
+    public async leaflinks(
+        data: string,
+        options?: PartialDeonParseOptions,
+    ): Promise<Record<string, DeonValue>> {
+        const sourceName = options?.sourceName ?? '<memory>';
+        const interpreter = this.interpreter();
+
+        await interpreter.interpret(
+            this.parseSyntax(data, sourceName),
+            this.interpreterOptions(sourceName, options),
+        );
+
+        return interpreter.getLeaflinks();
+    }
+
+
     public stringify(
-        data: any,
+        data: unknown,
         options?: PartialDeonStringifyOptions,
     ) {
-        const stringifier = new Stringifier(
-            options,
-        );
-
-        return stringifier.stringify(data);
+        return new Stringifier(options).stringify(data);
     }
 
-    /**
-     * Formats deon data to the canonical shape.
-     *
-     * @param data
-     */
+
     public canonical(
+        data: string | DeonValue,
+    ) {
+        const value = typeof data === 'string'
+            ? this.parseSynchronous<DeonValue>(data)
+            : data;
+
+        return new Stringifier({ canonical: true }).stringify(value);
+    }
+
+
+    public lint(
         data: string,
-    ) {
-        const parsed = this.parse(data);
-        const stringified = this.stringify(parsed);
+        sourceName = '<memory>',
+    ): DeonDiagnostic[] {
+        return lintDocument(this.parseSyntax(data, sourceName));
+    }
 
-        return stringified;
+
+    private interpreter() {
+        return new Interpreter(DeonPure, fetcher, { pure: true });
     }
 
 
     /**
-     * Log error.
-     *
-     * @param entity
-     * @param message
+     * Filesystem access is denied here, rather than merely left unasked for, so that an option
+     * handed in from outside cannot turn it back on.
      */
-    private error(
-        entity: number | Token,
-        message: string,
-    ) {
-        if (typeof entity === 'number') {
-            // entity is a line number
-            // this.report(entity, '', message);
-            return;
-        }
-
-        // entity is a Token
-        if (entity.type === TokenType.EOF) {
-            // this.report(entity.line, ' at end', message);
-        } else {
-            // this.report(entity.line, " at '" + entity.lexeme + "'", message);
-        }
+    private interpreterOptions(
+        sourceName: string,
+        options?: PartialDeonParseOptions,
+    ): DeonInterpreterOptions {
+        return {
+            file: sourceName === '<memory>' ? undefined : sourceName,
+            parseOptions: {
+                ...options,
+                allowFilesystem: false,
+            },
+        };
     }
 
-    /**
-     * Logs to console a static error.
-     *
-     * @param line
-     * @param where
-     * @param message
-     */
-    private report(
-        line: number,
-        where: string,
-        message: string,
-    ) {
-        const value = 'Deon :: [line ' + line + '] Error' + where + ': ' + message;
-        console.log(value);
 
-        this.hadError = true;
+    /**
+     * A pure evaluator has no filesystem, so a datasign contract arrives through `resources` rather
+     * than as a path in `datasignFiles` for it to go and read.
+     */
+    private datasign(
+        root: DeonValue,
+        options?: PartialDeonParseOptions,
+    ) {
+        const map = options?.datasignMap;
+
+        if (!map || !Object.keys(map).length) {
+            return root;
+        }
+
+        const sources = (options?.datasignFiles ?? []).map(file => {
+            const source = options?.resources?.[file];
+
+            if (source === undefined) {
+                datasignError(
+                    DiagnosticCode.CAPABILITY_DENIED,
+                    `Reading the datasign file '${file}' requires filesystem access.`,
+                    file,
+                );
+            }
+
+            return source as string;
+        });
+
+        return applyDatasign(
+            root,
+            readDatasign(sources, options?.datasignReader),
+            map,
+        );
     }
 }
 // #endregion module

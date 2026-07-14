@@ -16,14 +16,16 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
 
-        "target": "es6",
+        "target": "es2022",
         "lib": [
-            "ES2019"
+            "ES2023",
+            "DOM"
         ],
         "module": "esnext",
-        "moduleResolution": "node",
-        "declaration": true,
-        "declarationDir": "distribution",
+        "moduleResolution": "bundler",
+        "types": [
+            "node"
+        ],
 
         "rootDir": "source",
         "outDir": "distribution"
