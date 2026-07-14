@@ -17,8 +17,27 @@ pub struct ParseOptions {
     /// Maps a logical absolute target onto the host path that actually holds it (specification 9).
     pub absolute_paths: HashMap<String, String>,
 
+    /// Bearer credentials, keyed by an exact lowercase hostname — no port, no path, no wildcard.
+    ///
+    /// This is the *fallback*. A `with <token>` written on the declaration itself wins over it.
+    pub authorization: HashMap<String, String>,
+
+    /// The credential for [`crate::parse_link`], and half of the cache key. It is deliberately *not*
+    /// used by imports and injections, which take their credential from `with` or `authorization`.
+    pub token: String,
+
     pub allow_filesystem: bool,
     pub allow_network: bool,
+
+    /// Whether [`crate::parse_link`] may read and write a cache. Nothing else caches.
+    pub cache: bool,
+
+    /// How long a cache entry stands, in milliseconds. Recorded per entry, so changing this does not
+    /// invalidate what is already written.
+    pub cache_duration: u64,
+
+    /// Empty means `~/.deon-cache`.
+    pub cache_directory: String,
 
     /// The environment a `#$NAME` reads. An absent name is the empty string, never an error.
     pub environment: HashMap<String, String>,
@@ -37,14 +56,22 @@ impl Default for ParseOptions {
             source_name: "<memory>".to_string(),
             filebase: String::new(),
             absolute_paths: HashMap::new(),
+            authorization: HashMap::new(),
+            token: String::new(),
             allow_filesystem: false,
             allow_network: false,
+            cache: false,
+            cache_duration: DEFAULT_CACHE_DURATION,
+            cache_directory: String::new(),
             environment: HashMap::new(),
             resources: HashMap::new(),
             resource_stack: Vec::new(),
         }
     }
 }
+
+/// One hour, in milliseconds.
+pub const DEFAULT_CACHE_DURATION: u64 = 1000 * 60 * 60;
 
 impl ParseOptions {
     pub fn new() -> Self {
@@ -83,6 +110,33 @@ impl ParseOptions {
 
     pub fn absolute_path(mut self, from: impl Into<String>, to: impl Into<String>) -> Self {
         self.absolute_paths.insert(from.into(), to.into());
+        self
+    }
+
+    /// A bearer credential for one host. The key is matched as an exact lowercase hostname.
+    pub fn authorize(mut self, hostname: impl Into<String>, token: impl Into<String>) -> Self {
+        self.authorization
+            .insert(hostname.into().to_ascii_lowercase(), token.into());
+        self
+    }
+
+    pub fn token(mut self, token: impl Into<String>) -> Self {
+        self.token = token.into();
+        self
+    }
+
+    pub fn cache(mut self, cache: bool) -> Self {
+        self.cache = cache;
+        self
+    }
+
+    pub fn cache_directory(mut self, directory: impl Into<String>) -> Self {
+        self.cache_directory = directory.into();
+        self
+    }
+
+    pub fn cache_duration(mut self, milliseconds: u64) -> Self {
+        self.cache_duration = milliseconds;
         self
     }
 }

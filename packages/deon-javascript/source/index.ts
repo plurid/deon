@@ -11,8 +11,11 @@
     import Deon from './objects/Deon';
     import DeonPure from './objects/DeonPure';
 
-    import Scanner from './objects/Scanner';
+    import Scanner, {
+        ESCAPED_INTERPOLATION,
+    } from './objects/Scanner';
     import Parser from './objects/Parser';
+    import Token from './objects/Token';
     import Interpreter from './objects/Interpreter';
     import Stringifier from './objects/Stringifier';
 
@@ -74,6 +77,17 @@ export {
     DEON_FILENAME_EXTENSION,
     DEON_MEDIA_TYPE,
 
+    /**
+     * The sentinel that stands for an escaped `#{`, so that the interpolator, which runs later and
+     * over the evaluated string, does not mistake it for an interpolation to resolve.
+     *
+     * A host that hands a string *into* an entity — as an entity-call argument, say — is handing over
+     * text, not source, and text that happens to contain `#{name}` must not be read as a link into
+     * the surrounding document. Replacing `#{` with this before the value is evaluated is what says
+     * so; the interpolator turns it back into `#{` on the way out.
+     */
+    ESCAPED_INTERPOLATION,
+
 
     // functionalities
     cli,
@@ -99,6 +113,9 @@ export {
     typeDatasign,
 
     internals,
+
+    // the token a syntax node carries, which is where a diagnostic gets its position
+    Token,
 };
 
 

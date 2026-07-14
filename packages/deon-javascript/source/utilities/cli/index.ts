@@ -25,6 +25,10 @@
         typer,
     } from '../typer';
 
+    import {
+        parseJSON,
+    } from '../json';
+
     import Stringifier from '../../objects/Stringifier';
 
     import {
@@ -48,6 +52,7 @@ Options:
   -t, --typed
   -f, --filesystem <true|false>
   -n, --network <true|false>
+  -d, --destination <path>
   -w, --writeover
       --unsafe-paths
       --warnings-as-errors
@@ -292,7 +297,11 @@ const runCLI = async (
             throw new Error('convert requires a source file.');
         }
 
-        const json = JSON.parse(
+        // Deon's own reader, not the host's. A JSON number must arrive as the spelling it was
+        // written with (specification 9.1), and `JSON.parse` has already destroyed that by the time
+        // anyone could ask: `1.50` would come back as `1.5`. Converting a file and importing the same
+        // file have to mean the same thing.
+        const json = parseJSON(
             await fs.readFile(resolveAbsolutePath(source), 'utf8'),
         );
 

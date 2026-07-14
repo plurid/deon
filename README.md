@@ -59,6 +59,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Parsing](#parsing)
 + [Literals](#literals)
 + [Advanced Usage](#advanced-usage)
++ [Deon for AI](#deon-for-ai)
 + [In Use](#in-use)
 + [Usages](#usages)
 + [Idiomaticity](#idiomaticity)
@@ -1458,6 +1459,45 @@ A declaration is what a value cannot be: `1.0` stays the `string` `'1.0'` when d
 
 
 
+## Deon for AI
+
+[`@plurid/deon-mcp`][deon-mcp] serves `deon` over the [Model Context Protocol](https://modelcontextprotocol.io): a way for a language model to check the `deon` it writes, to read the `.deon` documents you have, and to use a `.deon` file as a prompt library.
+
+``` bash
+npx @plurid/deon-mcp --root ./configurations --prompts ./prompts.deon
+```
+
+**The language does not change.** There is no `infer` keyword, no resource kind which calls a model. It would slot neatly into the `import` machinery — and that is the temptation. A resource which asks a model for its value makes the same document parse to different values on different days, and a data notation whose value moves is not a data notation. `deon` describes; the model is asked elsewhere.
+
+What *is* offered is what already fit.
+
+**Tools.** A model writing `deon` gets it wrong, and has no way to find out; it has to guess whether the document it just produced is the document it meant. A `deon` [diagnostic](#diagnostics) carries a code, a line, and a column, so the loop closes: `deon_parse`, `deon_lint`, `deon_canonical`, `deon_stringify`, `deon_typed`, `deon_entities`. A refusal comes back as data rather than as prose, and says what is wrong and where, which is enough to fix it.
+
+**Prompts.** A `.deon` file *is* a prompt library as it stands, and the fit is not a metaphor: an MCP prompt takes named arguments and they are strings; a `deon` [entity call](#interpolation) takes named arguments and they *must* be strings; and the arguments an entity demands are exactly the [interpolation](#interpolation) names it carries, which `deon` already computes. So the mapping is mechanical rather than a convention which could be got wrong.
+
+``` deon
+// ./prompts.deon
+review `Review this #{language} code, focusing on #{focus}:
+
+#{code}`
+
+{
+    review Review code for quality and bugs
+}
+```
+
+The leaflinks are the templates, and the root map is the manifest — a key names an entity to expose, its value describes it. `prompts/list` then offers `review` with the required arguments `language`, `focus`, and `code`, which nothing declared: they were read out of the template. A leaflink the root does not name stays private to the library, exactly as it is private to a document.
+
+**Resources.** The `.deon` files under the roots you named, served canonically, and nothing else.
+
+The security model is the one the language already had. The [capability model](#parsing) denies the filesystem and the network unless they are asked for, which is ordinarily a nicety and here is load-bearing: a document's text becomes text a model reads, and a model acts on text it reads. So a document handed to a *tool* came from the model, is not trusted, and reaches nothing at all; a document under a *root* was named by a person, and may read the disk; and the network stays off, because a document which may `import` from an arbitrary URL is a way to put words a model will read into a channel nobody is watching.
+
+The full account, including how to compose a shared preamble without it becoming an argument, is in the [`deon-mcp` documentation][deon-mcp].
+
+[deon-mcp]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
+
+
+
 ## In Use
 
 `deon` is used in:
@@ -1791,6 +1831,16 @@ fn main() {
 [@plurid/deon-rust][deon-rust] • `Rust` implementation
 
 [deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
+
+
+
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon-mcp">
+    <img src="https://img.shields.io/npm/v/@plurid/deon-mcp.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
+</a>
+
+[@plurid/deon-mcp][deon-mcp-package] • `Model Context Protocol` server
+
+[deon-mcp-package]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
 
 
 

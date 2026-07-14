@@ -1,6 +1,6 @@
 [package]
 name = "deon"
-version = "0.0.0"
+version = "0.0.0-11"
 authors = ["ly3xqhl8g9 <ly3xqhl8g9@plurid.com>"]
 license = "DEL"
 description = "DeObject Notation Format of Structured Strings"
@@ -18,14 +18,34 @@ name = "deon"
 path = "src/lib.rs"
 
 
+[features]
+default = []
+
+# Reaching a remote target needs TLS, and TLS is the one thing that must not be hand-rolled: a
+# mistake in certificate validation is a silent machine-in-the-middle. So it is the single optional
+# dependency, and it is off by default — `cargo add deon` still pulls nothing at all.
+#
+# A host that would rather bring its own client does not need this feature: `ResourceLoader` is a
+# public trait, and implementing it is the supported way in.
+network = ["dep:ureq"]
+
+cli = ["network"]
+
+
 [dependencies]
-# None. A data notation should not need any, and one rule of the specification forbids the obvious
-# candidate outright: a JSON number must arrive as the spelling it was written with (9.1), which
-# every general JSON parser has already destroyed. So the JSON reader is written here, and with it
-# everything else.
+# The library proper has none, and one rule of the specification forbids the obvious candidate
+# outright: a JSON number must arrive as the spelling it was written with (9.1), which every general
+# JSON parser has already destroyed. So the JSON reader is written here, and with it everything else.
+ureq = { version = "3", optional = true, default-features = false, features = ["rustls"] }
 
 
 [dev-dependencies]
 # Reads the language-neutral fixture manifest, `spec/conformance/cases.json`, and nothing else. The
 # library must not depend on it, or the number rule above would be lost.
 serde_json = "1"
+
+
+[[bin]]
+name = "deon"
+path = "src/bin/deon.rs"
+required-features = ["cli"]

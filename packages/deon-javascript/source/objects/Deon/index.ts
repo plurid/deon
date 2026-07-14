@@ -15,7 +15,9 @@
         lintDocument,
     } from '../Parser';
 
-    import Interpreter from '../Interpreter';
+    import Interpreter, {
+        entityParameters,
+    } from '../Interpreter';
 
     import Stringifier from '../Stringifier';
 
@@ -40,6 +42,7 @@
     } from '../../utilities/datasign';
 
     import type {
+        DeonEntity,
         DeonInterpreterOptions,
         DeonLoadEnvironmentOptions,
         PartialDeonParseOptions,
@@ -299,6 +302,42 @@ class Deon {
         sourceName = '<memory>',
     ): DeonDiagnostic[] {
         return lintDocument(this.parseSyntax(data, sourceName));
+    }
+
+
+    /**
+     * The entities a document declares, and the arguments each would demand if it were called.
+     *
+     * This is syntactic: the document is read, not evaluated, so nothing is loaded and nothing is
+     * reached. It is safe to point at a file whose imports have not been agreed to.
+     *
+     * An entity that carries interpolations is a template — `#name(parameter value)` fills them in —
+     * which is what lets a `.deon` file stand as a prompt library, and this is what says what a
+     * prompt's arguments are.
+     */
+    public entities(
+        data: string,
+        sourceName = '<memory>',
+    ): DeonEntity[] {
+        const document = this.parseSyntax(data, sourceName);
+
+        return document.declarations.map(declaration => {
+            // A resource is a declaration too, and shares the one namespace, so leaving it out would
+            // make the list a lie about which names are taken.
+            if (declaration.type !== 'leaflink') {
+                return {
+                    name: declaration.name,
+                    parameters: [],
+                    kind: 'resource',
+                } as DeonEntity;
+            }
+
+            return {
+                name: declaration.name,
+                parameters: [...entityParameters(declaration.value)],
+                kind: declaration.value.type,
+            } as DeonEntity;
+        });
     }
 
 

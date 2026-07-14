@@ -551,7 +551,7 @@ impl<'a> Evaluator<'a> {
 
     /// The parameters of an entity are the interpolation names written inside it. An environment
     /// name is read from the environment rather than passed in, so it is not one of them.
-    fn parameters(node: &ValueNode) -> Vec<String> {
+    pub fn parameters(node: &ValueNode) -> Vec<String> {
         let mut parameters: Vec<String> = Vec::new();
 
         Self::visit_parameters(node, &mut parameters);

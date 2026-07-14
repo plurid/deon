@@ -728,59 +728,71 @@ class Evaluator {
     }
 
 
-    /**
-     * The parameters of an entity are the interpolation names written inside it. An environment
-     * name is read from the environment rather than passed in, so it is not one of them.
-     */
     private parameters(
         node: ValueNode,
     ) {
-        const parameters = new Set<string>();
+        return entityParameters(node);
+    }
+}
 
-        const visit = (
-            value: ValueNode,
-        ) => {
-            if (value.type === 'scalar') {
-                for (const match of value.value.matchAll(/#\{([^}]+)\}/g)) {
-                    const name = parseReference(match[1].trim())[0];
 
-                    if (name && !name.startsWith('$')) {
-                        parameters.add(name);
-                    }
-                }
-            } else if (value.type === 'map') {
-                for (const entry of value.entries) {
-                    if (entry.type === 'entry') {
-                        visit(entry.value);
-                    } else if (entry.type === 'link-entry' && entry.value.type === 'call') {
-                        for (const argument of entry.value.arguments) {
-                            visit(argument.value);
-                        }
-                    }
-                }
-            } else if (value.type === 'list') {
-                for (const item of value.items) {
-                    if (item.type !== 'spread-item') {
-                        visit(item);
-                    }
-                }
-            } else if (value.type === 'structure') {
-                for (const row of value.rows) {
-                    for (const cell of row) {
-                        visit(cell);
-                    }
-                }
-            } else if (value.type === 'call') {
-                for (const argument of value.arguments) {
-                    visit(argument.value);
+/**
+ * The parameters of an entity are the interpolation names written inside it. An environment name is
+ * read from the environment rather than passed in, so it is not one of them (specification 11).
+ *
+ * This sits outside the evaluator, and is exported, because it is a rule of the language rather than
+ * a detail of evaluation: it is syntactic, it needs no capabilities, and anything that wants to know
+ * what a `#name(...)` call would demand — an editor, a prompt server — must ask exactly this question
+ * rather than answer it a second time and drift.
+ */
+export const entityParameters = (
+    node: ValueNode,
+) => {
+    const parameters = new Set<string>();
+
+    const visit = (
+        value: ValueNode,
+    ) => {
+        if (value.type === 'scalar') {
+            for (const match of value.value.matchAll(/#\{([^}]+)\}/g)) {
+                const name = parseReference(match[1].trim())[0];
+
+                if (name && !name.startsWith('$')) {
+                    parameters.add(name);
                 }
             }
-        };
+        } else if (value.type === 'map') {
+            for (const entry of value.entries) {
+                if (entry.type === 'entry') {
+                    visit(entry.value);
+                } else if (entry.type === 'link-entry' && entry.value.type === 'call') {
+                    for (const argument of entry.value.arguments) {
+                        visit(argument.value);
+                    }
+                }
+            }
+        } else if (value.type === 'list') {
+            for (const item of value.items) {
+                if (item.type !== 'spread-item') {
+                    visit(item);
+                }
+            }
+        } else if (value.type === 'structure') {
+            for (const row of value.rows) {
+                for (const cell of row) {
+                    visit(cell);
+                }
+            }
+        } else if (value.type === 'call') {
+            for (const argument of value.arguments) {
+                visit(argument.value);
+            }
+        }
+    };
 
-        visit(node);
+    visit(node);
 
-        return parameters;
-    }
+    return parameters;
 }
 
 

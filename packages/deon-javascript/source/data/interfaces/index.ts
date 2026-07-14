@@ -73,4 +73,18 @@ export type ScanMode = 'MAP' | 'LIST' | '';
 export interface ConfiledFile {
     data: string;
 }
+
+
+/**
+ * A declaration, and the arguments it would demand if it were called.
+ *
+ * An entity that carries interpolations is a template: `#name(parameter value)` fills them in. The
+ * parameters are exactly the interpolation names it carries (specification 11) — an environment name
+ * is read from the environment rather than passed in, so it is not one of them.
+ */
+export interface DeonEntity {
+    name: string;
+    parameters: string[];
+    kind: 'scalar' | 'map' | 'list' | 'structure' | 'link' | 'call' | 'resource';
+}
 // #endregion module

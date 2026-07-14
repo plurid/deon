@@ -9,7 +9,8 @@ use crate::json::parse_json;
 use crate::options::ParseOptions;
 use crate::parser::Parser;
 use crate::resources::{
-    extension, resolve_mapped_absolute_path, resource_target, Fetched, ResourceLoader,
+    authorization, extension, resolve_mapped_absolute_path, resource_target, Fetched,
+    ResourceLoader,
 };
 use crate::scanner::{parse_reference, Scanner};
 use crate::syntax::{
@@ -399,13 +400,18 @@ impl<'a> Interpreter<'a> {
         &self,
         resource: &Resource,
         options: &ParseOptions,
-        _authenticator: Option<&str>,
+        authenticator: Option<&str>,
     ) -> DResult<Value> {
         let target = resource_target(resource, options);
 
+        // The `with` written on the declaration wins; the `authorization` map is the fallback. The
+        // `token` option is not consulted here at all — that one belongs to `parse_link`.
+        let host_token = authorization(&target, options);
+        let token = authenticator.or(host_token.as_deref());
+
         let fetched = self
             .virtual_resource(resource, &target, options)
-            .or_else(|| self.loader.load(&target, resource.kind, options));
+            .or_else(|| self.loader.load(&target, resource.kind, options, token));
 
         let Some(fetched) = fetched else {
             return self.unavailable(resource, options, &target);

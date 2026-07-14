@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::options::ParseOptions;
 use crate::syntax::{Resource, ResourceKind};
 use crate::text::{is_absolute_path, is_url, scheme_of};
+use crate::url::Url;
 
 /// What a loader hands back.
 pub struct Fetched {
@@ -22,28 +23,53 @@ pub struct Fetched {
 
 /// Reads a resource, or does not. A parser built without one cannot reach the filesystem or the
 /// network by accident, because it has nothing to reach with (specification 9).
+///
+/// A host that wants a resource from somewhere this crate does not know about — a database, an
+/// archive, an HTTP client of its own choosing — implements this, and needs no feature flag to do it.
+///
+/// `token` is the bearer credential already decided for this target: the `with` written on the
+/// declaration if there is one, otherwise the `authorization` entry for the host. Deciding it is not
+/// the loader's job; using it is.
 pub trait ResourceLoader {
-    fn load(&self, target: &str, kind: ResourceKind, options: &ParseOptions) -> Option<Fetched>;
+    fn load(
+        &self,
+        target: &str,
+        kind: ResourceKind,
+        options: &ParseOptions,
+        token: Option<&str>,
+    ) -> Option<Fetched>;
 }
 
 /// A loader that can reach nothing at all.
 pub struct DenyAll;
 
 impl ResourceLoader for DenyAll {
-    fn load(&self, _target: &str, _kind: ResourceKind, _options: &ParseOptions) -> Option<Fetched> {
+    fn load(
+        &self,
+        _target: &str,
+        _kind: ResourceKind,
+        _options: &ParseOptions,
+        _token: Option<&str>,
+    ) -> Option<Fetched> {
         None
     }
 }
 
 /// The filesystem, and only when it has been granted.
 ///
-/// There is no network here. A remote target is refused by returning nothing, which the interpreter
-/// turns into the denial or the failure that the capability model calls for.
+/// A remote target is not this loader's business, so it is refused by returning nothing — which the
+/// interpreter turns into the denial or the failure that the capability model calls for. Reaching a
+/// remote target is [`crate::network::Http`]'s job, and it exists only behind the `network` feature.
 pub struct Filesystem;
 
 impl ResourceLoader for Filesystem {
-    fn load(&self, target: &str, kind: ResourceKind, options: &ParseOptions) -> Option<Fetched> {
-        // network pass: a remote target would be fetched here.
+    fn load(
+        &self,
+        target: &str,
+        kind: ResourceKind,
+        options: &ParseOptions,
+        _token: Option<&str>,
+    ) -> Option<Fetched> {
         if is_url(target) || scheme_of(target).is_some() {
             return None;
         }
@@ -61,6 +87,31 @@ impl ResourceLoader for Filesystem {
             filebase: directory_of(&file).to_string(),
             resource_id: file,
         })
+    }
+}
+
+/// Everything this crate itself knows how to reach: the filesystem, and — with the `network` feature
+/// — a remote target.
+///
+/// Neither is granted here. Each sub-loader refuses on its own unless the matching capability was
+/// asked for, so the capability model is enforced in one place per capability rather than at every
+/// call site (specification 9).
+pub struct Host;
+
+impl ResourceLoader for Host {
+    fn load(
+        &self,
+        target: &str,
+        kind: ResourceKind,
+        options: &ParseOptions,
+        token: Option<&str>,
+    ) -> Option<Fetched> {
+        #[cfg(feature = "network")]
+        if let Some(fetched) = crate::network::Http.load(target, kind, options, token) {
+            return Some(fetched);
+        }
+
+        Filesystem.load(target, kind, options, token)
     }
 }
 
@@ -99,19 +150,40 @@ pub fn resolve_mapped_absolute_path(file: &str, mappings: &HashMap<String, Strin
 }
 
 /// The canonical identity of a resource. A relative filesystem target resolves against the file that
-/// holds it, and `..` is folded away so that two spellings of one resource cannot escape the cycle
-/// check.
+/// holds it, a relative URL against the URL that holds it, and `..` is folded away so that two
+/// spellings of one resource cannot escape the cycle check.
 pub fn resource_target(resource: &Resource, options: &ParseOptions) -> String {
     let target = with_import_extension(&resource.target, resource.kind);
 
-    // network pass: a relative URL would resolve against the URL that holds it. Nothing here can
-    // reach a remote target, so it is carried through as written and denied by the loader.
+    // A target with a scheme of its own is not relative to anything.
     if scheme_of(&target).is_some() {
-        return target;
+        return match Url::parse(&target) {
+            Some(url) => url.href(),
+            None => target,
+        };
     }
 
     let source = &options.source_name;
     let filebase = &options.filebase;
+
+    // A document read over HTTP resolves its own relative imports over HTTP.
+    //
+    // The asymmetry is deliberate, and is the reference's: a `filebase` is a *directory*, so it is
+    // given a trailing slash and the reference is appended to it, whereas a `source_name` is the
+    // *document* itself, so the reference replaces its last segment.
+    let url_base = if is_url(filebase) {
+        Some(format!("{}/", filebase.trim_end_matches('/')))
+    } else if is_url(source) {
+        Some(source.clone())
+    } else {
+        None
+    };
+
+    if let Some(url_base) = url_base {
+        if let Some(base) = Url::parse(&url_base) {
+            return base.join(&target).href();
+        }
+    }
 
     let normalized = target.replace('\\', "/");
     let absolute = is_absolute_path(&normalized);
@@ -131,6 +203,18 @@ pub fn resource_target(resource: &Resource, options: &ParseOptions) -> String {
     };
 
     normalize_path(&joined)
+}
+
+/// The `authorization` option is keyed by an exact lowercase hostname — no port, no path, no
+/// wildcard. A target that is not remote gets no token at all.
+pub fn authorization(target: &str, options: &ParseOptions) -> Option<String> {
+    if !is_url(target) {
+        return None;
+    }
+
+    let url = Url::parse(target)?;
+
+    options.authorization.get(url.hostname()).cloned()
 }
 
 /// Folds `.` and `..` away. Above the root there is nothing, so a rooted path drops what it cannot

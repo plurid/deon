@@ -59,6 +59,7 @@ Why `deobject`? More of a play-on-words, although a case can be made considering
 + [Parsing](#parsing)
 + [Literals](#literals)
 + [Advanced Usage](#advanced-usage)
++ [Deon for AI](#deon-for-ai)
 + [In Use](#in-use)
 + [Usages](#usages)
 + [Idiomaticity](#idiomaticity)
@@ -1289,6 +1290,45 @@ const data = Deon.parse(
 
 
 
+## Deon for AI
+
+[`@plurid/deon-mcp`][deon-mcp] serves `deon` over the [Model Context Protocol](https://modelcontextprotocol.io): a way for a language model to check the `deon` it writes, to read the `.deon` documents you have, and to use a `.deon` file as a prompt library.
+
+``` bash
+npx @plurid/deon-mcp --root ./configurations --prompts ./prompts.deon
+```
+
+**The language does not change.** There is no `infer` keyword, no resource kind which calls a model. It would slot neatly into the `import` machinery — and that is the temptation. A resource which asks a model for its value makes the same document parse to different values on different days, and a data notation whose value moves is not a data notation. `deon` describes; the model is asked elsewhere.
+
+What *is* offered is what already fit.
+
+**Tools.** A model writing `deon` gets it wrong, and has no way to find out; it has to guess whether the document it just produced is the document it meant. A `deon` [diagnostic](#diagnostics) carries a code, a line, and a column, so the loop closes: `deon_parse`, `deon_lint`, `deon_canonical`, `deon_stringify`, `deon_typed`, `deon_entities`. A refusal comes back as data rather than as prose, and says what is wrong and where, which is enough to fix it.
+
+**Prompts.** A `.deon` file *is* a prompt library as it stands, and the fit is not a metaphor: an MCP prompt takes named arguments and they are strings; a `deon` [entity call](#interpolation) takes named arguments and they *must* be strings; and the arguments an entity demands are exactly the [interpolation](#interpolation) names it carries, which `deon` already computes. So the mapping is mechanical rather than a convention which could be got wrong.
+
+``` deon
+// ./prompts.deon
+review `Review this #{language} code, focusing on #{focus}:
+
+#{code}`
+
+{
+    review Review code for quality and bugs
+}
+```
+
+The leaflinks are the templates, and the root map is the manifest — a key names an entity to expose, its value describes it. `prompts/list` then offers `review` with the required arguments `language`, `focus`, and `code`, which nothing declared: they were read out of the template. A leaflink the root does not name stays private to the library, exactly as it is private to a document.
+
+**Resources.** The `.deon` files under the roots you named, served canonically, and nothing else.
+
+The security model is the one the language already had. The [capability model](#parsing) denies the filesystem and the network unless they are asked for, which is ordinarily a nicety and here is load-bearing: a document's text becomes text a model reads, and a model acts on text it reads. So a document handed to a *tool* came from the model, is not trusted, and reaches nothing at all; a document under a *root* was named by a person, and may read the disk; and the network stays off, because a document which may `import` from an arbitrary URL is a way to put words a model will read into a channel nobody is watching.
+
+The full account, including how to compose a shared preamble without it becoming an argument, is in the [`deon-mcp` documentation][deon-mcp].
+
+[deon-mcp]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
+
+
+
 ## In Use
 
 `deon` is used in:
@@ -1529,7 +1569,24 @@ The `.deon` file that will be used for environment variables can use all the fea
 
 ### Rust
 
-The crate has no dependencies, and it is a library: there is no binary, and nothing in it can reach the network.
+The crate has no dependencies. That is a property of the default build and it is meant to be kept: `cargo tree --edges normal` prints the crate and nothing else. Reaching the network needs a TLS client, and a TLS client is not something to hand-roll, so it lives behind a feature — which is what lets the default stay honest.
+
+| feature | what it adds | what it costs |
+| --- | --- | --- |
+| *(default)* | the language, entire: parsing, evaluating, linting, stringifying, the conformance suite | nothing |
+| `network` | `import` and `inject` over `http` and `https`, bearer tokens, the response cache | a small blocking client over `rustls` |
+| `cli` | the `deon` binary; implies `network` | as above |
+
+``` toml
+deon = "0.0.0-11"                                        # zero dependencies
+deon = { version = "0.0.0-11", features = ["network"] }  # + a client
+```
+
+``` bash
+cargo install deon --features cli
+```
+
+Without the feature, a remote target is refused before a request is made — `DEON_CAPABILITY_DENIED`, and no socket was opened. `ResourceLoader` is a public trait either way, so a caller who wants to bring their own client can serve remote imports with no feature at all.
 
 #### The data model
 
@@ -1551,13 +1608,26 @@ pub enum Value {
 | --- | --- |
 | `parse(source)` | reads a document, granting it nothing — a document that imports is denied |
 | `parse_with(source, &options)` | reads a document with the capabilities and the surroundings the caller decides |
+| `parse_with_loader(source, &options, loader)` | as above, against a `ResourceLoader` of the caller's own |
 | `parse_file(file, &options)` | reads a file, which grants the filesystem to it and to what it imports |
 | `parse_syntax(source, name)` | the tree, without evaluating it, so nothing is loaded and nothing is reached |
+| `entities(source, name)` | what the document declares, and what each would demand |
 | `lint(source)` | the diagnostics that are advice rather than refusal |
 | `leaflinks(source, &options)` | the evaluated declaration namespace, which is what drives editor completion |
 | `stringify(&value, &options)` | writes a value back out |
 | `canonical(&value)` | the one output two implementations must agree on, character for character |
 | `typed(&value)` | the conservative typer: `Value` into `Typed`, which has booleans and numbers |
+
+`entities` is syntactic — it parses and does not evaluate, so it needs no capabilities and cannot reach anything. It answers *what would this entity ask me for*, which is a question the language already knew the answer to: an entity's parameters are exactly the interpolation names it carries.
+
+``` rust
+let source = "greet `Hi #{name}, you are #{role}.`\n\n{\n    a b\n}\n";
+
+for entity in deon::entities(source, "<memory>")? {
+    println!("{} {:?} {:?}", entity.name, entity.parameters, entity.kind);
+    // greet ["name", "role"] Scalar
+}
+```
 
 #### Capabilities
 
@@ -1581,7 +1651,44 @@ let options = deon::ParseOptions::new()
 let data = deon::parse_with("import other from ./other\n\n{\n    #other.name\n}\n", &options)?;
 ```
 
-Network access is not implemented in this crate. A remote target is refused before any request is made, with `DEON_CAPABILITY_DENIED`.
+#### The network
+
+With `-F network`, a document may `import` and `inject` over `http` and `https` — once it is allowed to, which is a separate decision from the feature being compiled in. The feature says the code exists; `allow_network` says this document may use it. Denial happens before a request is made, not after one comes back.
+
+``` rust
+let options = deon::ParseOptions::new()
+    .allow_network(true)
+    .authorize("api.example.com", "a-token")     // a bearer, per exact hostname
+    .cache(true);                                // and the response is kept
+
+let data = deon::parse_with(source, &options)?;
+```
+
+A token can come from two places, and the document wins: `import data from https://api.example.com/d.deon with #token` uses the `token` leaflink; otherwise the `authorization` map is consulted, keyed by exact lowercase hostname — no port, no path, no wildcard. An empty token sends no header at all rather than an empty one.
+
+A response which is not a 2xx becomes `DEON_RESOURCE_IO` — allowed, but it failed — which is a different thing from `DEON_CAPABILITY_DENIED`, which is never-allowed. The distinction matters to whoever is reading the error.
+
+The cache keys a response by `sha256(name + NUL + token)` rather than by the URL, so a token never appears in a filename and a document fetched under one token is never served to the holder of another. The `sha256` is in the crate, not behind the feature, because the specification requires it. A cache entry is itself a canonical Deon document, which is a small piece of dogfooding: the format has to survive a round-trip, so it is made to.
+
+#### The CLI
+
+`cargo install deon --features cli` puts a `deon` binary on the path. It is the same surface as the `JavaScript` implementation's, command for command, and it is meant to stay that way — the two were differentially tested against each other, and `confile` output is byte-identical.
+
+``` bash
+deon file.deon                          # parse, and print it back
+deon file.deon -o json -t               # as JSON, through the conservative typer
+deon file.deon -n true                  # and let it reach the network
+
+deon convert data.json                  # JSON into Deon, keeping each number's spelling
+deon environment env.deon cmd args      # run a command with the document as its environment
+deon confile src/*.deon                 # many files into one document
+deon exfile confile.deon                # and back out again
+deon lint file.deon                     # the advice, and then the refusals
+```
+
+The defaults are load-bearing and they match the reference: `--output deon`, `--typed false`, **`--filesystem true`**, **`--network false`**. A file named on a command line was named by a person, so it may read the disk; nothing said it may reach the network.
+
+`exfile` writes files out of a document, which makes it the one command where a mistake is not recoverable. So a path which is absolute, or which climbs out of the destination with `..`, is refused unless `--unsafe-paths` — and every entry is validated before any file is written, so a document with one bad path writes nothing at all rather than half of itself.
 
 #### Errors
 
@@ -1634,6 +1741,15 @@ match deon::parse(source) {
 [@plurid/deon-rust][deon-rust] • `Rust` implementation
 
 [deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
+
+
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon-mcp">
+    <img src="https://img.shields.io/npm/v/@plurid/deon-mcp.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
+</a>
+
+[@plurid/deon-mcp][deon-mcp-package] • `Model Context Protocol` server
+
+[deon-mcp-package]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
 
 
 

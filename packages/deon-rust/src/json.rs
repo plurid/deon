@@ -7,7 +7,176 @@
 //! source is read directly, and a number is carried across as the characters it was written as.
 
 use crate::text::json_number_length;
+use crate::typer::Typed;
 use crate::value::{Map, Value};
+
+/// Writes JSON, indented by four spaces.
+///
+/// Every Deon value is a string, a list, or a map, so this only ever writes a string, an array, or an
+/// object. A number or a boolean can only appear once the conservative typer has been through
+/// (specification 14), which is what [`write_typed_json`] is for.
+pub fn write_json(value: &Value) -> String {
+    let mut out = String::new();
+
+    write_value(value, 0, &mut out);
+    out.push('\n');
+
+    out
+}
+
+fn write_value(value: &Value, level: usize, out: &mut String) {
+    match value {
+        Value::String(text) => write_json_string(text, out),
+        Value::List(items) => {
+            if items.is_empty() {
+                out.push_str("[]");
+                return;
+            }
+
+            out.push_str("[\n");
+
+            for (index, item) in items.iter().enumerate() {
+                indent(level + 1, out);
+                write_value(item, level + 1, out);
+
+                if index + 1 < items.len() {
+                    out.push(',');
+                }
+
+                out.push('\n');
+            }
+
+            indent(level, out);
+            out.push(']');
+        }
+        Value::Map(entries) => {
+            if entries.is_empty() {
+                out.push_str("{}");
+                return;
+            }
+
+            out.push_str("{\n");
+
+            for (index, (key, entry)) in entries.iter().enumerate() {
+                indent(level + 1, out);
+                write_json_string(key, out);
+                out.push_str(": ");
+                write_value(entry, level + 1, out);
+
+                if index + 1 < entries.len() {
+                    out.push(',');
+                }
+
+                out.push('\n');
+            }
+
+            indent(level, out);
+            out.push('}');
+        }
+    }
+}
+
+/// The typed view, where a string that could only have meant a number or a boolean has become one.
+pub fn write_typed_json(value: &Typed) -> String {
+    let mut out = String::new();
+
+    write_typed(value, 0, &mut out);
+    out.push('\n');
+
+    out
+}
+
+fn write_typed(value: &Typed, level: usize, out: &mut String) {
+    match value {
+        Typed::Bool(value) => out.push_str(if *value { "true" } else { "false" }),
+        Typed::Number(number) => out.push_str(&format_number(*number)),
+        Typed::String(text) => write_json_string(text, out),
+        Typed::List(items) => {
+            if items.is_empty() {
+                out.push_str("[]");
+                return;
+            }
+
+            out.push_str("[\n");
+
+            for (index, item) in items.iter().enumerate() {
+                indent(level + 1, out);
+                write_typed(item, level + 1, out);
+
+                if index + 1 < items.len() {
+                    out.push(',');
+                }
+
+                out.push('\n');
+            }
+
+            indent(level, out);
+            out.push(']');
+        }
+        Typed::Map(entries) => {
+            if entries.is_empty() {
+                out.push_str("{}");
+                return;
+            }
+
+            out.push_str("{\n");
+
+            for (index, (key, entry)) in entries.iter().enumerate() {
+                indent(level + 1, out);
+                write_json_string(key, out);
+                out.push_str(": ");
+                write_typed(entry, level + 1, out);
+
+                if index + 1 < entries.len() {
+                    out.push(',');
+                }
+
+                out.push('\n');
+            }
+
+            indent(level, out);
+            out.push('}');
+        }
+    }
+}
+
+/// A whole number is written without a fractional part, so `1` does not come back as `1.0`. The typer
+/// only ever produces a finite number, so there is no infinity to write.
+fn format_number(number: f64) -> String {
+    if number.fract() == 0.0 && number.abs() < 1e21 {
+        format!("{number:.0}")
+    } else {
+        format!("{number}")
+    }
+}
+
+fn indent(level: usize, out: &mut String) {
+    for _ in 0..level {
+        out.push_str("    ");
+    }
+}
+
+fn write_json_string(text: &str, out: &mut String) {
+    out.push('"');
+
+    for character in text.chars() {
+        match character {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\u{8}' => out.push_str("\\b"),
+            '\u{c}' => out.push_str("\\f"),
+            character if (character as u32) < 0x20 => {
+                out.push_str(&format!("\\u{:04x}", character as u32));
+            }
+            character => out.push(character),
+        }
+    }
+
+    out.push('"');
+}
 
 pub fn parse_json(source: &str) -> Result<Value, String> {
     let mut reader = JsonReader {
