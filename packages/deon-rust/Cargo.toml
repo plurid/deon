@@ -7,9 +7,10 @@ description = "DeObject Notation Format of Structured Strings"
 readme = "README.md"
 homepage = "https://github.com/plurid/deon"
 repository = "https://github.com/plurid/deon"
-keywords = ["cli", "deon"]
-categories = ["command-line-utilities", "language", "data"]
-edition = "2018"
+keywords = ["deon", "notation", "parser"]
+categories = ["parser-implementations", "data-structures"]
+edition = "2021"
+rust-version = "1.70"
 
 
 [lib]
@@ -17,10 +18,14 @@ name = "deon"
 path = "src/lib.rs"
 
 
-[[bin]]
-name = "deon"
-path = "src/bin.rs"
-
-
 [dependencies]
-structopt = "0.3.13"
+# None. A data notation should not need any, and one rule of the specification forbids the obvious
+# candidate outright: a JSON number must arrive as the spelling it was written with (9.1), which
+# every general JSON parser has already destroyed. So the JSON reader is written here, and with it
+# everything else.
+
+
+[dev-dependencies]
+# Reads the language-neutral fixture manifest, `spec/conformance/cases.json`, and nothing else. The
+# library must not depend on it, or the number rule above would be lost.
+serde_json = "1"

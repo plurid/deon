@@ -1,5 +1,0 @@
-import file from ./file
-
-{
-    anotherMap #file.aMap
-}

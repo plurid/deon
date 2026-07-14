@@ -119,21 +119,15 @@ const data = {
 ``` rust
 // Rust
 
-let data = deon!({
-    entities [
-        {
-            id 01
-            name One
-            active true
-        }
-        {
-            id 02
-            name Two
-            active false
-        }
-    ]
-    time: 1598439736
-});
+let data = deon::parse(source).unwrap();
+
+// Value::Map({
+//     "entities": Value::List([
+//         Value::Map({ "id": "01", "name": "One", "active": "true" }),
+//         Value::Map({ "id": "02", "name": "Two", "active": "false" }),
+//     ]),
+//     "time": "1598439736",
+// })
 ```
 
 ``` python
@@ -1223,21 +1217,13 @@ main();
 
 ### Rust
 
+Rust has no `deon` literal. A document is a string, and `include_str!` is what makes it one at compile time, so a `.deon` file stays a `.deon` file that an editor can highlight and the conformance suite can read.
+
 ``` rust
-use deon::{deon}
-
-
 fn main() {
-    let data = deon!(
-        // handles full-fledged deon data
-        // with imports, injects, leaflinks, etc.
-        {
-            key value
-        }
-    );
+    let data = deon::parse(include_str!("./data.deon")).unwrap();
 
-    // { key: 'value' }
-    println!("{}", data.to_string());
+    println!("{}", deon::canonical(&data));
 }
 ```
 
@@ -1543,31 +1529,78 @@ The `.deon` file that will be used for environment variables can use all the fea
 
 ### Rust
 
-In order to parse `deon` data the `Deon` implementation or the `deon!` macro can be used.
+The crate has no dependencies, and it is a library: there is no binary, and nothing in it can reach the network.
+
+#### The data model
+
+A Deon value is exactly one of three things — a string, an ordered list, or an ordered map. There is no null, no boolean, and no number.
 
 ``` rust
-use deon::{
-    Deon,
-    deon!,
-}
-
-fn main() {
-    let deon_data = "
-        {
-            key value
-        }
-    ";
-
-    let deon_object = Deon::new();
-    let deon_object_parsed = Deon::parse(deon_data);
-
-    let deon_macro_parsed = deon!(
-        {
-            key value
-        }
-    );
+pub enum Value {
+    String(String),
+    List(Vec<Value>),
+    Map(Map),
 }
 ```
+
+`Map` keeps the order its keys were written in. A key written twice is last-write-wins, and it moves to the position of its final write.
+
+#### The functions
+
+| function | what it does |
+| --- | --- |
+| `parse(source)` | reads a document, granting it nothing — a document that imports is denied |
+| `parse_with(source, &options)` | reads a document with the capabilities and the surroundings the caller decides |
+| `parse_file(file, &options)` | reads a file, which grants the filesystem to it and to what it imports |
+| `parse_syntax(source, name)` | the tree, without evaluating it, so nothing is loaded and nothing is reached |
+| `lint(source)` | the diagnostics that are advice rather than refusal |
+| `leaflinks(source, &options)` | the evaluated declaration namespace, which is what drives editor completion |
+| `stringify(&value, &options)` | writes a value back out |
+| `canonical(&value)` | the one output two implementations must agree on, character for character |
+| `typed(&value)` | the conservative typer: `Value` into `Typed`, which has booleans and numbers |
+
+#### Capabilities
+
+Nothing is granted by default. Calling a parser grants neither the filesystem nor the network; each is an explicit decision.
+
+``` rust
+let options = deon::ParseOptions::new()
+    .allow_filesystem(true)
+    .absolute_path("absolute/path/*", "/real/path/on/disk");
+
+let data = deon::parse_with(source, &options)?;
+```
+
+A document can also be given its resources directly, which is how a test — or an editor — reads one that imports without granting it anything at all.
+
+``` rust
+let options = deon::ParseOptions::new()
+    .source_name("main.deon")
+    .resource("other.deon", "{\n    name The Name\n}\n");
+
+let data = deon::parse_with("import other from ./other\n\n{\n    #other.name\n}\n", &options)?;
+```
+
+Network access is not implemented in this crate. A remote target is refused before any request is made, with `DEON_CAPABILITY_DENIED`.
+
+#### Errors
+
+An error carries the diagnostic code and the position it was written at, which is what an editor underlines. The offsets are bytes; the line and the column are one-based Unicode code points.
+
+``` rust
+match deon::parse(source) {
+    Ok(value) => println!("{}", deon::canonical(&value)),
+    Err(error) => {
+        let span = &error.diagnostics[0].span;
+
+        eprintln!("{} at {}:{} — {}", error.code, span.line, span.column, error.message);
+    }
+}
+```
+
+#### Conformance
+
+`cargo test` runs the 46 language-neutral fixtures in `spec/conformance/cases.json`, the same manifest the other implementations read. An implementation conforms only when it passes every one of them, reporting the specified diagnostic code *and* the position it was written at.
 
 
 

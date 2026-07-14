@@ -1,9 +1,0 @@
-{
-    aMap {
-        'a list' [
-            {
-                aKey 'a value with spaces    '
-            }
-        ]
-    }
-}
