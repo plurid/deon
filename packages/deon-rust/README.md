@@ -1325,7 +1325,7 @@ The security model is the one the language already had. The [capability model](#
 
 The full account, including how to compose a shared preamble without it becoming an argument, is in the [`deon-mcp` documentation][deon-mcp].
 
-[deon-mcp]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
+[deon-mcp]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-mcp
 
 
 
@@ -1720,7 +1720,7 @@ match deon::parse(source) {
 
 [@plurid/deon-grammar][deon-grammar] • `Visual Studio Code` syntax highlighting
 
-[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode
+[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-grammar/vscode
 
 
 
@@ -1749,7 +1749,7 @@ match deon::parse(source) {
 
 [@plurid/deon-mcp][deon-mcp-package] • `Model Context Protocol` server
 
-[deon-mcp-package]: https://github.com/plurid/deon/tree/master/packages/deon-mcp
+[deon-mcp-package]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-mcp
 
 
 

@@ -1580,7 +1580,7 @@ fn main() {
 
 [@plurid/deon-grammar][deon-grammar] • `Visual Studio Code` syntax highlighting
 
-[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/deon-grammar/vscode
+[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-grammar/vscode
 
 
 
