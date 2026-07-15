@@ -5,6 +5,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 /**
  * Reading a resource over HTTP once the network has been granted (specification 9). The stdlib client
@@ -14,8 +15,14 @@ import java.nio.charset.StandardCharsets;
  * allowed. An empty token sends no header, because {@code Bearer } is a credential-shaped nothing.
  */
 final class Network {
+    /** Thirty seconds, matching the other implementations' clients. The connect timeout bounds
+     * reaching the server; the per-request timeout bounds the whole exchange, so a server that connects
+     * and then stalls cannot hang the parse. */
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(TIMEOUT)
             .build();
 
     static String httpGet(String target, String kind, String token, Span span) {
@@ -27,7 +34,7 @@ final class Network {
 
         HttpRequest.Builder builder;
         try {
-            builder = HttpRequest.newBuilder(URI.create(target)).GET().header("Accept", accept);
+            builder = HttpRequest.newBuilder(URI.create(target)).GET().timeout(TIMEOUT).header("Accept", accept);
         } catch (IllegalArgumentException e) {
             throw new DeonException(Code.RESOURCE_IO, "Unable to reach resource '" + target + "'.", span);
         }

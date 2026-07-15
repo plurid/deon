@@ -12,6 +12,10 @@
     import {
         DeonValue,
     } from '../../data/syntax';
+
+    import {
+        guardDepth,
+    } from '../../utilities/guardDepth';
     // #endregion external
 // #endregion imports
 
@@ -236,6 +240,10 @@ class Stringifier {
     public stringify(
         input: unknown,
     ) {
+        // The guard runs before any recursion below, so a value nesting past the limit is refused with
+        // a coded diagnostic rather than taking the host stack down with it.
+        guardDepth(input);
+
         const data = normalize(input);
 
         const leaflinks: GeneratedLeaflink[] = [];

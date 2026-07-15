@@ -36,8 +36,8 @@ cli = ["network"]
 # Both first-party, both part of this workspace. `deon` is a thin facade: it re-exports the core in
 # full and adds the two compile-time macros. There are no third-party dependencies in the default
 # build — `cargo tree` shows only these crates, which are this project's own.
-deon-core = { path = "core" }
-deon-macros = { path = "macros" }
+deon-core = { path = "core", version = "0.0.0-11" }
+deon-macros = { path = "macros", version = "0.0.0-11" }
 
 
 [dev-dependencies]

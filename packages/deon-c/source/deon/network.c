@@ -10,8 +10,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netdb.h>
+
+/* A single fetch is bounded, so one unresponsive server cannot hang the parse. The connect is bounded
+ * by a non-blocking connect and a poll; the read and write are bounded by socket timeouts. Thirty
+ * seconds, matching the other implementations' clients. */
+#define NET_TIMEOUT_MS 30000
 
 /* Reading a resource over HTTP once the network has been granted (section 9). This is plain HTTP over a
  * socket, with no third-party client and no TLS — an https target it cannot reach is a DEON_RESOURCE_IO,
@@ -23,6 +32,28 @@ static void net_fail(deon_ctx *ctx, const char *what, const char *target, deon_s
     char msg[1024];
     snprintf(msg, sizeof(msg), "%s '%s'.", what, target);
     deon_fail(ctx, DEON_RESOURCE_IO, msg, span);
+}
+
+/* connect(2) with a deadline: connect on a non-blocking socket, wait for it to become writable within
+ * the timeout, then restore blocking mode. Returns 0 on success, -1 on failure or timeout — the caller
+ * treats every one the same, as an unreachable resource. */
+static int connect_timeout(int fd, const struct sockaddr *addr, socklen_t len, int timeout_ms) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+
+    int rc = connect(fd, addr, len);
+    if (rc != 0) {
+        if (errno != EINPROGRESS) return -1;
+        struct pollfd pfd = {.fd = fd, .events = POLLOUT};
+        do { rc = poll(&pfd, 1, timeout_ms); } while (rc < 0 && errno == EINTR);
+        if (rc <= 0) return -1; /* -1 error, 0 timeout */
+        int err = 0;
+        socklen_t elen = sizeof(err);
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &elen) < 0 || err != 0) return -1;
+    }
+
+    if (fcntl(fd, F_SETFL, flags) < 0) return -1;
+    return 0;
 }
 
 /* read the whole of a file descriptor to EOF into a growing buffer */
@@ -81,12 +112,18 @@ deon_str http_get(deon_ctx *ctx, const char *target, const char *kind, const cha
     for (struct addrinfo *ai = res; ai; ai = ai->ai_next) {
         fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (fd < 0) continue;
-        if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) break;
+        if (connect_timeout(fd, ai->ai_addr, ai->ai_addrlen, NET_TIMEOUT_MS) == 0) break;
         close(fd);
         fd = -1;
     }
     freeaddrinfo(res);
     if (fd < 0) net_fail(ctx, "Unable to reach resource", target, span);
+
+    /* The read and write are bounded too, so a server that connects and then stalls cannot hang the
+     * fetch: a read past the deadline returns an error, which is read as an unreadable resource. */
+    struct timeval tv = {.tv_sec = NET_TIMEOUT_MS / 1000, .tv_usec = (NET_TIMEOUT_MS % 1000) * 1000};
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     sb req = {0};
     sb_puts(&req, "GET ");

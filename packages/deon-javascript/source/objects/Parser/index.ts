@@ -103,7 +103,7 @@ const BARE_NAME = /^[A-Za-z0-9_-]+$/;
  * is what a spawned thread is given by default — with a wide margin, and it is far past any nesting a
  * person would write.
  */
-const MAX_DEPTH = 128;
+export const MAX_DEPTH = 128;
 
 
 

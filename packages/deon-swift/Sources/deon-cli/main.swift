@@ -164,6 +164,12 @@ private func printDiagnostics(_ document: Document) {
             + "\(diagnostic.severity) \(diagnostic.code) \(diagnostic.message)\n")
     }
 }
+
+// A writer (stringify/typed) refused a value that nests deeper than the limit — an error with a code but
+// no document span, so the position is a placeholder.
+private func printWriteError(_ error: DeonError) {
+    err("\(error.source):\(error.line):\(error.column) \(error.severity) \(error.code) \(error.message)\n")
+}
 // #endregion
 
 // #region JSON output
@@ -245,8 +251,8 @@ private func emitJSON(_ value: DeonValue, _ level: Int, _ buffer: inout [UInt8])
 }
 
 private func numberText(_ n: Double) -> String {
-    if n == n.rounded() && n.isFinite {
-        return String(Int64(n))
+    if n.isFinite, let whole = Int64(exactly: n) {
+        return String(whole)
     }
     return String(n)
 }
@@ -297,14 +303,21 @@ private func commandEvaluate(_ args: [String]) -> Int32 {
         printDiagnostics(document)
         return 1
     }
-    if optValue(args, "-o", "--output", "deon") == "json" {
-        let value = hasFlag(args, "-t", "--typed") ? document.typed() : document.value()
-        var buffer: [UInt8] = []
-        emitJSON(value, 0, &buffer)
-        buffer.append(0x0A)
-        writeBytes(buffer, stdout)
-    } else {
-        writeBytes(document.stringifyBytes(StringifyOptions()), stdout)
+    do {
+        if optValue(args, "-o", "--output", "deon") == "json" {
+            let value = try hasFlag(args, "-t", "--typed") ? document.typed() : document.value()
+            var buffer: [UInt8] = []
+            emitJSON(value, 0, &buffer)
+            buffer.append(0x0A)
+            writeBytes(buffer, stdout)
+        } else {
+            writeBytes(try document.stringifyBytes(StringifyOptions()), stdout)
+        }
+    } catch let error as DeonError {
+        printWriteError(error)
+        return 1
+    } catch {
+        return 1
     }
     return 0
 }
@@ -324,7 +337,15 @@ private func commandConvert(_ args: [String]) -> Int32 {
         printDiagnostics(document)
         return 1
     }
-    let written = document.stringifyBytes(StringifyOptions())
+    let written: [UInt8]
+    do {
+        written = try document.stringifyBytes(StringifyOptions())
+    } catch let error as DeonError {
+        printWriteError(error)
+        return 1
+    } catch {
+        return 1
+    }
     let destinations = positional(Array(args[2...]))
     if let destination = destinations.first {
         if !writeFile(destination, written) {
@@ -472,7 +493,16 @@ private func commandConfile(_ args: [String]) -> Int32 {
         printDiagnostics(document)
         return 1
     }
-    if !writeFile(destination, document.stringifyBytes(StringifyOptions())) {
+    let written: [UInt8]
+    do {
+        written = try document.stringifyBytes(StringifyOptions())
+    } catch let error as DeonError {
+        printWriteError(error)
+        return 1
+    } catch {
+        return 1
+    }
+    if !writeFile(destination, written) {
         err("deon: Unable to write '\(destination)'.\n")
         return 1
     }

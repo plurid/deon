@@ -19,6 +19,9 @@ from __future__ import annotations
 
 import re
 
+from .diagnostic import DiagnosticCode, Span, error
+from .parser import MAX_DEPTH
+from .stringifier import depth_of
 from .value import DeonMap, Value
 
 
@@ -61,6 +64,15 @@ def type_scalar(text: str) -> Typed:
 
 
 def typed(value: Value) -> Typed:
+    # A host-built value never met the parser's depth guard, so it is checked here — iteratively, via
+    # `depth_of` — before any recursion, sparing the caller the `RecursionError` this exists to prevent.
+    if depth_of(value) > MAX_DEPTH:
+        raise error(
+            DiagnosticCode.PARSE_EXPECTED,
+            "The value nests more deeply than the typer will follow.",
+            Span.head("<value>"),
+        )
+
     if isinstance(value, str):
         return type_scalar(value)
 

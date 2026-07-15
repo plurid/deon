@@ -203,24 +203,72 @@ pub fn leaflinks(source: &str, options: &ParseOptions) -> DResult<Map> {
     Interpreter::new(&DenyAll).leaflinks(&document, options)
 }
 
-pub fn stringify(value: &Value, options: &StringifyOptions) -> String {
-    Stringifier::new(options.clone()).stringify(value)
+/// Refuses a value that nests deeper than the writer will follow, before any recursive work begins.
+///
+/// A [`Value`] handed in by a host was not built by the parser, so the parser's own depth guard
+/// (`parser::MAX_DEPTH`) never saw it. Writing or typing such a value recurses on its nesting, and a
+/// value nested past the stack takes the process down — which is the crash a library must not hand its
+/// caller. So the three public writers check first, and this is the check: it walks the value with an
+/// explicit stack rather than the call stack, so the guard itself cannot be what overflows.
+///
+/// Depth counts enclosing values, matching the parser: the root is depth 1, so a value that would sit
+/// one past the limit is refused with the same [`DiagnosticCode::ParseExpected`] the parser raises.
+fn guard_depth(value: &Value) -> DResult<()> {
+    // Each entry is a value still to visit, paired with how deeply it is nested. The root counts as
+    // one enclosing value, exactly as the parser's `depth` reaches 1 for the outermost value.
+    let mut stack: Vec<(&Value, usize)> = vec![(value, 1)];
+
+    while let Some((current, depth)) = stack.pop() {
+        if depth > parser::MAX_DEPTH {
+            return Err(DeonError::new(
+                DiagnosticCode::ParseExpected,
+                "The value nests more deeply than Deon will write.",
+                Span::head("<value>"),
+            ));
+        }
+
+        match current {
+            Value::String(_) => {}
+            Value::List(items) => {
+                for item in items {
+                    stack.push((item, depth + 1));
+                }
+            }
+            Value::Map(map) => {
+                for (_, item) in map.iter() {
+                    stack.push((item, depth + 1));
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn stringify(value: &Value, options: &StringifyOptions) -> DResult<String> {
+    guard_depth(value)?;
+
+    Ok(Stringifier::new(options.clone()).stringify(value))
 }
 
 /// The one output two implementations must agree on, character for character. Reading it back must
 /// give the value it was written from (specification 13).
-pub fn canonical(value: &Value) -> String {
-    Stringifier::new(StringifyOptions::canonical()).stringify(value)
+pub fn canonical(value: &Value) -> DResult<String> {
+    guard_depth(value)?;
+
+    Ok(Stringifier::new(StringifyOptions::canonical()).stringify(value))
 }
 
 /// The canonical form of a document, read and written back.
 pub fn canonical_source(source: &str) -> DResult<String> {
-    Ok(canonical(&parse(source)?))
+    canonical(&parse(source)?)
 }
 
 /// Applies the conservative typer to an evaluated value (specification 14).
-pub fn typed(value: &Value) -> Typed {
-    typer::typed(value)
+pub fn typed(value: &Value) -> DResult<Typed> {
+    guard_depth(value)?;
+
+    Ok(typer::typed(value))
 }
 
 /// A declaration, and the arguments it would demand if it were called.

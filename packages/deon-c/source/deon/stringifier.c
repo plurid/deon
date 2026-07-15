@@ -349,8 +349,9 @@ static void write_x(sb *b, xnode *n, int level, const deon_stringify_options *o)
 /* #endregion */
 
 /* guard_depth enforces the nesting limit on a host-built value the parser never met (section 11.1),
- * iteratively, before any recursive writer runs. Returns false when the limit is exceeded. */
-static bool guard_depth(const deon_value *root) {
+ * iteratively, before any recursive writer runs. Returns false when the limit is exceeded. The public
+ * writers and the typer call it (via api.c) before their recursive passes. */
+bool guard_depth(const deon_value *root) {
     typedef struct { const deon_value *v; int depth; } frame;
     size_t cap = 64, len = 0;
     frame *stack = malloc(cap * sizeof(frame));
@@ -379,13 +380,8 @@ char *stringify_value(const deon_value *value, const deon_stringify_options *opt
     deon_stringify_options o = *opts;
     if (o.indentation == 0) o.indentation = 4;
 
-    if (!guard_depth(value)) {
-        if (out_len) *out_len = 0;
-        char *e = malloc(1);
-        e[0] = '\0';
-        return e;
-    }
-
+    /* The depth guard runs in the public writers (api.c) before this is reached, so by here the value is
+     * known to nest within the limit. */
     sb b = {0};
 
     if (o.leaflinks && !o.canonical) {

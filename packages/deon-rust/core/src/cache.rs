@@ -88,5 +88,10 @@ pub fn write(name: &str, value: &Value, options: &ParseOptions) {
         }
     }
 
-    let _ = std::fs::write(&path, crate::canonical(&Value::Map(entry)));
+    // A cache write is best-effort, and a value too deep to write canonically simply goes uncached
+    // rather than taking a failure anywhere: the caller asked to store something, not to be told it
+    // could not.
+    if let Ok(written) = crate::canonical(&Value::Map(entry)) {
+        let _ = std::fs::write(&path, written);
+    }
 }

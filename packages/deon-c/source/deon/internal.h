@@ -206,6 +206,11 @@ deon_value *type_value(arena *a, const deon_value *value);
 void   lint_document(deon_ctx *ctx, document_ast *doc, deon_diagnostic **out, size_t *out_len);
 char  *stringify_value(const deon_value *value, const deon_stringify_options *options, size_t *out_len);
 
+/* guard_depth walks a host-built value iteratively (never recursing) and returns false when it nests
+ * deeper than DEON_MAX_DEPTH, matching the limit the parser enforces (section 11.1). The public writers
+ * and the typer run it before any recursive pass. */
+bool   guard_depth(const deon_value *root);
+
 /* interpolation parameter names of an entity body (its exact parameter set). */
 void interpolation_names(node *n, arena *a, deon_str **out, size_t *out_len);
 

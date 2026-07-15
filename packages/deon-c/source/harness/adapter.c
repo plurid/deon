@@ -178,6 +178,16 @@ static void answer_error(buf *out, const char *id, const deon_error *e) {
     bputc(out, '}');
 }
 
+/* A writer reported a bare code (a host-built value that nests too deep) rather than a document error
+ * with a span, so the position is 0:0. The code is normative; the position is not (diagnostics.md). */
+static void answer_error_code(buf *out, const char *id, deon_code code) {
+    bputs(out, "{\"id\":");
+    json_string(out, id, strlen(id));
+    bputs(out, ",\"ok\":\"false\",\"code\":");
+    json_string(out, deon_code_name(code), strlen(deon_code_name(code)));
+    bputs(out, ",\"line\":\"0\",\"column\":\"0\"}");
+}
+
 static void perform(const deon_value *req, const char *id, buf *out) {
     const char *op = field_str(req, "op", "");
     deon_value *sv = deon_map_get(req, "source");
@@ -249,19 +259,24 @@ static void perform(const deon_value *req, const char *id, buf *out) {
     } else {
         deon_value *root = deon_document_root(doc);
         if (strcmp(op, "canonical") == 0) {
-            size_t n; char *s = deon_canonical(root, &n);
-            answer_ok(out, id, s, n);
-            free(s);
+            size_t n; deon_code ec = DEON_OK; char *s = deon_canonical(root, &n, &ec);
+            if (!s) answer_error_code(out, id, ec);
+            else { answer_ok(out, id, s, n); free(s); }
         } else if (strcmp(op, "stringify") == 0) {
             deon_stringify_options so = stringify_options_of(req);
-            size_t n; char *s = deon_stringify(root, &so, &n);
-            answer_ok(out, id, s, n);
-            free(s);
+            size_t n; deon_code ec = DEON_OK; char *s = deon_stringify(root, &so, &n, &ec);
+            if (!s) answer_error_code(out, id, ec);
+            else { answer_ok(out, id, s, n); free(s); }
         } else if (strcmp(op, "typed") == 0) {
-            buf j = {0};
-            marshal(&j, deon_typed(doc, root));
-            answer_ok(out, id, j.data, j.len);
-            free(j.data);
+            deon_code ec = DEON_OK;
+            deon_value *t = deon_typed(doc, root, &ec);
+            if (!t) answer_error_code(out, id, ec);
+            else {
+                buf j = {0};
+                marshal(&j, t);
+                answer_ok(out, id, j.data, j.len);
+                free(j.data);
+            }
         } else if (strcmp(op, "datasign") == 0) {
             buf j = {0};
             marshal(&j, root); /* parse_with already applied the contracts */

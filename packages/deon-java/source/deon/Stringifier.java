@@ -33,7 +33,10 @@ final class Stringifier {
         o.generatedComments = options.generatedComments;
 
         if (!guardDepth(value)) {
-            return "";
+            throw new DeonException(
+                    Code.PARSE_EXPECTED,
+                    "The value nests more deeply than Deon will write.",
+                    Span.head("<value>"));
         }
         return new Stringifier(o).run(value);
     }

@@ -50,7 +50,7 @@ impl Stops {
 ///
 /// The `JavaScript` implementation keeps the same number, so that a document is either read by both
 /// or refused by both.
-const MAX_DEPTH: usize = 128;
+pub(crate) const MAX_DEPTH: usize = 128;
 
 pub struct Parser {
     tokens: Vec<Token>,

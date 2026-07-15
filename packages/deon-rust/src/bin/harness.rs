@@ -174,9 +174,9 @@ fn run(request: &Map) -> deon::DResult<String> {
             let value = deon::parse_with(source, &options)?;
 
             match operation {
-                "canonical" => Ok(deon::canonical(&value)),
-                "stringify" => Ok(deon::stringify(&value, &stringify_options_of(request))),
-                "typed" => Ok(write_typed_json(&deon::typed(&value))),
+                "canonical" => deon::canonical(&value),
+                "stringify" => deon::stringify(&value, &stringify_options_of(request)),
+                "typed" => Ok(write_typed_json(&deon::typed(&value)?)),
                 "datasign" => Ok(write_typed_json(&deon::sign(&value, &options)?)),
                 other => panic!("unknown operation '{other}'"),
             }

@@ -48,16 +48,16 @@ def now_milliseconds() -> int:
     return int(time.time() * 1000)
 
 
-def entry_path(name: str, options: ParseOptions) -> Optional[pathlib.Path]:
+def entry_path(name: str, token: str, options: ParseOptions) -> Optional[pathlib.Path]:
     if not options.cache:
         return None
 
     directory = pathlib.Path(os.path.expanduser(options.cache_directory or DEFAULT_CACHE_DIRECTORY))
 
-    return directory / cache_key(name, options.token)
+    return directory / cache_key(name, token)
 
 
-def read(name: str, options: ParseOptions) -> Optional[Value]:
+def read(name: str, token: str, options: ParseOptions) -> Optional[Value]:
     """A cached response, if there is one and it has not expired.
 
     Every failure is silent. A cache that raises is worse than no cache: it turns a performance
@@ -66,7 +66,7 @@ def read(name: str, options: ParseOptions) -> Optional[Value]:
     """
     from . import parse
 
-    path = entry_path(name, options)
+    path = entry_path(name, token, options)
 
     if path is None:
         return None
@@ -102,10 +102,10 @@ def read(name: str, options: ParseOptions) -> Optional[Value]:
     return entry.get("data")
 
 
-def write(name: str, value: Value, options: ParseOptions) -> None:
+def write(name: str, value: Value, token: str, options: ParseOptions) -> None:
     from .stringifier import canonical
 
-    path = entry_path(name, options)
+    path = entry_path(name, token, options)
 
     if path is None:
         return

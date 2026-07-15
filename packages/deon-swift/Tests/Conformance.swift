@@ -525,7 +525,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
         let document = Deon.parseWith(source, options)
         if !document.ok {
             fail(id, "canonical: \(document.error.code)")
-        } else if document.canonical() == canonical {
+        } else if try! document.canonical() == canonical {
             did.canonical += 1
             asserted = true
         } else {
@@ -538,7 +538,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
         if !document.ok {
             fail(id, "stringify: \(document.error.code)")
         } else {
-            let produced = document.stringify(stringifyOptionsOf(stringify.get("options")))
+            let produced = try! document.stringify(stringifyOptionsOf(stringify.get("options")))
             if produced == (stringify.get("expected")?.asString ?? "\u{0}mismatch") {
                 did.stringify += 1
                 asserted = true
@@ -552,7 +552,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
         let document = Deon.parseWith(source, options)
         if !document.ok {
             fail(id, "typed: \(document.error.code)")
-        } else if typedMatches(document.typed(), typed) {
+        } else if typedMatches(try! document.typed(), typed) {
             did.typed += 1
             asserted = true
         } else {
@@ -594,15 +594,15 @@ private func roundTrip(_ c: JSON) {
     if !document.ok {
         return
     }
-    let canonical = document.canonical()
-    if Deon.parse(canonical).canonical() != canonical {
+    let canonical = try! document.canonical()
+    if try! Deon.parse(canonical).canonical() != canonical {
         fail(id, "parse(canonical(v)) != v")
     }
 }
 
 private func invariants() {
     // a rewritten key stringifies at its final write position (section 5)
-    let rewritten = Deon.parse("{ a one\nb two\na three }").stringify(StringifyOptions())
+    let rewritten = try! Deon.parse("{ a one\nb two\na three }").stringify(StringifyOptions())
     if rewritten != "{\n    b two\n    a three\n}\n" {
         fail("rewritten-key", "unexpected: \(rewritten)")
     }

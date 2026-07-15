@@ -149,6 +149,12 @@ static void print_diagnostics(const deon_error *e) {
                 severity, deon_code_name(d.code), (int)d.message.len, d.message.data);
     }
 }
+
+/* A writer (stringify/canonical/typed) reported a code rather than a document position — the value nests
+ * deeper than the limit. Report it the way the tool reports a parse failure that has no source span. */
+static void print_write_error(deon_code code) {
+    fprintf(stderr, "<memory>:1:1 error %s The value nests deeper than the limit.\n", deon_code_name(code));
+}
 /* #endregion */
 
 /* #region environment map */
@@ -296,14 +302,21 @@ static int cmd_evaluate(char **args, int n) {
     } else {
         deon_value *root = deon_document_root(doc);
         if (strcmp(opt_value(args, n, "-o", "--output", "deon"), "json") == 0) {
-            if (has_flag(args, n, "-t", "--typed")) root = deon_typed(doc, root);
-            emit_json(stdout, root, 0);
-            fputc('\n', stdout);
+            if (has_flag(args, n, "-t", "--typed")) {
+                deon_code tc = DEON_OK;
+                root = deon_typed(doc, root, &tc);
+                if (!root) { print_write_error(tc); status = 1; }
+            }
+            if (root) {
+                emit_json(stdout, root, 0);
+                fputc('\n', stdout);
+            }
         } else {
             size_t slen;
-            char *s = deon_stringify(root, NULL, &slen);
-            fwrite(s, 1, slen, stdout);
-            free(s);
+            deon_code sc = DEON_OK;
+            char *s = deon_stringify(root, NULL, &slen, &sc);
+            if (!s) { print_write_error(sc); status = 1; }
+            else { fwrite(s, 1, slen, stdout); free(s); }
         }
     }
     deon_document_free(doc);
@@ -325,8 +338,10 @@ static int cmd_convert(char **args, int n) {
     if (!deon_document_ok(doc)) { print_diagnostics(deon_document_error(doc)); deon_document_free(doc); return 1; }
 
     size_t slen;
-    char *written = deon_stringify(deon_document_root(doc), NULL, &slen);
+    deon_code sc = DEON_OK;
+    char *written = deon_stringify(deon_document_root(doc), NULL, &slen, &sc);
     deon_document_free(doc);
+    if (!written) { print_write_error(sc); return 1; }
 
     char *dests[64];
     int dn = positional(args + 2, n - 2, dests, 64);
@@ -458,8 +473,10 @@ static int cmd_confile(char **args, int n) {
     free(text.data);
     if (!deon_document_ok(cd)) { print_diagnostics(deon_document_error(cd)); deon_document_free(cd); return 1; }
     size_t slen;
-    char *written = deon_stringify(deon_document_root(cd), NULL, &slen);
+    deon_code sc = DEON_OK;
+    char *written = deon_stringify(deon_document_root(cd), NULL, &slen, &sc);
     deon_document_free(cd);
+    if (!written) { print_write_error(sc); return 1; }
     int status = write_file(destination, written, slen);
     free(written);
     if (status != 0) { fprintf(stderr, "deon: Unable to write '%s'.\n", destination); return 1; }

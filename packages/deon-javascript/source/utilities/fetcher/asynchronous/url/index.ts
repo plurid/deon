@@ -4,6 +4,10 @@
         FetcherType,
     } from '../../../../data/interfaces';
 
+    import {
+        NETWORK_TIMEOUT,
+    } from '../../../../data/constants';
+
     import resolveFetchURL from '../../logic/resolveFetchURL';
     // #endregion external
 // #endregion imports
@@ -25,10 +29,12 @@ const fetchFromURL = async (
         type,
     );
 
+    // Bounded so a stalled server cannot hang the parse (matching the synchronous fetcher).
     const response = await fetch(
         url,
         {
             headers,
+            signal: AbortSignal.timeout(NETWORK_TIMEOUT),
         },
     );
     if (!response.ok) {

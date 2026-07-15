@@ -167,9 +167,11 @@ func sortedNames(set map[string]bool) []string {
 }
 
 // Canonical writes the one form of a value that every implementation agrees on, character for
-// character (specification 13).
-func Canonical(value Value) string {
-	return canonical(value)
+// character (specification 13). A value built by hand that nests more deeply than the limit
+// (specification 11.1) is refused with a diagnostic rather than a stack overflow.
+func Canonical(value Value) (result string, err error) {
+	defer recoverError(&err)
+	return canonical(value), nil
 }
 
 // CanonicalSource evaluates a document and writes its canonical form.
@@ -181,12 +183,17 @@ func CanonicalSource(source string, options ParseOptions) (string, error) {
 	return canonical(value), nil
 }
 
-// Stringify writes a value with the given options (specification 12).
-func Stringify(value Value, options StringifyOptions) string {
-	return stringify(value, options.resolved())
+// Stringify writes a value with the given options (specification 12). A value built by hand that
+// nests more deeply than the limit (specification 11.1) is refused with a diagnostic.
+func Stringify(value Value, options StringifyOptions) (result string, err error) {
+	defer recoverError(&err)
+	return stringify(value, options.resolved()), nil
 }
 
-// Typed applies the conservative typer (specification 14).
-func Typed(value Value) any {
-	return typed(value)
+// Typed applies the conservative typer (specification 14). A value built by hand that nests more
+// deeply than the limit (specification 11.1) is refused with a diagnostic rather than a stack
+// overflow.
+func Typed(value Value) (result any, err error) {
+	defer recoverError(&err)
+	return typed(value), nil
 }

@@ -24,7 +24,7 @@ COBJ := $(patsubst $(CDEON)/%.c,build/cobj/%.o,$(CSRC))
 
 LIBSRC := $(wildcard Sources/Deon/*.swift)
 
-.PHONY: all deon harness test network cache clean
+.PHONY: all deon harness test depth network cache clean
 
 all: deon harness
 
@@ -37,7 +37,7 @@ build/cobj/%.o: $(CDEON)/%.c
 # #region the Deon module — the Swift wrapper over the C library
 build/Deon.swiftmodule build/Deon.o: $(LIBSRC) $(MODULEMAP)
 	@mkdir -p build
-	$(SWIFTC) -wmo -parse-as-library -module-name Deon -O $(MODULEFLAG) \
+	$(SWIFTC) -wmo -parse-as-library -module-name Deon -O -enable-testing $(MODULEFLAG) \
 		-emit-module -emit-module-path build/Deon.swiftmodule \
 		-emit-object -o build/Deon.o \
 		$(LIBSRC)
@@ -59,6 +59,13 @@ test: build/conformance
 build/conformance: Tests/Conformance.swift build/Deon.swiftmodule build/Deon.o $(COBJ)
 	$(SWIFTC) -module-name conformance -O -I build $(MODULEFLAG) \
 		Tests/Conformance.swift build/Deon.o $(COBJ) -o build/conformance
+
+depth: build/depth-test
+	./build/depth-test
+
+build/depth-test: Tests/DepthTest.swift build/Deon.swiftmodule build/Deon.o $(COBJ)
+	$(SWIFTC) -module-name depth_test -O -I build $(MODULEFLAG) \
+		Tests/DepthTest.swift build/Deon.o $(COBJ) -o build/depth-test
 
 network: build/network-test
 	./build/network-test

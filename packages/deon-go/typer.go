@@ -20,20 +20,54 @@ var (
 )
 
 func typed(value Value) any {
+	guardTypedDepth(value)
+	return typedNode(value)
+}
+
+// guardTypedDepth enforces the nesting limit on a value handed to the typer by a host, which never
+// met the parser (specification 11.1). It walks iteratively before any recursive typing runs, so the
+// limit is checked rather than discovered by a stack overflow.
+func guardTypedDepth(value Value) {
+	type frame struct {
+		value Value
+		depth int
+	}
+	stack := []frame{{value, 0}}
+	for len(stack) > 0 {
+		f := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if f.depth > maxDepth {
+			fail(ParseExpected, "The value nests more deeply than the typer will follow.", headSpan("<value>"))
+		}
+		switch v := f.value.(type) {
+		case []Value:
+			for _, item := range v {
+				stack = append(stack, frame{item, f.depth + 1})
+			}
+		case *Map:
+			for _, key := range v.Keys() {
+				member, _ := v.Get(key)
+				stack = append(stack, frame{member, f.depth + 1})
+			}
+		}
+	}
+}
+
+func typedNode(value Value) any {
 	switch v := value.(type) {
 	case string:
 		return typeScalar(v)
 	case []Value:
 		out := make([]any, len(v))
 		for i, item := range v {
-			out[i] = typed(item)
+			out[i] = typedNode(item)
 		}
 		return out
 	case *Map:
 		out := NewMap()
 		for _, key := range v.Keys() {
 			member, _ := v.Get(key)
-			out.Set(key, typed(member))
+			out.Set(key, typedNode(member))
 		}
 		return out
 	default:

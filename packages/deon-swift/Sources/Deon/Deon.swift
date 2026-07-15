@@ -227,25 +227,37 @@ public final class Document {
         bridge(deon_document_root(handle)!)
     }
 
-    /// The conservative typer's view of the root (specification 14).
-    public func typed() -> DeonValue {
-        bridge(deon_typed(handle, deon_document_root(handle))!)
+    /// The conservative typer's view of the root (specification 14). A value built by hand rather than
+    /// parsed can nest past the limit the parser enforces; when it does this throws ``DeonError``.
+    public func typed() throws -> DeonValue {
+        var code = DEON_OK
+        guard let typed = deon_typed(handle, deon_document_root(handle), &code) else {
+            throw writeError(code)
+        }
+        return bridge(typed)
     }
 
-    /// The one output every implementation agrees on, character for character (specification 13).
-    public func canonical() -> String {
+    /// The one output every implementation agrees on, character for character (specification 13). Throws
+    /// ``DeonError`` when the value nests past the limit.
+    public func canonical() throws -> String {
         var length = 0
-        return takeString(deon_canonical(deon_document_root(handle), &length), length)
+        var code = DEON_OK
+        guard let result = deon_canonical(deon_document_root(handle), &length, &code) else {
+            throw writeError(code)
+        }
+        return takeString(result, length)
     }
 
-    /// The root written back out with the given options, as text.
-    public func stringify(_ options: StringifyOptions) -> String {
-        String(decoding: stringifyBytes(options), as: UTF8.self)
+    /// The root written back out with the given options, as text. Throws ``DeonError`` when the value
+    /// nests past the limit.
+    public func stringify(_ options: StringifyOptions) throws -> String {
+        String(decoding: try stringifyBytes(options), as: UTF8.self)
     }
 
     /// The root written back out with the given options, as bytes — the command line tool writes this
     /// straight to a file or to standard output, and a Deon string may carry bytes that are not text.
-    public func stringifyBytes(_ options: StringifyOptions) -> [UInt8] {
+    /// Throws ``DeonError`` when the value nests past the limit.
+    public func stringifyBytes(_ options: StringifyOptions) throws -> [UInt8] {
         var native = deon_default_stringify_options()
         native.canonical = options.canonical
         native.readable = options.readable
@@ -256,8 +268,20 @@ public final class Document {
         native.generated_header = options.generatedHeader
         native.generated_comments = options.generatedComments
         var length = 0
-        return takeBytes(deon_stringify(deon_document_root(handle), &native, &length), length)
+        var code = DEON_OK
+        guard let result = deon_stringify(deon_document_root(handle), &native, &length, &code) else {
+            throw writeError(code)
+        }
+        return takeBytes(result, length)
     }
+}
+
+/// Turns a bare writer code (no document span — a host-built value that nests too deep) into a
+/// ``DeonError``. The code is normative; the position and message are not (spec/diagnostics.md).
+func writeError(_ code: deon_code) -> DeonError {
+    DeonError(code: String(cString: deon_code_name(code)),
+              message: "The value nests deeper than the limit.",
+              line: 0, column: 0, source: "<memory>", severity: "error")
 }
 
 /// Reads a document, granted nothing. A document that imports is denied — a diagnostic, not a surprise.
@@ -287,7 +311,10 @@ public func parseWithBytes(_ bytes: [UInt8], _ options: Options) -> Document {
 public func parseFile(_ path: String, _ options: Options) -> Document {
     let retainer = Retainer()
     var native = buildOptions(options, retainer)
-    let handle = path.withCString { deon_parse_file($0, &native) }!
+    // The library uses this path as the diagnostic source name and keeps the pointer, not a copy, so it
+    // must outlive the call; a transient `withCString` buffer would dangle in an error's span.
+    let cpath = retainer.dup(path)
+    let handle = deon_parse_file(cpath, &native)!
     return Document(handle, retainer)
 }
 
@@ -308,7 +335,10 @@ public func readJSONBytes(_ bytes: [UInt8], _ sourceName: String) -> Document {
 public func parseLink(_ link: String, _ options: Options) -> Document {
     let retainer = Retainer()
     var native = buildOptions(options, retainer)
-    let handle = link.withCString { deon_parse_link($0, &native) }!
+    // As with parseFile: the link becomes a diagnostic source name held by pointer, so it must outlive
+    // the call rather than living only for the duration of a `withCString`.
+    let clink = retainer.dup(link)
+    let handle = deon_parse_link(clink, &native)!
     return Document(handle, retainer)
 }
 

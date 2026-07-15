@@ -64,6 +64,16 @@ fn matches_the_runtime_parser() {
 }
 
 #[test]
+fn unicode_escape_with_underscore_separator() {
+    // Rust permits `\u{1_F600}`; the macro must decode it rather than reject it as a bad literal.
+    let value = deon!("{ emoji \u{1_F600} }");
+    let Value::Map(root) = value else {
+        panic!("the root is a map");
+    };
+    assert_eq!(root.get("emoji"), Some(&Value::string("\u{1F600}")));
+}
+
+#[test]
 fn includes_a_document_from_a_file() {
     // tests/fixtures/config.deon, relative to the crate root.
     let value = include_deon!("tests/fixtures/config.deon");

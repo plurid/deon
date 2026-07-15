@@ -274,12 +274,24 @@ deon_stringify_options deon_default_stringify_options(void) {
     return o;
 }
 
-char *deon_stringify(const deon_value *value, const deon_stringify_options *options, size_t *out_len) {
+char *deon_stringify(const deon_value *value, const deon_stringify_options *options, size_t *out_len, deon_code *error) {
+    if (!guard_depth(value)) {
+        if (error) *error = DEON_PARSE_EXPECTED;
+        if (out_len) *out_len = 0;
+        return NULL;
+    }
+    if (error) *error = DEON_OK;
     deon_stringify_options o = options ? *options : deon_default_stringify_options();
     return stringify_value(value, &o, out_len);
 }
 
-char *deon_canonical(const deon_value *value, size_t *out_len) {
+char *deon_canonical(const deon_value *value, size_t *out_len, deon_code *error) {
+    if (!guard_depth(value)) {
+        if (error) *error = DEON_PARSE_EXPECTED;
+        if (out_len) *out_len = 0;
+        return NULL;
+    }
+    if (error) *error = DEON_OK;
     deon_stringify_options o = deon_default_stringify_options();
     o.canonical = true;
     o.readable = true;
@@ -287,7 +299,12 @@ char *deon_canonical(const deon_value *value, size_t *out_len) {
     return stringify_value(value, &o, out_len);
 }
 
-deon_value *deon_typed(deon_document *document, const deon_value *value) {
+deon_value *deon_typed(deon_document *document, const deon_value *value, deon_code *error) {
+    if (!guard_depth(value)) {
+        if (error) *error = DEON_PARSE_EXPECTED;
+        return NULL;
+    }
+    if (error) *error = DEON_OK;
     return type_value(document->a, value);
 }
 /* #endregion */

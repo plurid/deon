@@ -142,11 +142,11 @@ fn parse(arguments: &[String]) -> Result<ExitCode, Failure> {
 
     match option(arguments, "-o", "--output", "deon").as_str() {
         "deon" => {
-            print!("{}", deon::stringify(&value, &StringifyOptions::default()));
+            print!("{}", deon::stringify(&value, &StringifyOptions::default())?);
         }
         "json" => {
             if toggle(arguments, "-t", "--typed") {
-                print!("{}", write_typed_json(&deon::typed(&value)));
+                print!("{}", write_typed_json(&deon::typed(&value)?));
             } else {
                 print!("{}", write_json(&value));
             }
@@ -174,7 +174,7 @@ fn convert(arguments: &[String]) -> Result<ExitCode, Failure> {
         Err(error) => return fail(format!("Invalid JSON in '{source}': {error}")),
     };
 
-    let written = deon::stringify(&value, &StringifyOptions::default());
+    let written = deon::stringify(&value, &StringifyOptions::default())?;
 
     match positionals.get(1) {
         Some(destination) => write(destination, &written)?,
@@ -258,7 +258,7 @@ fn confile(arguments: &[String]) -> Result<ExitCode, Failure> {
         root.insert(file.clone(), Value::Map(entry));
     }
 
-    let written = deon::stringify(&Value::Map(root), &StringifyOptions::default());
+    let written = deon::stringify(&Value::Map(root), &StringifyOptions::default())?;
     write(&destination, &written)?;
 
     Ok(ExitCode::SUCCESS)

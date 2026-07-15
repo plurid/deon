@@ -97,10 +97,19 @@ func respond(_ fd: Int32, _ status: String, _ contentType: String, _ body: Strin
 // state, so no lock crosses between them.
 var serverListener: Int32 = -1
 
+// The pthread start-routine argument is spelled differently on each platform — non-optional on Darwin,
+// optional on Glibc — so the signature is chosen per platform to satisfy both.
+#if canImport(Darwin)
 func serverThread(_ argument: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? {
     serve(serverListener)
     return nil
 }
+#else
+func serverThread(_ argument: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    serve(serverListener)
+    return nil
+}
+#endif
 
 /// Serves the loopback documents forever: a Deon child, a JSON resource, and a 404 for `/missing`.
 func serve(_ listener: Int32) {

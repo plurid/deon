@@ -250,7 +250,7 @@ def stringify(value: Value, options: StringifyOptions | None = None) -> str:
         from .diagnostic import DiagnosticCode, Span, error
 
         raise error(
-            DiagnosticCode.TYPE_MISMATCH,
+            DiagnosticCode.PARSE_EXPECTED,
             "The value nests more deeply than Deon will write.",
             Span.head("<value>"),
         )

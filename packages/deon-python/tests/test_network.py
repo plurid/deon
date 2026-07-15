@@ -8,8 +8,11 @@ suite that fails when the internet does, and tells you nothing about the languag
 from __future__ import annotations
 
 import http.server
+import shutil
+import tempfile
 import threading
 import unittest
+from unittest import mock
 
 import deon
 from deon import DeonError, DiagnosticCode, ParseOptions
@@ -19,6 +22,10 @@ from deon.network import parse_link
 class Responder(http.server.BaseHTTPRequestHandler):
     #: What the last request carried, so a test can assert on the headers that were *sent*.
     seen: dict = {}
+
+    #: How many times each path was actually requested, so a cache test can prove a hit reached no
+    #: socket at all — a served-from-cache response and a re-fetch look identical from the value alone.
+    hits: dict = {}
 
     routes = {
         "/child.deon": ("{ name imported }", 200),
@@ -34,6 +41,7 @@ class Responder(http.server.BaseHTTPRequestHandler):
             "accept": self.headers.get("Accept"),
             "authorization": self.headers.get("Authorization"),
         }
+        Responder.hits[self.path] = Responder.hits.get(self.path, 0) + 1
 
         body, status = self.routes.get(self.path, ("", 404))
 
@@ -46,7 +54,9 @@ class Responder(http.server.BaseHTTPRequestHandler):
         pass
 
 
-class Network(unittest.TestCase):
+class Served(unittest.TestCase):
+    """A loopback HTTP server for the duration of the class. `127.0.0.1` only (specification 15)."""
+
     @classmethod
     def setUpClass(cls):
         cls.server = http.server.HTTPServer(("127.0.0.1", 0), Responder)
@@ -68,6 +78,8 @@ class Network(unittest.TestCase):
 
         return options
 
+
+class Network(Served):
     # #region the gate
     def test_the_network_is_denied_by_default_and_nothing_is_requested(self):
         """The gate is *before* the request, which is what makes a denial a fact and not a promise."""
@@ -181,7 +193,7 @@ class Network(unittest.TestCase):
     # #endregion parse_link
 
 
-class Cache(unittest.TestCase):
+class CacheKey(unittest.TestCase):
     """Specification 9: a token must not appear in a cache identifier, and an authenticated entry must
     be separated by a digest of the credential."""
 
@@ -208,6 +220,89 @@ class Cache(unittest.TestCase):
         from deon.cache import cache_key
 
         self.assertNotEqual(cache_key("ab", "c"), cache_key("a", "bc"))
+
+
+class Cache(Served):
+    """The response cache, end to end: a hit reaches no socket, a second credential is a separate entry,
+    it is off unless asked for, and an expired entry is fetched afresh (specification 9)."""
+
+    def setUp(self):
+        Responder.hits = {}
+        # A fresh directory per test, so one test's entries never decide another's outcome.
+        self._directory = tempfile.mkdtemp(prefix="deon-cache-test-")
+        self.addCleanup(shutil.rmtree, self._directory, ignore_errors=True)
+        # The routes are class state; restore whatever a test rewrites.
+        self._routes = dict(Responder.routes)
+        self.addCleanup(setattr, Responder, "routes", self._routes)
+
+    def caching(self, **extra) -> ParseOptions:
+        return self.allowed(cache=True, cache_directory=self._directory, **extra)
+
+    def fetch(self, options: ParseOptions):
+        return deon.parse_with(
+            f"import c from {self.host}/cached.deon\n{{ #c.name }}",
+            options,
+        )
+
+    def test_a_second_fetch_is_served_from_cache_and_opens_no_socket(self):
+        Responder.routes["/cached.deon"] = ("{ name first }", 200)
+        options = self.caching()
+
+        self.assertEqual(self.fetch(options), {"name": "first"})
+        self.assertEqual(Responder.hits.get("/cached.deon"), 1)
+
+        # The server now says something different. A real hit ignores it — the body came off disk.
+        Responder.routes["/cached.deon"] = ("{ name second }", 200)
+
+        self.assertEqual(self.fetch(options), {"name": "first"})
+        self.assertEqual(Responder.hits.get("/cached.deon"), 1)
+
+    def test_without_the_cache_flag_every_fetch_reaches_the_server(self):
+        Responder.routes["/cached.deon"] = ("{ name first }", 200)
+        options = self.allowed()  # cache off, the default
+
+        self.fetch(options)
+        Responder.routes["/cached.deon"] = ("{ name second }", 200)
+        self.assertEqual(self.fetch(options), {"name": "second"})
+        self.assertEqual(Responder.hits.get("/cached.deon"), 2)
+
+    def test_a_different_credential_is_a_separate_entry_and_is_not_served_the_first(self):
+        """The data-leak guard, exercised rather than asserted about the key: alice's cached body must
+        never satisfy bob's request, so bob's fetch reaches the server anew."""
+        Responder.routes["/cached.deon"] = ("{ name shared }", 200)
+        alice = self.caching(authorization={"127.0.0.1": "alice"})
+        bob = self.caching(authorization={"127.0.0.1": "bob"})
+
+        self.fetch(alice)
+        self.assertEqual(Responder.hits.get("/cached.deon"), 1)
+
+        # Bob has never fetched this, whatever alice cached. A hit here would be the leak.
+        self.fetch(bob)
+        self.assertEqual(Responder.hits.get("/cached.deon"), 2)
+
+        # And alice is still served from her own entry.
+        self.fetch(alice)
+        self.assertEqual(Responder.hits.get("/cached.deon"), 2)
+
+    def test_an_expired_entry_is_fetched_afresh(self):
+        Responder.routes["/cached.deon"] = ("{ name first }", 200)
+
+        # The clock is under the test's control, so expiry is a decision and not a race: the entry is
+        # written at t=0 with a one-second life, then read once inside that life and once past it.
+        clock = {"now": 0}
+        with mock.patch("deon.cache.now_milliseconds", side_effect=lambda: clock["now"]):
+            options = self.caching(cache_duration=1000)
+
+            self.assertEqual(self.fetch(options), {"name": "first"})  # writes at t=0
+            Responder.routes["/cached.deon"] = ("{ name second }", 200)
+
+            clock["now"] = 500  # still within the second — the cache still answers
+            self.assertEqual(self.fetch(options), {"name": "first"})
+            self.assertEqual(Responder.hits.get("/cached.deon"), 1)
+
+            clock["now"] = 2000  # past it — the stale entry is dropped and the server is asked again
+            self.assertEqual(self.fetch(options), {"name": "second"})
+            self.assertEqual(Responder.hits.get("/cached.deon"), 2)
 
 
 if __name__ == "__main__":

@@ -29,6 +29,11 @@ const fetcherDefaultInjectHeaders = {
 const defaultCacheDuration = 1_000 * 60 * 60;
 
 
+// The bound on a single network fetch, in milliseconds. Without it a stalled server hangs the parse.
+// Thirty seconds, matching the other implementations' clients.
+const NETWORK_TIMEOUT = 30_000;
+
+
 const deonParseOptions: DeonParseOptions = {
     sourceName: '<memory>',
     filebase: '',
@@ -86,6 +91,8 @@ export {
     fetcherDefaultInjectHeaders,
 
     defaultCacheDuration,
+
+    NETWORK_TIMEOUT,
 
     deonParseOptions,
     deonStrigifyOptions,

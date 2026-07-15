@@ -3,7 +3,16 @@ package deon
 import (
 	"io"
 	"net/http"
+	"time"
 )
+
+// networkTimeout bounds a single fetch — connection, headers, and body together. Without it,
+// http.DefaultClient waits forever, so one unresponsive server hangs the whole parse. Thirty seconds,
+// matching the other implementations' clients.
+const networkTimeout = 30 * time.Second
+
+// httpClient is the one client every fetch uses, so the timeout is not something a caller can forget.
+var httpClient = &http.Client{Timeout: networkTimeout}
 
 // httpGet reads a resource over HTTP once the network has been granted (specification 9). An import
 // asks for Deon or JSON; an injection asks for anything. A non-2xx status is DEON_RESOURCE_IO — it was
@@ -30,7 +39,7 @@ func httpGet(target, kind, token string, span Span) string {
 		request.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		fail(ResourceIO, "Unable to reach resource '"+target+"'.", span)
 	}

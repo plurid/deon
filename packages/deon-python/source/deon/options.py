@@ -47,8 +47,9 @@ class ParseOptions:
     #: credential is not something to hand out on a prefix match.
     authorization: dict[str, str] = field(default_factory=dict)
 
-    #: The credential `parse_link` fetches with, and the one folded into a cache identifier. It is not
-    #: what the *importer* sends — that comes from the declaration's `with`, or from `authorization`.
+    #: The credential `parse_link` fetches with. It is not what an *importer* sends — that comes from
+    #: the declaration's `with`, or from `authorization` — and it is the importer's resolved credential,
+    #: not this one, that a cache entry is separated by (specification 9).
     token: str = ""
 
     cache: bool = False

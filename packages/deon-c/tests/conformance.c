@@ -411,7 +411,7 @@ static void run_case(jnode *c, checked *did) {
         deon_document *doc = deon_parse_with(source, slen, &o);
         if (!deon_document_ok(doc)) fail(id, "canonical: %s", deon_code_name(deon_document_error(doc)->code), "");
         else {
-            size_t n; char *got = deon_canonical(deon_document_root(doc), &n);
+            size_t n; char *got = deon_canonical(deon_document_root(doc), &n, NULL);
             if (n != canonical->slen || memcmp(got, canonical->str, n) != 0) fail(id, "canonical mismatch", "", "");
             else { did->canonical++; asserted = true; }
             free(got);
@@ -425,7 +425,7 @@ static void run_case(jnode *c, checked *did) {
         if (!deon_document_ok(doc)) fail(id, "stringify: %s", deon_code_name(deon_document_error(doc)->code), "");
         else {
             deon_stringify_options so = stringify_options_of(jget(stringify, "options"));
-            size_t n; char *got = deon_stringify(deon_document_root(doc), &so, &n);
+            size_t n; char *got = deon_stringify(deon_document_root(doc), &so, &n, NULL);
             jnode *exp = jget(stringify, "expected");
             if (!exp || exp->kind != J_STR || n != exp->slen || memcmp(got, exp->str, n) != 0) fail(id, "stringify mismatch", "", "");
             else { did->stringify++; asserted = true; }
@@ -438,7 +438,7 @@ static void run_case(jnode *c, checked *did) {
     if (typed) {
         deon_document *doc = deon_parse_with(source, slen, &o);
         if (!deon_document_ok(doc)) fail(id, "typed: %s", deon_code_name(deon_document_error(doc)->code), "");
-        else if (!typed_matches(deon_typed(doc, deon_document_root(doc)), typed)) fail(id, "typed does not match", "", "");
+        else if (!typed_matches(deon_typed(doc, deon_document_root(doc), NULL), typed)) fail(id, "typed does not match", "", "");
         else { did->typed++; asserted = true; }
         deon_document_free(doc);
     }
@@ -471,7 +471,7 @@ static void round_trip(jnode *c) {
     deon_options o = options_of(c, &s);
     deon_document *doc = deon_parse_with(source_of(c), source_len_of(c), &o);
     if (!deon_document_ok(doc)) { deon_document_free(doc); free_scratch(&s); return; }
-    size_t n; char *canon = deon_canonical(deon_document_root(doc), &n);
+    size_t n; char *canon = deon_canonical(deon_document_root(doc), &n, NULL);
     deon_document *again = deon_parse(canon, n);
     if (!deon_document_ok(again)) fail(id, "canonical does not re-parse", "", "");
     else if (!deon_value_equal(deon_document_root(again), deon_document_root(doc))) fail(id, "parse(canonical(v)) != v", "", "");
@@ -484,7 +484,7 @@ static void round_trip(jnode *c) {
 static void invariants(void) {
     /* a rewritten key stringifies at its final write position (section 5) */
     deon_document *d = deon_parse("{ a one\nb two\na three }", 23);
-    size_t n; char *got = deon_stringify(deon_document_root(d), NULL, &n);
+    size_t n; char *got = deon_stringify(deon_document_root(d), NULL, &n, NULL);
     const char *want = "{\n    b two\n    a three\n}\n";
     if (strcmp(got, want) != 0) fail("rewritten-key", "expected %s", want, "");
     free(got); deon_document_free(d);

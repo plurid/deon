@@ -229,7 +229,10 @@ func runCase(c conformanceCase, did *checked) error {
 		if err != nil {
 			return fmt.Errorf("stringify: %v", err)
 		}
-		got := Stringify(value, stringifyOptionsOf(c.Stringify.Options))
+		got, err := Stringify(value, stringifyOptionsOf(c.Stringify.Options))
+		if err != nil {
+			return fmt.Errorf("stringify: %v", err)
+		}
 		if got != c.Stringify.Expected {
 			return fmt.Errorf("stringify: expected %q, got %q", c.Stringify.Expected, got)
 		}
@@ -499,7 +502,10 @@ func TestCanonicalRoundTrips(t *testing.T) {
 
 func TestRewrittenKeyMovesToItsFinalPosition(t *testing.T) {
 	value, _ := Parse("{ a one\nb two\na three }")
-	got := Stringify(value, StringifyOptions{})
+	got, err := Stringify(value, StringifyOptions{})
+	if err != nil {
+		t.Fatalf("stringify: %v", err)
+	}
 	if want := "{\n    b two\n    a three\n}\n"; got != want {
 		t.Errorf("expected %q, got %q", want, got)
 	}
@@ -514,6 +520,63 @@ func TestColumnCountsCodePoints(t *testing.T) {
 	span := deonErr.Diagnostics[0].Span
 	if span.Line != 2 || span.Column != 5 {
 		t.Errorf("expected 2:5, got %d:%d", span.Line, span.Column)
+	}
+}
+
+// TestHostValueDeeperThanLimitIsRefused builds a value by hand that nests more deeply than the
+// nesting limit (specification 11.1) — never through the parser — and asserts that the public
+// writers refuse it with DEON_PARSE_EXPECTED rather than panicking or overflowing the stack. A
+// value shallower than the limit still succeeds.
+func TestHostValueDeeperThanLimitIsRefused(t *testing.T) {
+	deep := func() Value {
+		var v Value = "leaf"
+		// maxDepth enclosing values are allowed; 130 is comfortably beyond the limit of 128.
+		for i := 0; i < 130; i++ {
+			if i%2 == 0 {
+				v = []Value{v}
+			} else {
+				m := NewMap()
+				m.Set("k", v)
+				v = m
+			}
+		}
+		return v
+	}
+
+	assertParseExpected := func(name string, err error) {
+		if err == nil {
+			t.Fatalf("%s: expected an error, got nil", name)
+			return
+		}
+		deonErr, ok := err.(*Error)
+		if !ok {
+			t.Fatalf("%s: expected a Deon error, got %v", name, err)
+			return
+		}
+		if deonErr.Code != ParseExpected {
+			t.Fatalf("%s: expected %s, got %s", name, ParseExpected, deonErr.Code)
+		}
+	}
+
+	_, err := Stringify(deep(), StringifyOptions{})
+	assertParseExpected("Stringify", err)
+
+	_, err = Canonical(deep())
+	assertParseExpected("Canonical", err)
+
+	_, err = Typed(deep())
+	assertParseExpected("Typed", err)
+
+	// A shallow value still succeeds through every writer.
+	shallow := []Value{"a", "b"}
+	if _, err := Stringify(shallow, StringifyOptions{}); err != nil {
+		t.Errorf("shallow Stringify: unexpected error %v", err)
+	}
+	if _, err := Canonical(shallow); err != nil {
+		t.Errorf("shallow Canonical: unexpected error %v", err)
+	}
+	if _, err := Typed(shallow); err != nil {
+		t.Errorf("shallow Typed: unexpected error %v", err)
 	}
 }
 

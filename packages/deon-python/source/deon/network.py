@@ -20,6 +20,7 @@ import urllib.request
 from typing import Optional
 from urllib.parse import urlsplit
 
+from . import cache
 from .diagnostic import DiagnosticCode, Span, error
 from .options import ParseOptions
 from .resources import (
@@ -98,6 +99,15 @@ class Http:
         # server would be right to reject it.
         credential = token if token else authorization(target, options)
 
+        # The cache is keyed by the *resolved* credential, not by `options.token` — a document fetched
+        # under one bearer must never be served to the holder of another (specification 9). It stores
+        # the raw response body, so a hit skips the socket and the interpreter parses it exactly as it
+        # would a fresh one. Off unless `options.cache`; every failure inside is silent.
+        cached = cache.read(target, credential or "", options)
+
+        if isinstance(cached, str):
+            return self._fetched(cached, target, kind)
+
         if credential:
             headers["Authorization"] = f"Bearer {credential}"
 
@@ -106,6 +116,12 @@ class Http:
         if data is None:
             raise ResourceUnreadable(f"the request for '{target}' did not succeed")
 
+        cache.write(target, data, credential or "", options)
+
+        return self._fetched(data, target, kind)
+
+    @staticmethod
+    def _fetched(data: str, target: str, kind: str) -> Fetched:
         return Fetched(
             data=data,
             filetype=extension_of(target) if kind == IMPORT else "",

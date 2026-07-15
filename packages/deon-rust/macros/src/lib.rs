@@ -176,7 +176,10 @@ fn unescape(literal: &str) -> Option<String> {
                 i += 1;
                 let mut hex = String::new();
                 while *inner.get(i)? != '}' {
-                    hex.push(inner[i]);
+                    // Rust permits underscore digit separators inside `\u{...}` (e.g. `\u{1_F600}`).
+                    if inner[i] != '_' {
+                        hex.push(inner[i]);
+                    }
                     i += 1;
                 }
                 i += 1;

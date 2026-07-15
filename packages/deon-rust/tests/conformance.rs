@@ -234,7 +234,8 @@ fn run(case: &Json, checked: &mut Checked) -> Result<(), String> {
             .as_str()
             .ok_or_else(|| "the fixture's stringify has no expected".to_string())?;
 
-        let written = deon::stringify(&value, &stringify_options_of(&stringify["options"]));
+        let written = deon::stringify(&value, &stringify_options_of(&stringify["options"]))
+            .map_err(|error| error.to_string())?;
 
         if written != expected {
             return Err(format!("stringify: expected {expected:?}, got {written:?}"));
@@ -246,7 +247,7 @@ fn run(case: &Json, checked: &mut Checked) -> Result<(), String> {
 
     if !case["typed"].is_null() {
         let value = deon::parse_with(&source, &options).map_err(|error| error.to_string())?;
-        let typed = deon::typed(&value);
+        let typed = deon::typed(&value).map_err(|error| error.to_string())?;
 
         if !typed_matches(&typed, &case["typed"]) {
             return Err(format!("typed: expected {}, got {typed:?}", case["typed"]));
@@ -520,7 +521,9 @@ fn canonical_round_trip() {
             continue;
         };
 
-        let canonical = deon::canonical(&value);
+        let Ok(canonical) = deon::canonical(&value) else {
+            continue;
+        };
 
         match deon::parse(&canonical) {
             Ok(reparsed) if reparsed == value => checked += 1,
@@ -552,7 +555,7 @@ fn a_rewritten_key_moves_to_its_final_position() {
 
     // And the order is what the readable output writes, rather than only what the map remembers.
     assert_eq!(
-        deon::stringify(&value, &StringifyOptions::default()),
+        deon::stringify(&value, &StringifyOptions::default()).expect("the value writes"),
         "{\n    b 2\n    a 3\n}\n",
     );
 }

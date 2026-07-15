@@ -40,7 +40,7 @@ class Depth(unittest.TestCase):
         with self.assertRaises(DeonError) as caught:
             deon.stringify(value)
 
-        self.assertEqual(caught.exception.code, DiagnosticCode.TYPE_MISMATCH)
+        self.assertEqual(caught.exception.code, DiagnosticCode.PARSE_EXPECTED)
 
     def test_an_ordinary_nesting_is_written(self):
         value = []

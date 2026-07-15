@@ -127,10 +127,11 @@ enum JSON {
     }
 
     /// The typer yields whole numbers as whole doubles; write those without a decimal point, as every
-    /// sibling does, so 42 is 42 and not 42.0.
+    /// sibling does, so 42 is 42 and not 42.0. `Int64(exactly:)` guards the conversion — a whole number
+    /// beyond the Int64 range falls through rather than trapping.
     static func number(_ n: Double) -> String {
-        if n == n.rounded() && n.isFinite {
-            return String(Int64(n))
+        if n.isFinite, let whole = Int64(exactly: n) {
+            return String(whole)
         }
         return String(n)
     }

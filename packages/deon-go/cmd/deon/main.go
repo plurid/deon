@@ -215,14 +215,22 @@ func evaluate(arguments []string) error {
 
 	if option(arguments, "-o", "--output", "deon") == "json" {
 		if flag(arguments, "-t", "--typed") {
-			fmt.Print(encodeJSON(deon.Typed(value), 0) + "\n")
+			typedValue, err := deon.Typed(value)
+			if err != nil {
+				return err
+			}
+			fmt.Print(encodeJSON(typedValue, 0) + "\n")
 		} else {
 			fmt.Print(encodeJSON(value, 0) + "\n")
 		}
 		return nil
 	}
 
-	fmt.Print(deon.Stringify(value, deon.DefaultStringifyOptions()))
+	written, err := deon.Stringify(value, deon.DefaultStringifyOptions())
+	if err != nil {
+		return err
+	}
+	fmt.Print(written)
 	return nil
 }
 
@@ -242,7 +250,10 @@ func convert(arguments []string) error {
 	if err != nil {
 		return err
 	}
-	written := deon.Stringify(value, deon.DefaultStringifyOptions())
+	written, err := deon.Stringify(value, deon.DefaultStringifyOptions())
+	if err != nil {
+		return err
+	}
 
 	destinations := positional(arguments[2:])
 	if len(destinations) > 0 {
@@ -358,7 +369,10 @@ func confile(arguments []string) error {
 		root.Set(file, entry)
 	}
 
-	written := deon.Stringify(root, deon.DefaultStringifyOptions())
+	written, err := deon.Stringify(root, deon.DefaultStringifyOptions())
+	if err != nil {
+		return err
+	}
 	return os.WriteFile(destination, []byte(written), 0o644)
 }
 

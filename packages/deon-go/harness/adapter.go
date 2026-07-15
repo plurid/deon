@@ -113,11 +113,15 @@ func perform(r request) (string, error) {
 
 	switch r.Op {
 	case "canonical":
-		return deon.Canonical(value), nil
+		return deon.Canonical(value)
 	case "stringify":
-		return deon.Stringify(value, stringifyOptionsOf(r.StringifyOptions)), nil
+		return deon.Stringify(value, stringifyOptionsOf(r.StringifyOptions))
 	case "typed":
-		return marshal(deon.Typed(value)), nil
+		typedValue, err := deon.Typed(value)
+		if err != nil {
+			return "", err
+		}
+		return marshal(typedValue), nil
 	case "datasign":
 		// ParseWith has already applied the contracts, as the reference implementation does.
 		return marshal(value), nil

@@ -26,7 +26,7 @@
 
 
 
-The `Visual Studio Code` extension for `deon`. It gives a `.deon` file syntax highlighting, snippets, and live diagnostics as you type. It is editor tooling, not one of the language implementations — the language itself is defined in the [root README](../../../../README.md) and in [`spec/`](../../../../spec).
+The `Visual Studio Code` extension for `deon`. It gives a `.deon` file syntax highlighting, snippets, and editor configuration, and bundles a language-server client and server that are a work in progress. It is editor tooling, not one of the language implementations — the language itself is defined in the [root README](../../../../README.md) and in [`spec/`](../../../../spec).
 
 <a target="_blank" href="https://marketplace.visualstudio.com/items?itemName=plurid.deon-grammar">
     <img src="https://img.shields.io/badge/vscode-marketplace-1380C3?style=for-the-badge" alt="Marketplace">
@@ -37,7 +37,8 @@ The `Visual Studio Code` extension for `deon`. It gives a `.deon` file syntax hi
 + **Syntax highlighting** — a TextMate grammar (`source.deon`) for the `deon` language, over any `.deon` file.
 + **Snippets** — the common shapes of a document, expanded from a prefix.
 + **A language configuration** — brackets, comments, and auto-closing pairs.
-+ **Diagnostics** — a language server that validates the open document and underlines what is wrong, with the same codes and positions the implementations report. The number of problems surfaced and the client/server tracing are both configurable in settings.
+
+The extension also bundles a language-server client and server, but that half is **not finished**: the diagnostics it emits are still the scaffold's placeholder checks rather than real `deon` validation, and hover, go-to-definition, and completion are stubs (see [`notes/general.md`](./notes/general.md) for the open items). The syntax highlighting, snippets, and configuration are the parts that work today.
 
 ## Install
 

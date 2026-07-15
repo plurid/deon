@@ -178,7 +178,7 @@ A value nests when it contains another value. An implementation MUST refuse a do
 
 The limit is a requirement rather than a permission. A document is data, and data arrives from places that do not wish the reader well; an implementation that recursed as deeply as it was asked to would exhaust its host's stack and fail in a way that carries no code and no position, which a caller can do nothing with. 128 is far past any nesting a document has cause to contain.
 
-A value handed to a stringifier or to the typer by a host, rather than by the parser, is subject to the same limit.
+A value handed to a stringifier, to canonical form, or to the typer by a host — rather than by the parser — is subject to the same limit. An implementation MUST check the depth of such a value before writing or typing it and, when it exceeds the limit, report `DEON_PARSE_EXPECTED` rather than exhausting the stack or returning a truncated or empty result. The check itself MUST NOT recurse, or the value it is meant to guard against would overflow it first.
 
 ### 11.2 Where a diagnostic points
 

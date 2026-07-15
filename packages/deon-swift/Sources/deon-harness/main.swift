@@ -159,13 +159,23 @@ private func perform(_ request: DeonValue, _ id: String) -> String {
     if !document.ok {
         return errorResponse(id, document.error)
     }
+    do {
+        switch op {
+        case "canonical":
+            return okResponse(id, try document.canonical())
+        case "stringify":
+            return okResponse(id, try document.stringify(stringifyOptionsOf(request)))
+        case "typed":
+            return okResponse(id, try document.typed().json())
+        default:
+            break
+        }
+    } catch let error as DeonError {
+        return errorResponse(id, error)
+    } catch {
+        return panicResponse(id)
+    }
     switch op {
-    case "canonical":
-        return okResponse(id, document.canonical())
-    case "stringify":
-        return okResponse(id, document.stringify(stringifyOptionsOf(request)))
-    case "typed":
-        return okResponse(id, document.typed().json())
     case "datasign":
         return okResponse(id, document.value().json()) // parseWith already applied the contracts
     default:

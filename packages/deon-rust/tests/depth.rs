@@ -70,3 +70,50 @@ fn a_document_that_merely_nests_is_read() {
 
     assert!(outcome.is_none(), "a document within the limit must parse: {outcome:?}");
 }
+
+/// A value handed in by a host never went through the parser, so the writers guard their own depth.
+/// Wrapping a leaf `depth` times leaves the innermost value nested `depth + 1` deep — past the limit
+/// here — and the three public writers must refuse it with the same code the parser raises, rather
+/// than recursing into a stack overflow.
+fn wrapped(depth: usize, list: bool) -> deon::Value {
+    let mut value = deon::Value::string("leaf");
+
+    for _ in 0..depth {
+        value = if list {
+            deon::Value::List(vec![value])
+        } else {
+            let mut map = deon::Map::new();
+            map.insert("k", value);
+            deon::Value::Map(map)
+        };
+    }
+
+    value
+}
+
+#[test]
+fn a_host_value_that_nests_too_deeply_is_refused_rather_than_fatal() {
+    for list in [true, false] {
+        let value = wrapped(130, list);
+
+        for error in [
+            deon::stringify(&value, &deon::StringifyOptions::default()).err(),
+            deon::canonical(&value).err(),
+            deon::typed(&value).err(),
+        ] {
+            let error = error.expect("a value past the limit must not be written");
+
+            assert_eq!(error.code, deon::DiagnosticCode::ParseExpected);
+        }
+    }
+}
+
+/// And a value within the limit is written, typed, and canonicalised without complaint.
+#[test]
+fn a_host_value_that_merely_nests_is_written() {
+    let value = wrapped(64, true);
+
+    assert!(deon::stringify(&value, &deon::StringifyOptions::default()).is_ok());
+    assert!(deon::canonical(&value).is_ok());
+    assert!(deon::typed(&value).is_ok());
+}

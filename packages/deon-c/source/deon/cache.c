@@ -225,7 +225,7 @@ void cache_write(const deon_options *options, const char *name, const char *toke
     map_set(a, entry, arena_str_cstr(a, "data"), value_string(a, arena_str(a, body.data, body.len)));
 
     size_t clen;
-    char *text = deon_canonical(entry, &clen);
+    char *text = deon_canonical(entry, &clen, NULL); /* a cache entry is a shallow, hand-built map */
 
     /* strip the final directory component to make the parent path */
     char dir[2200];

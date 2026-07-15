@@ -70,8 +70,12 @@ func loopbackListener() -> (Int32, Int32)? {
 // misses the cache finds nothing there to connect to.
 var serverListener: Int32 = -1
 
-func serverThread(_ argument: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? {
+func serveOnce() {
     let fd = accept(serverListener, nil, nil)
+    // Close the listener the instant the one connection is accepted, so a later fetch that misses the
+    // cache is refused deterministically rather than racing into the listen backlog and blocking on a
+    // read that never returns (the C client sets no timeout).
+    close(serverListener)
     if fd >= 0 {
         var scratch = [UInt8](repeating: 0, count: 2048)
         _ = scratch.withUnsafeMutableBytes { read(fd, $0.baseAddress, 2047) }
@@ -91,9 +95,21 @@ func serverThread(_ argument: UnsafeMutableRawPointer) -> UnsafeMutableRawPointe
         }
         close(fd)
     }
-    close(serverListener)
+}
+
+// The pthread start-routine argument is spelled differently on each platform — non-optional on Darwin,
+// optional on Glibc — so the signature is chosen per platform to satisfy both.
+#if canImport(Darwin)
+func serverThread(_ argument: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? {
+    serveOnce()
     return nil
 }
+#else
+func serverThread(_ argument: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    serveOnce()
+    return nil
+}
+#endif
 
 /// True when the directory holds a digest-named entry — a 64-character hex name (specification 9).
 func hasDigestEntry(_ directory: String) -> Bool {

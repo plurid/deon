@@ -78,7 +78,7 @@ time 1598439736
     assert_eq!(first.get("active"), Some(&deon::Value::string("true")));
 
     // The typer is where a host says what its own types make of them.
-    let deon::Typed::Map(typed) = deon::typed(&data) else {
+    let deon::Typed::Map(typed) = deon::typed(&data).expect("the value types") else {
         panic!("the root is a map");
     };
 

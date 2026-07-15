@@ -2,6 +2,10 @@
     import {
         javascript,
     } from './typings';
+
+    import {
+        guardDepth,
+    } from '../guardDepth';
 // #endregion imports
 
 
@@ -50,6 +54,10 @@ const customTyper = <T = any>(
 const typer = <T = any>(
     data: any,
 ): T => {
+    // The guard runs before `customTyper` recurses, so a value nesting past the limit is refused with
+    // a coded diagnostic rather than overflowing the host stack.
+    guardDepth(data);
+
     const typedData = customTyper<T>(
         data,
         javascript,

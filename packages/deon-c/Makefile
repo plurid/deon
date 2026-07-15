@@ -7,7 +7,7 @@ INCLUDE := -Isource/deon
 LIB := $(wildcard source/deon/*.c)
 CLI := source/main.c $(wildcard source/cli/*.c)
 
-.PHONY: all deon harness test network cache clean
+.PHONY: all deon harness test depth network cache clean
 
 all: deon harness
 
@@ -27,6 +27,13 @@ test: build/conformance
 build/conformance: tests/conformance.c $(LIB)
 	@mkdir -p build
 	$(CC) $(CFLAGS) $(INCLUDE) tests/conformance.c $(LIB) -o build/conformance
+
+depth: build/depth
+	./build/depth
+
+build/depth: tests/depth.c $(LIB)
+	@mkdir -p build
+	$(CC) $(CFLAGS) $(INCLUDE) tests/depth.c $(LIB) -o build/depth
 
 network: build/network
 	./build/network

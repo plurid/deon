@@ -199,13 +199,18 @@ deon_document *deon_entities(const char *source, size_t len, const char *source_
                              const deon_entity **out, size_t *out_len);
 /* #endregion */
 
-/* #region writing (results are malloc'd; the caller frees) */
-char *deon_stringify(const deon_value *value, const deon_stringify_options *options, size_t *out_len);
-char *deon_canonical(const deon_value *value, size_t *out_len);
+/* #region writing (results are malloc'd; the caller frees)
+ * A value built by hand rather than parsed can nest past the limit the parser enforces (DEON_MAX_DEPTH).
+ * When it does, these return NULL and, if error is non-NULL, set it to DEON_PARSE_EXPECTED; on success
+ * they set *error to DEON_OK. Pass NULL for error to ignore it. */
+char *deon_stringify(const deon_value *value, const deon_stringify_options *options, size_t *out_len, deon_code *error);
+char *deon_canonical(const deon_value *value, size_t *out_len, deon_code *error);
 /* #endregion */
 
-/* #region typing (allocates into the given document's arena) */
-deon_value *deon_typed(deon_document *document, const deon_value *value);
+/* #region typing (allocates into the given document's arena)
+ * Returns NULL and sets *error to DEON_PARSE_EXPECTED when the value nests past the limit; otherwise sets
+ * *error to DEON_OK. Pass NULL for error to ignore it. */
+deon_value *deon_typed(deon_document *document, const deon_value *value, deon_code *error);
 /* #endregion */
 
 /* value helpers */
