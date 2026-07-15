@@ -1,0 +1,9 @@
+### C ###
+
+# The build directory: the tool, the harness adapter, and the test binaries, all built on demand by
+# `make` and by the harness scripts.
+/build/
+
+# Object files and debug bundles.
+*.o
+*.dSYM/

@@ -51,6 +51,11 @@ IMPLEMENTATIONS = {
         "directory": ROOT / "packages" / "deon-go",
         "run": ["./harness/deon-harness"],
     },
+    "c": {
+        "build": ["make", "harness"],
+        "directory": ROOT / "packages" / "deon-c",
+        "run": ["./build/harness"],
+    },
 }
 
 

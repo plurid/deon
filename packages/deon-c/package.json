@@ -1,3 +1,6 @@
 {
-    "name": "@plurid/deon-c"
+    "name": "@plurid/deon-c",
+    "version": "0.0.0-11",
+    "description": "The C implementation of deon, the DeObject Notation Format.",
+    "license": "DEL"
 }

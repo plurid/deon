@@ -103,6 +103,36 @@ jobs:
       - run: go test ./...
         working-directory: packages/deon-go
 
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Zero third-party dependencies: the C standard library and POSIX only. A binary linking anything
+      # beyond the system C runtime is a regression, whatever the tests say.
+      - name: no third-party libraries
+        working-directory: packages/deon-c
+        run: |
+          make deon
+          extra=$(ldd build/deon | awk '{print $1}' | grep -vE '^(linux-vdso|libc|libm|libpthread|ld-linux|/lib)' || true)
+          if [ -n "$extra" ]; then
+            echo "the tool links a third-party library:"
+            ldd build/deon
+            exit 1
+          fi
+
+      - name: conformance
+        working-directory: packages/deon-c
+        run: make test
+
+      - name: network
+        working-directory: packages/deon-c
+        run: make network
+
+      - name: cache
+        working-directory: packages/deon-c
+        run: make cache
+
   mcp:
     runs-on: ubuntu-latest
     steps:

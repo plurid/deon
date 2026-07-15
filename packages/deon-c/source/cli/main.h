@@ -1,16 +1,8 @@
-#ifndef DEON_CLI_H
-#define DEON_CLI_H
+#ifndef DEON_CLI_MAIN_H
+#define DEON_CLI_MAIN_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-
-
-
-int read_arguments(
-    int argc,
-    char* argv[]
-);
-
+/* The `deon` command line tool. Its surface is the same as the JavaScript, Rust, Python, and Go tools,
+ * command for command, and scripts/cli-harness.py holds the five to one behaviour. */
+int deon_cli(int argc, char **argv);
 
 #endif
