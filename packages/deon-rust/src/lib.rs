@@ -17,6 +17,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod datasign;
 pub mod diagnostic;
 pub mod evaluator;
 pub mod interpreter;
@@ -44,6 +45,7 @@ pub mod network;
 #[cfg(feature = "network")]
 pub use network::parse_link;
 
+pub use datasign::{apply_datasign, parse_datasign, read_datasign, type_datasign, Signatures};
 pub use diagnostic::{DResult, DeonError, Diagnostic, DiagnosticCode, Severity, Span};
 pub use options::{ParseOptions, StringifyOptions};
 pub use syntax::Document;
@@ -95,6 +97,74 @@ pub fn parse_file(file: &str, options: &ParseOptions) -> DResult<Value> {
     options.allow_filesystem = true;
 
     parse_with(&source, &options)
+}
+
+/// Reads a document and types it against the contracts the caller declared (specification 14.1).
+///
+/// This is a separate entry point rather than a flag on [`parse_with`], and it has to be: a [`Value`]
+/// is a string, a list, or a map, and there is nowhere in it to put the number that a contract's whole
+/// purpose is to produce. So a signed parse returns a [`Typed`], and an unsigned one cannot.
+///
+/// With no `datasign_map` this is [`parse_with`] followed by a verbatim widening — the strings stay
+/// strings. It is emphatically not [`typed`], which guesses: a key nobody declared has not been
+/// declared to be anything.
+pub fn parse_signed(source: &str, options: &ParseOptions) -> DResult<Typed> {
+    let root = parse_with(source, options)?;
+
+    sign(&root, options)
+}
+
+/// An evaluated root, typed against the caller's contracts.
+pub fn sign(root: &Value, options: &ParseOptions) -> DResult<Typed> {
+    if options.datasign_map.is_empty() {
+        return datasign::apply_datasign(root, &datasign::Signatures::new(), &options.datasign_map);
+    }
+
+    let mut sources = Vec::with_capacity(options.datasign_files.len());
+
+    for file in &options.datasign_files {
+        sources.push(read_datasign_source(file, options)?);
+    }
+
+    datasign::apply_datasign(root, &datasign::read_datasign(&sources), &options.datasign_map)
+}
+
+/// A contract, from wherever the caller put it.
+///
+/// Reading one is filesystem access like any other, and subject to §9: a raw string handed to
+/// [`parse`] grants nothing, so a contract it names may not be read from a disk. A contract supplied
+/// in `resources` needs no grant, because nothing is being reached.
+fn read_datasign_source(file: &str, options: &ParseOptions) -> DResult<String> {
+    let target = if std::path::Path::new(file).is_absolute() {
+        file.to_string()
+    } else if options.filebase.is_empty() {
+        file.to_string()
+    } else {
+        format!("{}/{}", options.filebase.trim_end_matches('/'), file)
+    };
+
+    for key in [target.as_str(), file] {
+        if let Some(source) = options.resources.get(key) {
+            return Ok(source.clone());
+        }
+    }
+
+    if !options.allow_filesystem {
+        return diagnostic::resource_err(
+            DiagnosticCode::CapabilityDenied,
+            format!("Reading the datasign file '{file}' requires filesystem access."),
+            file,
+        );
+    }
+
+    match std::fs::read_to_string(&target) {
+        Ok(source) => Ok(source),
+        Err(_) => diagnostic::resource_err(
+            DiagnosticCode::ResourceIo,
+            format!("Unable to read the datasign file '{file}'."),
+            file,
+        ),
+    }
 }
 
 /// The text of a file, as a diagnostic rather than an `io::Error` if it cannot be read.

@@ -28,6 +28,11 @@ def options_of(request: dict) -> ParseOptions:
     options.allow_filesystem = flag(request, "allowFilesystem")
     options.allow_network = flag(request, "allowNetwork")
 
+    # The contracts of specification 14.1. They arrive through `files` like every other resource, so
+    # no adapter reaches a disk.
+    options.datasign_files = list(request.get("datasignFiles") or [])
+    options.datasign_map = dict(request.get("datasignMap") or {})
+
     return options
 
 
@@ -77,6 +82,10 @@ def run(request: dict) -> str:
 
     if operation == "typed":
         return json.dumps(deon.typed(value))
+
+    if operation == "datasign":
+        # `parse_with` has already applied the contracts, as the reference implementation does.
+        return json.dumps(value)
 
     raise ValueError(f"unknown operation '{operation}'")
 

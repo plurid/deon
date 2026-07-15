@@ -25,6 +25,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from .datasign import Field, apply_datasign, parse_datasign, read_datasign, type_datasign
 from .diagnostic import Diagnostic, DiagnosticCode, DeonError, Span
 from .interpreter import Interpreter, interpolations, parameters
 from .options import DEFAULT_SOURCE_NAME, ParseOptions, StringifyOptions
@@ -62,7 +63,54 @@ def parse_with_loader(source: str, options: ParseOptions, loader) -> Value:
     """
     document = parse_syntax(source, options.source_name)
 
-    return Interpreter(options, loader).run(document)
+    root = Interpreter(options, loader).run(document)
+
+    return sign(root, options)
+
+
+def sign(root: Value, options: ParseOptions) -> Value:
+    """The evaluated root, typed against whatever contracts the caller declared (specification 14.1).
+
+    Post-parse, and nothing happens without a `datasign_map`: an empty map is the identity, and there
+    is no reason to read a contract nobody is going to apply.
+    """
+    if not options.datasign_map:
+        return root
+
+    sources = [read_datasign_source(file, options) for file in options.datasign_files]
+
+    return apply_datasign(root, read_datasign(sources), options.datasign_map)
+
+
+def read_datasign_source(file: str, options: ParseOptions) -> str:
+    """A contract, from wherever the caller put it.
+
+    Reading one is filesystem access like any other, and subject to §9: a raw string handed to `parse`
+    grants nothing, so a contract it names may not be read from a disk. A contract supplied in
+    `resources` needs no grant, because nothing is being reached.
+    """
+    target = file if os.path.isabs(file) else os.path.join(options.filebase or os.getcwd(), file)
+
+    for key in (target, file):
+        if key in options.resources:
+            return options.resources[key]
+
+    if not options.allow_filesystem:
+        raise DeonError(
+            DiagnosticCode.CAPABILITY_DENIED,
+            f"Reading the datasign file '{file}' requires filesystem access.",
+            Span.head(file),
+        )
+
+    try:
+        with open(target, "r", encoding="utf-8") as handle:
+            return handle.read()
+    except (OSError, UnicodeDecodeError):
+        raise DeonError(
+            DiagnosticCode.RESOURCE_IO,
+            f"Unable to read the datasign file '{file}'.",
+            Span.head(file),
+        ) from None
 
 
 def parse_with(source: str, options: Optional[ParseOptions] = None) -> Value:
@@ -181,10 +229,14 @@ __all__ = [
     "Span",
     "StringifyOptions",
     "Value",
+    "apply_datasign",
     "canonical",
     "canonical_source",
     "coerce",
     "entities",
+    "parse_datasign",
+    "read_datasign",
+    "type_datasign",
     "lint",
     "parse",
     "parse_file",

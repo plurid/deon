@@ -68,6 +68,30 @@ So the code, the severity, and the position are normative and the message is not
 
 Amended into `diagnostics.md`. Found by `scripts/cli-harness.py`, which had to decide what "the same result" means before it could compare anything.
 
+## 9. Datasign was one sentence
+
+The largest gap of the nine, and the last one found. §14 ended with *"Datasign integration is an optional post-parse adapter"* — and that was the whole of it. No contract format, no typing rules, no diagnostic, no statement of what happens to a key the contract does not mention. There was one implementation, 273 lines of it, and no fixture anywhere.
+
+Implementing it in two more languages by reading those 273 lines is exactly the mistake this whole exercise exists to undo: `deon-rust` was ported from `deon-javascript`, which is why the two agreeing proved nothing. So the rules were written into the specification first (**§14.1**), and Python and Rust were written from the section.
+
+And then — because `datasign` is a real project with a repository of its own, and the format belongs to it — the section was checked against the compiler that owns it. Three things came of that:
+
++ Deon's reader is **not** invented. It tracks `datasign`'s own production reader line for line (`/^\s*data (\w+) {/`, split on the colon, drop the trailing semicolon), and it reads `datasign`'s own `Text.datasign` test file correctly — annotations, documentation comment, and all. That file is now a fixture here, so the reader cannot drift from the format for years without something noticing.
++ **The optionality rule was wrong in all three.** `datasign` marks a field optional on a `?` *anywhere* on the line (`required = !/\?/.test(line)`), so `nickname: string?` is optional to the compiler that owns the format and was *required* to Deon — which would have made Deon reject a document `datasign` says is fine. Fixed in `JavaScript`, Rust, and Python together, and probed in both spellings.
++ **`import`, `!meta`, and composed types (`C = A & { … }`) are not read**, and now say so in §14.1. A value whose type names one falls under "defined elsewhere" and is left exactly as it was parsed. That is a limitation and it fails safe: it never converts a value it does not understand.
+
+The lesson generalises past datasign. An adapter to somebody else's format has a second source of truth, and testing it only against your own fixtures tests only your reading of their format.
+
+The one that would have diverged silently is the **numeric grammar**. `number` means whatever the host's own string-to-number function means, unless somebody says otherwise, and no two hosts agree:
+
+| | `0x10` | `1_000` | `Infinity` |
+| --- | --- | --- | --- |
+| ECMAScript | `16` | not a number | not a number |
+| Python | error | `1000` | `inf` |
+| Rust | error | error | `inf` |
+
+Three implementations, three different answers to *"is `1_000` a number"*, each of them perfectly defensible in its own language, and the contract would have meant three different things. §14.1 now fixes the grammar as ECMAScript's and writes it out, and all three implement it by hand rather than calling the host.
+
 ---
 
 ## What the conformance suite could not see

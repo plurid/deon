@@ -95,16 +95,22 @@ export const parseDatasign: DatasignReader = (
             continue;
         }
 
-        const name = value.slice(0, separator).trim();
-        const type = value.slice(separator + 1).replace(/;\s*$/, '').trim();
+        // A `?` *anywhere* on the line marks the field optional, which is datasign's own rule and
+        // not a tidier one invented here: `nickname?: string` and `nickname: string?` are both
+        // optional to the compiler that owns the format, and an adapter that read only the first
+        // would demand a field that datasign says may be absent.
+        const optional = value.includes('?');
+
+        const name = value.slice(0, separator).trim().replace(/\?/g, '');
+        const type = value.slice(separator + 1).replace(/;\s*$/, '').trim().replace(/\?/g, '');
         if (!name || !type) {
             continue;
         }
 
         fields.push({
-            name: name.replace(/\?$/, ''),
+            name,
             type,
-            required: !name.endsWith('?'),
+            required: !optional,
         });
     }
 

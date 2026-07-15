@@ -202,6 +202,35 @@ The typer is **conservative** on purpose: it converts only what it could write b
 
 
 
+## Contracts
+
+The conservative typer guesses from the value, so it has to refuse whenever a guess could be wrong. A **datasign contract** is the other half: it supplies the intent the value cannot carry, and `007` becomes `7` exactly where somebody declared it a number, and nowhere else.
+
+``` datasign
+data Account {
+    id: string;
+    age: number;
+    admin: boolean;
+    nickname?: string;
+}
+```
+
+``` python
+options = ParseOptions(
+    datasign_files=["account.datasign"],
+    datasign_map={"account": "Account"},
+)
+
+deon.parse_file("main.deon", options)
+# {'account': {'id': '007', 'age': 30, 'admin': True}}
+```
+
+A field ending in `?` may be absent; one that is declared and not optional and not present is `DEON_TYPE_MISMATCH`. A key the contract never mentions passes through untouched rather than being dropped, and is *not* guessed at — a contract describes what it knows about, and silence is not a claim. Reading a contract is filesystem access like any other, so `parse` on a raw string may not go and read one.
+
+The numeric grammar is written out in the specification (§14.1) rather than delegated to Python's `float`, and this matters more than it looks: `float('1_000')` is 1000 here and not a number in `JavaScript`, and `0x10` is 16 there and an error here. A contract that meant three things in three languages would not be a contract.
+
+
+
 ## Errors
 
 Everything raises `DeonError`, and nothing else crosses the boundary — no `RecursionError`, no `OSError`, no `json` exception. Those are the host's accidents leaking through, and each one would be a bug here rather than a fact about the document.

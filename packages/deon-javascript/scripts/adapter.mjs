@@ -21,6 +21,11 @@ const optionsOf = (request) => ({
     environment: request.environment ?? {},
     allowFilesystem: flag(request, 'allowFilesystem'),
     allowNetwork: flag(request, 'allowNetwork'),
+
+    // The contracts of specification 14.1. They arrive through `files` like every other resource, so
+    // no adapter reaches a disk.
+    datasignFiles: request.datasignFiles ?? [],
+    datasignMap: request.datasignMap ?? {},
 });
 
 
@@ -73,6 +78,11 @@ const run = (request) => {
 
     if (op === 'typed') {
         return JSON.stringify(typer(value));
+    }
+
+    if (op === 'datasign') {
+        // `parseSynchronous` has already applied the contracts.
+        return JSON.stringify(value);
     }
 
     throw new Error(`unknown operation '${op}'`);

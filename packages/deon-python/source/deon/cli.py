@@ -225,7 +225,11 @@ def environment(arguments: list[str]) -> int:
     # Everything after the source is the command, *verbatim*, with only this command's own flag taken
     # out. It cannot be filtered for things that look like options: `sh -c '...'` has a `-c` that
     # belongs to `sh`, and a CLI that ate it would silently run something the caller did not ask for.
-    command = positional(arguments[2:])
+    command = [
+        argument
+        for argument in arguments[2:]
+        if argument not in ("-w", "--writeover")
+    ]
 
     if not command:
         raise Failure("environment requires a command to run.")

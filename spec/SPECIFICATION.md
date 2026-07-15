@@ -216,8 +216,33 @@ For every value `v`, `parse(canonical(v))` MUST equal `v`.
 
 ## 14. Conservative typing
 
-Typing is outside the Deon data model. The optional common typer converts exact `true` and `false`, integers within the IEEE-754 safe 53-bit range matching `-?(0|[1-9][0-9]*)`, and finite decimal/exponent forms without leading zeroes. Empty strings, leading-zero values, out-of-range numbers, and `null` remain strings. Datasign integration is an optional post-parse adapter.
+Typing is outside the Deon data model. The optional common typer converts exact `true` and `false`, integers within the IEEE-754 safe 53-bit range matching `-?(0|[1-9][0-9]*)`, and finite decimal/exponent forms without leading zeroes. Empty strings, leading-zero values, out-of-range numbers, and `null` remain strings. Datasign integration (§14.1) is an optional post-parse adapter.
+
+### 14.1 Datasign
+
+The conservative typer of §14 guesses from the value, and so it must refuse whenever a guess could be wrong: `007` stays a string because a postal code that becomes the number `7` is a bug. A **datasign contract** is the other half — it supplies the intent the value cannot carry, so that `007` becomes `7` where a contract declared it a number, and stays `007` where none did. It is an optional adapter and an implementation MAY omit it; an implementation that provides it MUST provide exactly what follows, because the point of a contract is that two readers of it agree.
+
+A contract is read line by line from `.datasign` source, and the rules below are `datasign`'s own — the format belongs to that project, and this is an adapter to it rather than a dialect of it. A line whose first non-blank characters are `//`, `/*`, `*`, or `@` is ignored, and so is anything from `//` to the end of any other line: annotations and commentary describe the type to other tools and say nothing about the shape. A line matching `data <name> {` opens an entity; the next line whose first non-blank character is `}` closes it. Inside an entity, a line is a field when it contains a `:`; the name is what precedes the colon, the type is what follows it with any trailing `;` removed, and both are trimmed. A `?` **anywhere on the line** declares the field **optional** and is removed from both the name and the type, so `nickname?: string` and `nickname: string?` are the same declaration. Any other line inside an entity is ignored. When several sources are read together, a repeated entity name takes its fields from the last source that declares it.
+
+A `.datasign` file may hold declarations this reads nothing from: an `import`, a `!target` meta block, and a composed type (`C = A & { … }`). None of them declares an entity here, so a value whose type names one falls under the last rule below and is left exactly as it was parsed. That is a limitation and not a licence: it fails safe, never converting a value it does not understand, and an implementation that grows to read them changes only what it recognises and never what it does with what it already did.
+
+A contract is applied to an evaluated root value through a **datasign map**, which names root keys and the type each is expected to hold. An empty map is the identity. A non-empty map against a root that is not a map is `DEON_TYPE_MISMATCH`. A named key absent from the data is skipped rather than invented.
+
+A value is converted against a declared type as follows, and every failure below is `DEON_TYPE_MISMATCH`:
+
++ A type ending in `[]` requires a list, and converts each element against the element type.
++ `string` requires a string and yields it unchanged.
++ `boolean` requires the string `true` or the string `false`, and yields the corresponding boolean.
++ `number` requires a string that is a finite number, and yields that number. What counts as one is the ECMAScript `Number(string)` conversion over a non-blank string: leading and trailing whitespace is ignored; `0x`, `0o`, and `0b` prefixes are read in base 16, 8, and 2; an optional sign, digits, a decimal point, and an exponent are read in base 10; and `Infinity`, `NaN`, a digit separator, and every other spelling are a mismatch. This is a wider grammar than §14's, deliberately: §14 must not guess, and a contract is not guessing.
++ A type naming a declared entity requires a map. Each key the entity declares is converted against its declared type. A key the entity does *not* declare passes through unconverted rather than being dropped, and the write order of §5 is preserved. A field declared and not optional, whose key is absent from the map, is a mismatch.
++ A type naming neither a primitive nor a declared entity leaves its value untouched. Datasign permits types defined elsewhere, and a value is not to be guessed at merely because its type was not found.
+
+Reading a `.datasign` file is filesystem access and is subject to §9: it is `DEON_CAPABILITY_DENIED` when the filesystem was not granted, and `DEON_RESOURCE_IO` when it was granted and the file could not be read. A relative contract path resolves against the document's filebase.
+
+Typing happens after evaluation, so no source token remains to point at. A datasign diagnostic is reported at the head of the contract it came from, and names the path through the data (`accounts[0].age`) that failed, which is what makes it actionable.
 
 ## 15. Conformance
 
 An implementation conforms to Deon 1.0 only when it passes every required fixture in `spec/conformance/cases.json`, produces the required diagnostic code and source position for invalid fixtures, and satisfies canonical round trips. Tests MUST use injected or local resource resolvers rather than public network services.
+
+Conformance is tested on the diagnostic **code**, the **severity**, and the **position**. A diagnostic's message is not normative (`spec/diagnostics.md`): it is written for a person, and it will often quote the host, which no two hosts spell alike.

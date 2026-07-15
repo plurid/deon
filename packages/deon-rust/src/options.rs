@@ -48,6 +48,15 @@ pub struct ParseOptions {
 
     /// The documents already being read, so that a resource cannot import itself.
     pub resource_stack: Vec<String>,
+
+    /// The `.datasign` contracts that type the parsed data, and the root keys each type applies to
+    /// (specification 14.1). Both are needed: an empty map is the identity, and reading a contract
+    /// without one to apply would be reading a file for nothing.
+    ///
+    /// These are read by [`crate::parse_signed`] and by nothing else. `parse_with` returns a
+    /// [`crate::Value`], which has no numbers and no booleans to put a typed result in.
+    pub datasign_files: Vec<String>,
+    pub datasign_map: HashMap<String, String>,
 }
 
 impl Default for ParseOptions {
@@ -66,6 +75,8 @@ impl Default for ParseOptions {
             environment: HashMap::new(),
             resources: HashMap::new(),
             resource_stack: Vec::new(),
+            datasign_files: Vec::new(),
+            datasign_map: HashMap::new(),
         }
     }
 }

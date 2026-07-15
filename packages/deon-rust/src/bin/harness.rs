@@ -70,6 +70,21 @@ fn options_of(request: &Map) -> ParseOptions {
         options = options.environment_variable(name, value);
     }
 
+    // The contracts of specification 14.1, when the request carries any. The files themselves arrive
+    // through `files`, like every other resource, so no adapter reaches a disk.
+    if let Some(Value::List(files)) = request.get("datasignFiles") {
+        options.datasign_files = files
+            .iter()
+            .filter_map(|file| file.as_str().map(str::to_string))
+            .collect();
+    }
+
+    for (key, declared) in table(request, "datasignMap") {
+        options
+            .datasign_map
+            .insert(key.to_string(), declared.to_string());
+    }
+
     options
 }
 
@@ -162,6 +177,7 @@ fn run(request: &Map) -> deon::DResult<String> {
                 "canonical" => Ok(deon::canonical(&value)),
                 "stringify" => Ok(deon::stringify(&value, &stringify_options_of(request))),
                 "typed" => Ok(write_typed_json(&deon::typed(&value))),
+                "datasign" => Ok(write_typed_json(&deon::sign(&value, &options)?)),
                 other => panic!("unknown operation '{other}'"),
             }
         }

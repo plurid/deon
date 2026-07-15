@@ -37,8 +37,15 @@ Only `id`, `op`, and `source` are required.
 | `canonical` | the canonical form of the evaluated document |
 | `stringify` | the evaluated document, written with `stringifyOptions` |
 | `typed` | the conservative typer's view, as JSON text |
+| `datasign` | the document typed against `datasignFiles` and `datasignMap` (§14.1), as JSON text |
 | `lint` | `[{ code, line, column }]`, as JSON text |
 | `entities` | `[{ name, parameters, kind }]`, as JSON text |
+
+`canonical` and `stringify` are compared **character for character**, which is their whole point. The rest are compared as *parsed structures*, because three implementations are not required to have chosen the same JSON whitespace — but a boolean is never flattened into the string `"true"`, since telling those apart is exactly what the typing operations exist to do.
+
+`datasign` carries two extra fields: `datasignFiles`, the contracts to read, and `datasignMap`, the root keys each type applies to. The contracts themselves arrive through `files`, like every other resource, so no adapter reaches a disk.
+
+A probe that expects a *refusal* must isolate the fault it is probing. The harness compares the code and the position, and not the message, so a document that is wrong in two ways reports the same code either way. The number probes each supply a complete entity for exactly this reason: an incomplete one fails on the missing field before the number is ever looked at, and the probe would then pass no matter what the numeric grammar did.
 
 `canonical` is the load-bearing one. Canonical form is required to be identical across implementations, character for character (section 13), and it encodes the value, the map order, and the chosen form of every string in a single string. One comparison covers all of it.
 

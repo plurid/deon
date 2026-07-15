@@ -55,6 +55,12 @@ class ParseOptions:
     cache_duration: int = 3_600_000
     cache_directory: str = ""
 
+    #: The `.datasign` contracts that type the parsed data, and the root keys each type applies to
+    #: (specification 14.1). Both are needed: an empty map is the identity, and reading a contract
+    #: without one to apply would be reading a file for nothing.
+    datasign_files: list[str] = field(default_factory=list)
+    datasign_map: dict[str, str] = field(default_factory=dict)
+
 
 
 @dataclass

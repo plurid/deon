@@ -195,7 +195,7 @@ def drive(name: str, requests: list[dict]) -> dict[str, dict]:
 #: Operations whose result is JSON *text*. Three implementations are not required to have chosen the
 #: same whitespace, so these are compared as parsed structures rather than as characters — while
 #: `canonical` and `stringify`, whose whole point is the characters, are compared as characters.
-STRUCTURED = {"typed", "lint", "entities"}
+STRUCTURED = {"typed", "lint", "entities", "datasign"}
 
 
 def flatten(node: object) -> object:
