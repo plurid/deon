@@ -135,9 +135,9 @@ pub fn sign(root: &Value, options: &ParseOptions) -> DResult<Typed> {
 /// [`parse`] grants nothing, so a contract it names may not be read from a disk. A contract supplied
 /// in `resources` needs no grant, because nothing is being reached.
 fn read_datasign_source(file: &str, options: &ParseOptions) -> DResult<String> {
-    let target = if std::path::Path::new(file).is_absolute() {
-        file.to_string()
-    } else if options.filebase.is_empty() {
+    // An absolute target, or one with no base to resolve against, is used as it was written; a
+    // relative one resolves against the document's filebase, as every other relative target does.
+    let target = if std::path::Path::new(file).is_absolute() || options.filebase.is_empty() {
         file.to_string()
     } else {
         format!("{}/{}", options.filebase.trim_end_matches('/'), file)
