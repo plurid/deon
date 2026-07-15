@@ -44,11 +44,9 @@ jobs:
       - name: no third-party dependencies
         working-directory: packages/deon-rust
         run: |
-          extra=$(cargo tree --edges normal -p deon \
-            | sed -E 's/^[^a-zA-Z]*//; s/ .*//' \
-            | grep -vxE 'deon|deon-core|deon-macros' \
-            | grep -c . || true)
-          if [ "$extra" -ne 0 ]; then
+          names=$(cargo tree --edges normal --prefix none -p deon | awk '{print $1}' | sort -u)
+          extra=$(printf '%s\n' "$names" | grep -vxE 'deon|deon-core|deon-macros' || true)
+          if [ -n "$extra" ]; then
             echo "the default build gained a third-party dependency:"
             cargo tree --edges normal -p deon
             exit 1
