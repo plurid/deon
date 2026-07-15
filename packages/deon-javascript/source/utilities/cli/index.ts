@@ -413,6 +413,9 @@ const runCLI = async (
                 allowFilesystem: true,
                 filebase: path.dirname(filepath),
                 sourceName: filepath,
+                // The CLI is a host tool, so it supplies the host process environment explicitly; the
+                // library core never reads it on its own (specification 6).
+                environment: process.env,
             });
         }
 
@@ -429,6 +432,9 @@ const runCLI = async (
     const data = await deon.parseFile(command, {
         allowFilesystem: option(args, '-f', '--filesystem', 'true') === 'true',
         allowNetwork: option(args, '-n', '--network', 'false') === 'true',
+        // The CLI is a host tool, so it supplies the host process environment explicitly; the library
+        // core never reads it on its own (specification 6).
+        environment: process.env,
     });
 
     handleFileOutput(data, deon.stringify(data), {

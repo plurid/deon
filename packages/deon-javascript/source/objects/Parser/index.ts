@@ -218,7 +218,7 @@ class Parser {
         const open = this.consume(TokenType.LEFT_CURLY_BRACKET, "Expected '{'.");
         const entries: MapNode['entries'] = [];
 
-        this.skipSeparators();
+        this.requireNoLeadingComma();
 
         while (
             !this.check(TokenType.RIGHT_CURLY_BRACKET)
@@ -292,7 +292,7 @@ class Parser {
         const open = this.consume(TokenType.LEFT_SQUARE_BRACKET, "Expected '['.");
         const items: ListNode['items'] = [];
 
-        this.skipSeparators();
+        this.requireNoLeadingComma();
 
         while (
             !this.check(TokenType.RIGHT_SQUARE_BRACKET)
@@ -374,9 +374,15 @@ class Parser {
             const row: ValueNode[] = [this.value(LIST_STOPS)];
 
             while (this.match(TokenType.COMMA)) {
-                this.skipNewlines();
-
-                if (this.check(TokenType.RIGHT_SQUARE_BRACKET)) {
+                // A logical row ends at a newline (specification 8), so cells are separated by inline
+                // trivia only. The scanner has already absorbed spaces, tabs, and comments, leaving a
+                // NEWLINE token standing — and a comma before it, or before the closing ']' or the end
+                // of input, is a single trailing comma that ends the row rather than joining the next.
+                if (
+                    this.check(TokenType.RIGHT_SQUARE_BRACKET)
+                    || this.check(TokenType.NEWLINE)
+                    || this.check(TokenType.EOF)
+                ) {
                     break;
                 }
 
@@ -476,7 +482,7 @@ class Parser {
         const open = this.consume(TokenType.LEFT_PARENTHESIS, "Expected '('.");
         const args: CallArgumentNode[] = [];
 
-        this.skipSeparators();
+        this.requireNoLeadingComma();
 
         while (
             !this.check(TokenType.RIGHT_PARENTHESIS)
@@ -688,6 +694,24 @@ class Parser {
     }
 
 
+    /**
+     * A comma falls between two items, so a comma with nothing before it — one leading the group, or
+     * the lone comma of `{ , }` — is refused where it stands (specification 4.1). A newline never
+     * carries the restriction: a blank line is ignored rather than read as an empty item, so leading
+     * newlines are skipped first and only a comma is the fault.
+     */
+    private requireNoLeadingComma() {
+        this.skipNewlines();
+
+        if (this.check(TokenType.COMMA)) {
+            this.fail(
+                DiagnosticCode.PARSE_EXPECTED,
+                'A comma separates two items; it may not lead the group.',
+            );
+        }
+    }
+
+
     private skipNewlines() {
         while (this.match(TokenType.NEWLINE)) {
             // As above.
@@ -776,7 +800,10 @@ const lintValue = (
                 names.add(entry.name);
                 lintValue(entry.value, diagnostics);
             } else if (entry.type === 'link-entry') {
-                const segment = entry.value.reference[entry.value.reference.length - 1] ?? '';
+                const reference = entry.value.reference;
+                const segment = reference.access.length
+                    ? reference.access[reference.access.length - 1].name
+                    : reference.head;
                 const name = segment.startsWith('$') ? segment.slice(1) : segment;
 
                 if (names.has(name)) {

@@ -275,7 +275,10 @@ class Parser:
 
         entries: list = []
 
-        self.separators()
+        # Only newlines lead a map; a leading comma survives to the entry below, where `name` reports
+        # it. A comma falls *between* two entries, so one with none before it — leading the map or
+        # standing alone in it — is `DEON_PARSE_EXPECTED` at the comma (specification 4.1).
+        self.newlines()
 
         while not self.check(TokenType.RIGHT_CURLY) and not self.check(TokenType.EOF):
             if self.check(TokenType.SPREAD):
@@ -319,9 +322,18 @@ class Parser:
 
         items: list = []
 
-        self.separators()
+        # Only newlines lead a list; a leading comma is caught below. A comma falls *between* two
+        # items, so one with none before it — leading the list or standing alone in it — is
+        # `DEON_PARSE_EXPECTED` at the comma, and an empty item is written `''` (specification 4.1, 5).
+        self.newlines()
 
         while not self.check(TokenType.RIGHT_SQUARE) and not self.check(TokenType.EOF):
+            if self.check(TokenType.COMMA):
+                raise self.fail(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    "A list item was expected before this comma.",
+                )
+
             if self.check(TokenType.SPREAD):
                 token = self.advance()
                 items.append(SpreadEntry(reference=token.literal, token=token))
@@ -382,14 +394,38 @@ class Parser:
 
         rows: list[list[ValueNode]] = []
 
-        self.separators()
+        self.newlines()
 
         while not self.check(TokenType.RIGHT_SQUARE) and not self.check(TokenType.EOF):
+            if self.check(TokenType.COMMA):
+                raise self.fail(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    "A structure row begins with a cell, not a comma.",
+                )
+
             cells: list[ValueNode] = [self.value(ROW_STOPS)]
 
-            # A logical row ends at a newline; a comma separates the cells within it.
-            while self.match(TokenType.COMMA):
-                self.newlines()
+            # A logical row ends at a newline with balanced nesting; a comma separates the cells
+            # within it. A single trailing comma before the row's end — a newline, the closing ']',
+            # or the end of input — contributes no cell, as in a map or a list, and the arity is
+            # counted after it is discarded (specification 4.1, 8). A second comma with no cell before
+            # it is `DEON_PARSE_EXPECTED` at that comma.
+            while self.check(TokenType.COMMA):
+                self.advance()
+
+                if (
+                    self.check(TokenType.NEWLINE)
+                    or self.check(TokenType.RIGHT_SQUARE)
+                    or self.check(TokenType.EOF)
+                ):
+                    break
+
+                if self.check(TokenType.COMMA):
+                    raise self.fail(
+                        DiagnosticCode.PARSE_EXPECTED,
+                        "A structure cell was expected before this comma.",
+                    )
+
                 cells.append(self.value(ROW_STOPS))
 
             if len(cells) != len(fields):
@@ -401,7 +437,7 @@ class Parser:
 
             rows.append(cells)
 
-            self.separators()
+            self.newlines()
 
         self.consume(TokenType.RIGHT_SQUARE, "Expected ']' after the structure rows.")
 

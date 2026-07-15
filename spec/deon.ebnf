@@ -28,7 +28,7 @@ list-item         = spread | value ;
 structure         = "<", trivia, name, { trivia, ",", trivia, name }, trivia,
                     ">", trivia, "[", trivia, structure-row,
                     { newline, trivia, structure-row }, trivia, "]" ;
-structure-row     = value, { trivia, ",", trivia, value } ;
+structure-row     = value, { trivia, ",", trivia, value }, [ trivia, "," ] ;
 
 link              = "#", reference ;
 spread            = "...#", reference ;
@@ -41,7 +41,12 @@ reference         = environment-reference | reference-head,
 environment-reference = "$", bare-name ;
 reference-head    = bare-name | quoted-name ;
 dot-access        = ".", bare-name ;
-bracket-access    = "[", ( bare-name | quoted-name | digits ), "]" ;
+
+(* A bracket segment whose content is all decimal digits is a list index; any other unquoted content
+   is taken literally as a map key (section 6). It may not be empty and may not contain whitespace. *)
+bracket-access    = "[", ( digits | bracket-key | quoted-name ), "]" ;
+bracket-key       = bracket-character, { bracket-character } ;
+bracket-character = any-character - ( "]" | space | newline | "," ) ;
 
 string            = unquoted-string | single-string | multiline-string ;
 

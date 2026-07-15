@@ -21,15 +21,16 @@
  * the same, and can nest just as deeply, so the writers have to refuse it on the same terms.
  *
  * The walk is iterative, on an explicit stack, precisely so that the guard cannot overflow while
- * checking whether something else would. Depth counts the enclosing values, the root being one, which
- * is what the parser counts, so the two limits are the same value and a caller is refused by both for
- * the same reason.
+ * checking whether something else would. Depth counts the values enclosing each one — the root has
+ * none, so it is depth 0 — which is what the parser counts as it descends, so the two limits are the
+ * same value and a caller is refused by both for the same reason. A value nested exactly at the limit
+ * is accepted; only one nested past it is refused.
  */
 const guardDepth = (
     root: unknown,
 ): void => {
     const stack: { value: unknown; depth: number }[] = [
-        { value: root, depth: 1 },
+        { value: root, depth: 0 },
     ];
 
     while (stack.length) {

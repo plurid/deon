@@ -168,7 +168,10 @@ impl Parser {
 
         let mut entries: Vec<MapItem> = Vec::new();
 
-        self.skip_separators();
+        // Newlines and blank lines lead into the first entry, but a comma does not: a comma falls
+        // between two items, so one before the first has no item before it and is an error at the
+        // comma, which the entry parser raises when it meets it (specification 4.1).
+        self.skip_newlines();
 
         while !self.check(TokenType::RightCurly) && !self.check(TokenType::Eof) {
             if self.matches(TokenType::Spread) {
@@ -233,7 +236,9 @@ impl Parser {
 
         let mut items: Vec<ListItem> = Vec::new();
 
-        self.skip_separators();
+        // A leading comma has no item before it, so it is an error rather than trivia to skip past
+        // (specification 4.1); only newlines lead into the first item.
+        self.skip_newlines();
 
         while !self.check(TokenType::RightSquare) && !self.check(TokenType::Eof) {
             if self.matches(TokenType::Spread) {
@@ -305,9 +310,15 @@ impl Parser {
             let mut row: Vec<ValueNode> = vec![self.value(Stops::List)?];
 
             while self.matches(TokenType::Comma) {
-                self.skip_newlines();
-
-                if self.check(TokenType::RightSquare) {
+                // A comma separates cells within a logical row, and a row ends at a newline (§8). So a
+                // comma followed by a newline, the closing ']', or the end is a trailing comma that
+                // contributes no cell — it must not cross the newline and draw the next row's cells
+                // into this one. Only inline trivia (already dropped by the scanner) may sit between a
+                // cell-separating comma and the next cell.
+                if self.check(TokenType::Newline)
+                    || self.check(TokenType::RightSquare)
+                    || self.check(TokenType::Eof)
+                {
                     break;
                 }
 
@@ -396,7 +407,9 @@ impl Parser {
 
         let mut arguments: Vec<CallArgument> = Vec::new();
 
-        self.skip_separators();
+        // As with a map or a list, a comma before the first argument has no item before it and is an
+        // error, not trivia (specification 4.1).
+        self.skip_newlines();
 
         while !self.check(TokenType::RightParen) && !self.check(TokenType::Eof) {
             let name = self.name("Expected an entity argument name.")?;
@@ -619,15 +632,13 @@ fn lint_value(value: &ValueNode, diagnostics: &mut Vec<Diagnostic>) {
                 let (name, span) = match entry {
                     MapItem::Entry { name, span, .. } => (name.as_str(), span),
                     MapItem::Link { value, span } => {
-                        let reference: &[String] = match value {
+                        let name = match value {
                             ValueNode::Link { reference, .. }
-                            | ValueNode::Call { reference, .. } => reference,
-                            _ => &[],
+                            | ValueNode::Call { reference, .. } => reference.receiving_key(),
+                            _ => "",
                         };
 
-                        let segment = reference.last().map(String::as_str).unwrap_or("");
-
-                        (segment.strip_prefix('$').unwrap_or(segment), span)
+                        (name, span)
                     }
                     // A key replaced by a spread is not reported.
                     MapItem::Spread { .. } => continue,

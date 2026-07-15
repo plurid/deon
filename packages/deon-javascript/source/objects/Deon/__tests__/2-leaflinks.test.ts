@@ -659,9 +659,13 @@ spread [
 
 
     it('simple - environment variables', async () => {
-        process.env.ENV_ONE = 'aValue';
-        process.env.ENV_TWO = 'anotherValue';
-        process.env.ENV_THREE = 'threeValue';
+        // The evaluation environment is exactly what the parse is supplied, never the host process
+        // (specification 6), so the values are handed in explicitly rather than read from `process.env`.
+        const environment = {
+            ENV_ONE: 'aValue',
+            ENV_TWO: 'anotherValue',
+            ENV_THREE: 'threeValue',
+        };
 
         const dataValues = `
 {
@@ -677,6 +681,7 @@ envTwo #$ENV_TWO
         const deon = new Deon();
         const data = await deon.parse(
             dataValues,
+            { environment },
         );
         const end = Date.now();
         // log(data);

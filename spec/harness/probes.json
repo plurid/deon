@@ -114,5 +114,11 @@
     {"id": "datasign-optional-after-the-name", "ops": ["datasign"], "source": "{ a { id x, age 1, admin true } }", "files": {"a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n"}, "datasignFiles": ["a.datasign"], "datasignMap": {"a": "Account"}},
     {"id": "datasign-optional-after-the-type", "ops": ["datasign"], "source": "{ a { id x } }", "files": {"a.datasign": "data Account {\n    id: string;\n    nickname: string?;\n}\n"}, "datasignFiles": ["a.datasign"], "datasignMap": {"a": "Account"}},
     {"id": "datasign-a-composed-type-is-not-an-entity", "ops": ["datasign"], "source": "{ c { id x, extra 5 } }", "files": {"a.datasign": "data Base {\n    id: string;\n}\n\nComposed = Base & {\n    extra: number;\n}\n"}, "datasignFiles": ["a.datasign"], "datasignMap": {"c": "Composed"}},
-    {"id": "datasign-a-composed-types-base-still-reads", "ops": ["datasign"], "source": "{ b { id x } }", "files": {"a.datasign": "data Base {\n    id: string;\n}\n\nComposed = Base & {\n    extra: number;\n}\n"}, "datasignFiles": ["a.datasign"], "datasignMap": {"b": "Base"}}
+    {"id": "datasign-a-composed-types-base-still-reads", "ops": ["datasign"], "source": "{ b { id x } }", "files": {"a.datasign": "data Base {\n    id: string;\n}\n\nComposed = Base & {\n    extra: number;\n}\n"}, "datasignFiles": ["a.datasign"], "datasignMap": {"b": "Base"}},
+    {"id": "access-signed-index-is-a-key", "source": "l [a, b]\n{ v #l[+1] }"},
+    {"id": "access-trailing-space-in-a-bracket", "source": "l [a, b]\n{ v #l[1 ] }"},
+    {"id": "access-quoted-key-into-a-map-resolves", "source": "m { a b }\n{ v #m['a'] }"},
+    {"id": "access-decimal-key-into-a-map-resolves", "source": "m { '1.0' hit }\n{ v #m[1.0] }"},
+    {"id": "structure-row-trailing-comma", "source": "{ p <id, name> [1, One,] }"},
+    {"id": "nesting-at-the-limit-is-accepted", "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[x]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] }"}
 ]

@@ -508,7 +508,15 @@ final class Parser {
             skipInline();
             while (peek() == ',') {
                 advance();
-                skipTrivia();
+                // Inline trivia only, so a newline still ends the row and a comma before it reads as
+                // trailing rather than joining the next row's cells (sections 4.1 and 8).
+                skipInline();
+                // A single trailing comma before the row's end contributes no cell, as in a map or a
+                // list: the row ends at the newline with balanced nesting, at the structure's closing
+                // ']', or at end of input. The arity below is counted after it is discarded.
+                if (isNewline(peek()) || peek() == ']' || atEnd()) {
+                    break;
+                }
                 cells.add(parseValue());
                 skipInline();
             }
@@ -656,7 +664,18 @@ final class Parser {
         }
         String text = slice(start, pos);
         if (digits) {
-            return new AccessSeg(text, Integer.parseInt(text), true);
+            // A numeric index that overflows `int` cannot name any position a real list holds, so it
+            // is clamped to a value guaranteed out of range rather than throwing: `#l[99999999999999]`
+            // resolves as DEON_UNRESOLVED_LINK, exactly as an ordinary out-of-range index does, and
+            // matches the other implementations instead of crashing on `Integer.parseInt`.
+            int index;
+            try {
+                long value = Long.parseLong(text);
+                index = value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+            } catch (NumberFormatException overflow) {
+                index = Integer.MAX_VALUE;
+            }
+            return new AccessSeg(text, index, true);
         }
         return new AccessSeg(text, 0, false);
     }

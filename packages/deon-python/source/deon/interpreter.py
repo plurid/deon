@@ -26,6 +26,7 @@ from .resources import (
     resolve_target,
 )
 from .syntax import (
+    Access,
     Call,
     Document,
     Entry,
@@ -189,7 +190,7 @@ class Evaluator:
             if isinstance(entry, LinkEntry):
                 # The shortened form: the final access segment names the key it arrives under.
                 inner = entry.value
-                key = inner.reference.segments[-1]
+                key = inner.reference.receiving_key
 
                 result.insert(key, self.value(inner, scope, depth + 1))
                 continue
@@ -272,9 +273,9 @@ class Evaluator:
     def reference(self, reference: Reference, token: Token, scope: dict[str, str], depth: int) -> Value:
         if reference.environment:
             # An absent environment name is the empty string, and not an error (specification 6).
-            return self.options.environment.get(reference.segments[0], "")
+            return self.options.environment.get(reference.head, "")
 
-        head = reference.segments[0]
+        head = reference.head
 
         # A local shadows an outer leaflink for the duration of the call (specification 10).
         if head in scope:
@@ -291,41 +292,46 @@ class Evaluator:
         return self.access(base, reference, token)
 
     def access(self, base: Value, reference: Reference, token: Token) -> Value:
-        for segment in reference.segments[1:]:
+        for segment in reference.access:
             if isinstance(base, DeonMap):
-                if segment not in base:
+                # A dot segment, a quoted bracket segment, and a bracket segment that is not all
+                # digits are all map keys (specification 6); an all-digit segment carries the same
+                # text, so a map is navigated by that text either way.
+                if segment.name not in base:
                     raise error(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        f"'{segment}' is not a member of '{reference}'.",
+                        f"'{segment.name}' is not a member of '{reference}'.",
                         token.span(),
                     )
 
-                base = base[segment]
+                base = base[segment.name]
                 continue
 
             if isinstance(base, list):
-                if not segment.isdigit():
+                # A list is addressed by an index and never by a name: a quoted or dotted segment, or
+                # a bracket segment that is not all decimal digits, names no position it holds.
+                if not segment.by_index:
                     raise error(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        f"'{segment}' is not a list index.",
+                        f"'{segment.name}' is not a list index.",
                         token.span(),
                     )
 
-                index = int(segment)
-
-                if index >= len(base):
+                # A well-formed index that names no position — including one too large to hold a
+                # value — is unresolved, never a crash and never a clamped element (specification 6).
+                if segment.index < 0 or segment.index >= len(base):
                     raise error(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        f"The index {index} is outside '{reference}'.",
+                        f"The index {segment.index} is outside '{reference}'.",
                         token.span(),
                     )
 
-                base = base[index]
+                base = base[segment.index]
                 continue
 
             raise error(
                 DiagnosticCode.UNRESOLVED_LINK,
-                f"'{segment}' cannot be accessed on a string.",
+                f"'{segment.name}' cannot be accessed on a string.",
                 token.span(),
             )
 
@@ -469,7 +475,7 @@ class Evaluator:
         return value
 
     def call(self, node: Call, scope: dict[str, str], depth: int) -> Value:
-        head = node.reference.segments[0]
+        head = node.reference.head
 
         if head not in self.declarations:
             raise error(
@@ -621,70 +627,139 @@ def decode(raw: str, token: Token, resolve) -> str:
 
 
 def parse_reference(text: str, token: Token) -> Reference:
-    """The reference inside a `#{...}`, which the scanner consumed but did not read."""
+    """The reference inside a `#{...}`, which the scanner consumed but did not read.
+
+    The reference is written immediately between the braces, with no surrounding whitespace, and it
+    must not be empty (specification 10): `#{}` and `#{ name }` are `DEON_PARSE_EXPECTED`, not an
+    empty or a trimmed reference. A fault is anchored the way the strict implementations anchor it —
+    relative to the `#{` opener, so a fault at offset `k` of the reference text is at line 1, column
+    `3 + k`, the two opener characters lying before it. Its access segments obey the same key/index
+    rule as a leaflink: a dot or quoted segment is a key, and a bracket segment is an index only when
+    it is all decimal digits.
+    """
     from .scanner import NAME_CHARACTERS
 
-    text = text.strip()
+    stops = " \t\n,{}[]()<>'`"
 
-    if not text:
-        raise error(DiagnosticCode.LEX_INVALID, "An interpolation names nothing.", token.span())
+    def fault(offset: int):
+        column = 3 + offset
+
+        return error(
+            DiagnosticCode.PARSE_EXPECTED,
+            "An interpolation names a reference written immediately between its braces.",
+            Span(
+                source=token.source,
+                start=0,
+                end=0,
+                line=1,
+                column=column,
+                end_line=1,
+                end_column=column,
+            ),
+        )
+
+    def quoted(at: int) -> tuple[str, int]:
+        # `at` points at the opening quote; return the content and the index past the closing quote.
+        cursor = at + 1
+        content: list[str] = []
+
+        while cursor < len(text):
+            character = text[cursor]
+
+            if character == "\\" and cursor + 1 < len(text):
+                content.append(text[cursor + 1])
+                cursor += 2
+                continue
+
+            if character == "'":
+                return "".join(content), cursor + 1
+
+            content.append(character)
+            cursor += 1
+
+        raise fault(at)
+
+    length = len(text)
 
     if text.startswith("$"):
-        return Reference(segments=(text[1:],), environment=True)
+        index = 1
 
-    segments: list[str] = []
-    current: list[str] = []
-    index = 0
+        while index < length and text[index] in NAME_CHARACTERS:
+            index += 1
 
-    while index < len(text):
+        if index == 1 or index != length:
+            raise fault(1 if index == 1 else index)
+
+        return Reference(head=text[1:index], environment=True)
+
+    if length and text[0] == "'":
+        head, index = quoted(0)
+    else:
+        index = 0
+
+        while index < length and text[index] in NAME_CHARACTERS:
+            index += 1
+
+        if index == 0:
+            raise fault(0)
+
+        head = text[:index]
+
+    access: list[Access] = []
+
+    while index < length:
         character = text[index]
 
         if character == ".":
-            segments.append("".join(current))
-            current = []
             index += 1
+            begin = index
+
+            while index < length and text[index] in NAME_CHARACTERS:
+                index += 1
+
+            if index == begin:
+                raise fault(begin)
+
+            access.append(Access(name=text[begin:index]))
             continue
 
         if character == "[":
-            closing = text.find("]", index)
+            index += 1
 
-            if closing == -1:
-                raise error(
-                    DiagnosticCode.LEX_INVALID,
-                    f"Invalid interpolation reference '{text}'.",
-                    token.span(),
-                )
+            if index < length and text[index] == "'":
+                name, index = quoted(index)
+                access.append(Access(name=name))
+            else:
+                begin = index
+                digits = True
 
-            if current:
-                segments.append("".join(current))
-                current = []
+                while index < length and text[index] != "]" and text[index] not in stops:
+                    if text[index] not in "0123456789":
+                        digits = False
 
-            inner = text[index + 1 : closing].strip().strip("'")
-            segments.append(inner)
-            index = closing + 1
+                    index += 1
+
+                content = text[begin:index]
+
+                if content == "":
+                    raise fault(begin)
+
+                if digits:
+                    access.append(Access(name=content, by_index=True, index=int(content)))
+                else:
+                    access.append(Access(name=content))
+
+            if index >= length or text[index] != "]":
+                raise fault(index)
+
+            index += 1
             continue
 
-        if character not in NAME_CHARACTERS:
-            raise error(
-                DiagnosticCode.LEX_INVALID,
-                f"Invalid interpolation reference '{text}'.",
-                token.span(),
-            )
+        # Anything else — an interior space, a stray character — where a `.`, a `[`, or the end of
+        # the reference was due: it did not end cleanly, which is the fault section 10 forbids.
+        raise fault(index)
 
-        current.append(character)
-        index += 1
-
-    if current:
-        segments.append("".join(current))
-
-    if not segments or not segments[0]:
-        raise error(
-            DiagnosticCode.LEX_INVALID,
-            f"Invalid interpolation reference '{text}'.",
-            token.span(),
-        )
-
-    return Reference(segments=tuple(segments))
+    return Reference(head=head, access=tuple(access))
 
 
 def parameters(node: ValueNode) -> set[str]:

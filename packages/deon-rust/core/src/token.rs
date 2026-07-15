@@ -97,7 +97,7 @@ impl Token {
     pub fn reference(&self) -> Reference {
         match &self.literal {
             Literal::Reference(reference) => reference.clone(),
-            _ => Vec::new(),
+            _ => Reference::default(),
         }
     }
 }

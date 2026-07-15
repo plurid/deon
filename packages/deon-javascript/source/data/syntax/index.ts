@@ -19,9 +19,32 @@ export type DeonValue =
 
 
 /**
- * The segments a link navigates: `entity.name` is `['entity', 'name']`.
+ * One navigation step of a link (specification 6). A dot segment is always a map key. A bracket
+ * segment is a list index only when its content is a run of decimal digits — leading zeros allowed,
+ * read as the integer — and is otherwise a map key: a quoted string, or the exact characters written
+ * between the brackets.
  */
-export type Reference = string[];
+export interface AccessSegment {
+    // The map key to look up, or the digits of an index. Kept verbatim, so a shortened link receives
+    // under the exact text between its brackets and a diagnostic can quote it.
+    name: string;
+    // A decimal-digit bracket segment reaches a list by position. A dot, a quoted bracket, or a
+    // non-digit bracket is a key, never an index, so it is `DEON_UNRESOLVED_LINK` on a list.
+    byIndex: boolean;
+    // The parsed index, meaningful only when `byIndex`. A run of digits too large to represent
+    // becomes a value past any list length, which resolves as out-of-range rather than a crash.
+    index: number;
+}
+
+
+/**
+ * What a link, spread, interpolation, or call names: a head — a leaflink or entity name, a quoted
+ * name, or an environment name kept with its `$` — and the segments that navigate into it.
+ */
+export interface Reference {
+    head: string;
+    access: AccessSegment[];
+}
 
 
 export interface ScalarNode {

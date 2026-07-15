@@ -122,6 +122,16 @@ fn run(arguments: &[String]) -> Result<ExitCode, Failure> {
     }
 }
 
+/// The options with the host process environment folded in, so that a `#$NAME` in a document the
+/// *user* asked to evaluate reads the host environment, as the reference CLI does. The library never
+/// consults the host environment itself (specification 6): a document is data, and data must not be
+/// able to read a host secret. The CLI is a host tool, so it supplies the host environment explicitly
+/// — which is the one place it is allowed to come from — rather than the core reaching for it.
+fn with_host_environment(mut options: ParseOptions) -> ParseOptions {
+    options.environment.extend(std::env::vars());
+    options
+}
+
 /// `deon <file>` — read a document and write it back out.
 fn parse(arguments: &[String]) -> Result<ExitCode, Failure> {
     let file = &arguments[0];
@@ -132,11 +142,13 @@ fn parse(arguments: &[String]) -> Result<ExitCode, Failure> {
     // file itself rather than going through `parse_file`, whose whole job is to grant that.
     let source = deon::read_file(&path)?;
 
-    let options = ParseOptions::new()
-        .source_name(&path)
-        .filebase(deon::resources::directory_of(&path))
-        .allow_filesystem(option(arguments, "-f", "--filesystem", "true") == "true")
-        .allow_network(option(arguments, "-n", "--network", "false") == "true");
+    let options = with_host_environment(
+        ParseOptions::new()
+            .source_name(&path)
+            .filebase(deon::resources::directory_of(&path))
+            .allow_filesystem(option(arguments, "-f", "--filesystem", "true") == "true")
+            .allow_network(option(arguments, "-n", "--network", "false") == "true"),
+    );
 
     let value = deon::parse_with(&source, &options)?;
 
@@ -198,7 +210,10 @@ fn environment(arguments: &[String]) -> Result<ExitCode, Failure> {
         return fail("environment requires a source file and a command.");
     }
 
-    let value = deon::parse_file(&arguments[1], &ParseOptions::new().allow_filesystem(true))?;
+    let value = deon::parse_file(
+        &arguments[1],
+        &with_host_environment(ParseOptions::new().allow_filesystem(true)),
+    )?;
 
     let Value::Map(entries) = &value else {
         return fail("An environment source must contain a root map.");
@@ -276,7 +291,10 @@ fn exfile(arguments: &[String]) -> Result<ExitCode, Failure> {
 
     let unsafe_paths = arguments.iter().any(|a| a == "--unsafe-paths");
 
-    let value = deon::parse_file(source, &ParseOptions::new().allow_filesystem(true))?;
+    let value = deon::parse_file(
+        source,
+        &with_host_environment(ParseOptions::new().allow_filesystem(true)),
+    )?;
 
     let Value::Map(entries) = &value else {
         return fail("An exfile source must contain a root map.");
@@ -402,10 +420,12 @@ fn lint(arguments: &[String]) -> Result<ExitCode, Failure> {
 
         // Linting reports the warnings; evaluating is what surfaces the errors. A document that does
         // not evaluate has more wrong with it than a linter is allowed to say.
-        let options = ParseOptions::new()
-            .allow_filesystem(true)
-            .source_name(&path)
-            .filebase(deon::resources::directory_of(&path));
+        let options = with_host_environment(
+            ParseOptions::new()
+                .allow_filesystem(true)
+                .source_name(&path)
+                .filebase(deon::resources::directory_of(&path)),
+        );
 
         deon::parse_with(&source, &options)?;
     }

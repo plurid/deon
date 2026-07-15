@@ -10,9 +10,9 @@ use crate::diagnostic::{err, DResult, DiagnosticCode, Span};
 use crate::options::ParseOptions;
 use crate::scanner::{parse_reference, ESCAPED_INTERPOLATION};
 use crate::syntax::{
-    CallArgument, Declaration, Document, Leaflink, ListItem, MapItem, Reference, ValueNode,
+    Access, CallArgument, Declaration, Document, Leaflink, ListItem, MapItem, Reference, ValueNode,
 };
-use crate::text::{interpolations, is_list_index};
+use crate::text::interpolations;
 use crate::value::{Map, Value};
 
 /// The arguments of an entity call, bound for the length of that call and shadowing the leaflinks
@@ -162,15 +162,12 @@ impl<'a> Evaluator<'a> {
 
                 // The shortened form takes its receiving key from the last segment of the link.
                 MapItem::Link { value, .. } => {
-                    let reference: &[String] = match value {
+                    let key = match value {
                         ValueNode::Link { reference, .. } | ValueNode::Call { reference, .. } => {
-                            reference
+                            reference.receiving_key().to_string()
                         }
-                        _ => &[],
+                        _ => String::new(),
                     };
-
-                    let segment = reference.last().map(String::as_str).unwrap_or("");
-                    let key = segment.strip_prefix('$').unwrap_or(segment).to_string();
 
                     let value = self.value(value, locals)?;
                     result.insert(key, value);
@@ -301,32 +298,31 @@ impl<'a> Evaluator<'a> {
         span: &Span,
         locals: &Locals,
     ) -> DResult<Value> {
-        let Some(name) = reference.first().filter(|name| !name.is_empty()) else {
+        let name = &reference.head;
+
+        if name.is_empty() {
             return err(DiagnosticCode::UnresolvedLink, "A link requires a name.", span);
-        };
+        }
 
         let mut value = if let Some(variable) = name.strip_prefix('$') {
-            // An absent environment name is the empty string, never an error.
-            let configured = self.options.environment.get(variable).cloned();
-
-            Value::String(
-                configured
-                    .or_else(|| std::env::var(variable).ok())
-                    .unwrap_or_default(),
-            )
+            // An absent environment name is the empty string, never an error. Only the environment
+            // supplied to the parse is read; the host process environment is never consulted, so a
+            // document cannot reach out and read a host secret (specification 6).
+            Value::String(self.options.environment.get(variable).cloned().unwrap_or_default())
         } else if let Some(local) = locals.get(name.as_str()) {
             Value::string(local.clone())
         } else {
             self.resolve_name(name, span)?
         };
 
-        for segment in &reference[1..] {
+        for segment in &reference.access {
             value = match value {
                 Value::List(items) => {
-                    let index = if is_list_index(segment) {
-                        segment.parse::<usize>().ok()
-                    } else {
-                        None
+                    // A dot segment or a quoted bracket names a key, which no list holds; only an
+                    // in-range decimal index reads a position (specification 6).
+                    let index = match segment {
+                        Access::Index { index: Some(index), .. } => Some(*index),
+                        _ => None,
                     };
 
                     match index.and_then(|index| items.into_iter().nth(index)) {
@@ -334,18 +330,18 @@ impl<'a> Evaluator<'a> {
                         None => {
                             return err(
                                 DiagnosticCode::UnresolvedLink,
-                                format!("Invalid list access '[{segment}]'."),
+                                format!("Invalid list access '[{}]'.", segment.text()),
                                 span,
                             );
                         }
                     }
                 }
-                Value::Map(entries) => match entries.get(segment) {
+                Value::Map(entries) => match entries.get(segment.text()) {
                     Some(entry) => entry.clone(),
                     None => {
                         return err(
                             DiagnosticCode::UnresolvedLink,
-                            format!("Missing access segment '{segment}'."),
+                            format!("Missing access segment '{}'.", segment.text()),
                             span,
                         );
                     }
@@ -353,7 +349,7 @@ impl<'a> Evaluator<'a> {
                 Value::String(_) => {
                     return err(
                         DiagnosticCode::UnresolvedLink,
-                        format!("Missing access segment '{segment}'."),
+                        format!("Missing access segment '{}'.", segment.text()),
                         span,
                     );
                 }
@@ -406,7 +402,7 @@ impl<'a> Evaluator<'a> {
         span: &Span,
         outer: &Locals,
     ) -> DResult<Value> {
-        let head = reference.first().map(String::as_str).unwrap_or("");
+        let head = reference.head.as_str();
 
         let Some(declaration) = self.declarations.get(head).copied() else {
             return err(
@@ -416,7 +412,7 @@ impl<'a> Evaluator<'a> {
             );
         };
 
-        let target = Self::static_target(&declaration.value, &reference[1..], span)?;
+        let target = Self::static_target(&declaration.value, &reference.access, span)?;
         let parameters = Self::parameters(target);
 
         let mut locals = Locals::new();
@@ -468,7 +464,7 @@ impl<'a> Evaluator<'a> {
             );
         }
 
-        let name = reference.join(".");
+        let name = reference.identity();
 
         if self.calling.contains(&name) {
             return err(
@@ -492,7 +488,7 @@ impl<'a> Evaluator<'a> {
     /// cannot be evaluated before the arguments are known.
     fn static_target(
         node: &'a ValueNode,
-        access: &[String],
+        access: &[Access],
         span: &Span,
     ) -> DResult<&'a ValueNode> {
         let mut target = node;
@@ -502,14 +498,14 @@ impl<'a> Evaluator<'a> {
                 ValueNode::Map { entries, .. } => {
                     // The last write to the key is the one that holds.
                     let found = entries.iter().rev().find_map(|entry| match entry {
-                        MapItem::Entry { name, value, .. } if name == segment => Some(value),
+                        MapItem::Entry { name, value, .. } if name == segment.text() => Some(value),
                         _ => None,
                     });
 
                     let Some(found) = found else {
                         return err(
                             DiagnosticCode::UnresolvedLink,
-                            format!("Missing entity access segment '{segment}'."),
+                            format!("Missing entity access segment '{}'.", segment.text()),
                             span,
                         );
                     };
@@ -517,18 +513,20 @@ impl<'a> Evaluator<'a> {
                     target = found;
                 }
 
-                ValueNode::List { items, .. } if is_list_index(segment) => {
-                    let index: usize = segment.parse().unwrap_or(usize::MAX);
-
-                    let found = match items.get(index) {
-                        Some(ListItem::Value(value)) => Some(value),
+                ValueNode::List { items, .. } => {
+                    // Only an in-range decimal index reads a list position; a key does not.
+                    let found = match segment {
+                        Access::Index { index: Some(index), .. } => match items.get(*index) {
+                            Some(ListItem::Value(value)) => Some(value),
+                            _ => None,
+                        },
                         _ => None,
                     };
 
                     let Some(found) = found else {
                         return err(
                             DiagnosticCode::UnresolvedLink,
-                            format!("Invalid entity list access '[{segment}]'."),
+                            format!("Invalid entity list access '[{}]'.", segment.text()),
                             span,
                         );
                     };
@@ -539,7 +537,7 @@ impl<'a> Evaluator<'a> {
                 _ => {
                     return err(
                         DiagnosticCode::UnresolvedLink,
-                        format!("Cannot access entity segment '{segment}'."),
+                        format!("Cannot access entity segment '{}'.", segment.text()),
                         span,
                     );
                 }
@@ -563,9 +561,7 @@ impl<'a> Evaluator<'a> {
         match node {
             ValueNode::Scalar { value, .. } => {
                 for (_, _, raw) in interpolations(value) {
-                    let Some(name) = parse_reference(raw.trim()).into_iter().next() else {
-                        continue;
-                    };
+                    let name = parse_reference(raw.trim()).head;
 
                     if name.is_empty() || name.starts_with('$') {
                         continue;

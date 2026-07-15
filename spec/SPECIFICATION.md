@@ -38,6 +38,8 @@ Comments and formatting are not semantic data. An implementation MAY expose a lo
 
 Spaces and horizontal tabs separate tokens. A newline or comma separates map entries, list items, structure cells, and call arguments when not nested inside another group. Blank lines are ignored.
 
+A comma falls *between* two items. A comma with no item before it — whether it leads the group or stands alone in it — is `DEON_PARSE_EXPECTED`. A single trailing comma before the closing `}` or `]`, and before the newline that ends a structure row, is permitted and contributes no item; maps, lists, and structures agree on this. A newline never carries the restriction, because a blank line is ignored rather than read as an empty item.
+
 Both LF and CRLF input are accepted. Semantic multiline strings and generated output normalize line endings to LF.
 
 ### 4.2 Comments
@@ -85,9 +87,11 @@ The unnamed top-level map or list is the root. Every other top-level named value
 
 `#name` evaluates a leaflink. Within a map, the shortened form uses the final access segment as the receiving key. `key #name` uses the explicit receiving key. Within a list, a link contributes one item.
 
-Dot access (`#entity.name`) and bracket access (`#entity[name]`, `#items[0]`) navigate maps and lists. Accessing a missing member, a non-container, or an invalid list index is an error. A quoted initial name is parsed before access segments.
+Dot access (`#entity.name`) and bracket access (`#entity[name]`, `#items[0]`) navigate maps and lists. A dot segment is always a map key. A bracket segment is a **list index** only when its content is a run of decimal digits — leading zeros are permitted and the digits are read as the integer — and is otherwise a **map key**: a quoted string, or else the exact characters written between the brackets. A quoted or dotted segment is therefore never a list index, so `#items['0']` and `#items.0` look up the key `0` rather than the first element, and `#items[1.0]` looks up the key `1.0`. A bracket segment must not be empty, and whitespace inside it ends the segment — so a space before the closing `]` is `DEON_PARSE_EXPECTED` at that space, and `[]` is `DEON_PARSE_EXPECTED` at the `]`. A quoted initial name is parsed before access segments.
 
-`#$NAME` reads the evaluation environment. An absent environment name evaluates to the empty string. Environment values are always strings.
+Accessing a missing map key, a non-container, an out-of-range list index, or a list index too large to represent is `DEON_UNRESOLVED_LINK`. An index is well-formed but unresolved when it names no position the list holds; it is never a crash and never a silently clamped element.
+
+`#$NAME` reads the evaluation environment. An absent environment name evaluates to the empty string. Environment values are always strings. The evaluation environment is exactly the environment supplied to the parse; an implementation MUST NOT consult the host process environment, so a name the caller did not supply is empty even when the host defines it — otherwise a document could read host secrets that were never handed to it. A tool that wants the host environment available to a document, such as the command-line interface, supplies it explicitly.
 
 ## 7. Spreading
 
@@ -111,7 +115,7 @@ people <id, name> [
 ]
 ```
 
-The signature contains unique map keys; a repeated field name is `DEON_STRUCTURE_ARITY` at the signature's opening `<`. Cells may contain any Deon value. A logical row ends at a newline with balanced nesting, and cells are comma separated. Every row MUST contain exactly the signature arity. The example evaluates to `[{ id: "1", name: "One" }, { id: "2", name: "Two" }]`.
+The signature contains unique map keys; a repeated field name is `DEON_STRUCTURE_ARITY` at the signature's opening `<`. Cells may contain any Deon value. A logical row ends at a newline with balanced nesting, and cells are comma separated. A single trailing comma before the row's end contributes no cell, as in a map or list. Every row MUST contain exactly the signature arity, counted after any trailing comma is discarded. The example evaluates to `[{ id: "1", name: "One" }, { id: "2", name: "Two" }]`.
 
 ## 9. Imports and injections
 
@@ -141,7 +145,7 @@ Repeated JSON object members follow Deon's last-write-wins map rule.
 
 ## 10. Interpolation and entity calls
 
-`#{reference}` may occur any number of times in any string form. A reference is resolved using the same access rules as a leaflink and MUST produce a string. Every occurrence is replaced. `\\#{` writes a literal interpolation opener.
+`#{reference}` may occur any number of times in any string form. A reference is resolved using the same access rules as a leaflink and MUST produce a string. The reference is written immediately between the braces with no surrounding whitespace and MUST NOT be empty: `#{}` and `#{ name }` are `DEON_PARSE_EXPECTED`, not an empty or trimmed reference. Every occurrence is replaced. `\\#{` writes a literal interpolation opener.
 
 A map, list, or string leaflink may be called:
 

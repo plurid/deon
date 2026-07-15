@@ -5,6 +5,7 @@
     } from '../../data/constants';
 
     import type {
+        AccessSegment,
         DeclarationNode,
         DeonValue,
         DocumentNode,
@@ -427,7 +428,10 @@ class Evaluator {
                         this.reference(entry.value.reference, entry.value.token, locals),
                     );
 
-                const segment = entry.value.reference[entry.value.reference.length - 1] ?? '';
+                const reference = entry.value.reference;
+                const segment = reference.access.length
+                    ? reference.access[reference.access.length - 1].name
+                    : reference.head;
                 const key = segment.startsWith('$') ? segment.slice(1) : segment;
 
                 setOrdered(result, key, value);
@@ -510,7 +514,7 @@ class Evaluator {
         token: Token,
         locals: Locals,
     ) {
-        const [name, ...access] = reference;
+        const name = reference.head;
 
         if (!name) {
             deonError(
@@ -524,36 +528,37 @@ class Evaluator {
 
         if (name.startsWith('$')) {
             const environmentName = name.slice(1);
-            const configured = this.options.environment?.[environmentName];
-            const processValue = typeof process === 'undefined'
-                ? undefined
-                : process.env[environmentName];
 
-            // An absent environment name is the empty string, never an error.
-            value = configured ?? processValue ?? '';
+            // An absent environment name is the empty string, never an error. Only the environment
+            // supplied to the parse is read; the host process environment is never consulted, so a
+            // document cannot reach a host secret it was not handed (specification 6).
+            value = this.options.environment?.[environmentName] ?? '';
         } else if (locals.has(name)) {
             value = locals.get(name) as string;
         } else {
             value = this.resolveName(name, token);
         }
 
-        for (const segment of access) {
+        for (const segment of reference.access) {
             if (Array.isArray(value)) {
-                if (!/^(0|[1-9][0-9]*)$/.test(segment) || Number(segment) >= value.length) {
+                // A list is reached only by a decimal-digit bracket. A dot, a quoted bracket, or a
+                // non-digit bracket is a key, which a list has none of; an index past its end — or too
+                // large to represent — names no position it holds (specification 6).
+                if (!segment.byIndex || segment.index >= value.length) {
                     deonError(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        `Invalid list access '[${segment}]'.`,
+                        `A list has no position '${segment.name}'.`,
                         token,
                     );
                 }
 
-                value = value[Number(segment)];
-            } else if (typeof value !== 'string' && own(value, segment)) {
-                value = value[segment];
+                value = value[segment.index];
+            } else if (typeof value !== 'string' && own(value, segment.name)) {
+                value = value[segment.name];
             } else {
                 deonError(
                     DiagnosticCode.UNRESOLVED_LINK,
-                    `Missing access segment '${segment}'.`,
+                    `Missing access segment '${segment.name}'.`,
                     token,
                 );
             }
@@ -573,7 +578,9 @@ class Evaluator {
         locals: Locals,
     ) {
         const output = input.replace(/#\{([^}]+)\}/g, (_match, raw: string) => {
-            const value = this.reference(parseReference(raw.trim()), token, locals);
+            // The reference was validated when it was scanned (specification 10), so it carries no
+            // surrounding whitespace and parses cleanly here.
+            const value = this.reference(parseReference(raw).reference, token, locals);
 
             if (typeof value !== 'string') {
                 deonError(
@@ -600,17 +607,17 @@ class Evaluator {
         token: Token,
         outerLocals: Locals,
     ) {
-        const declaration = this.declarations.get(reference[0]);
+        const declaration = this.declarations.get(reference.head);
 
         if (!declaration) {
             deonError(
                 DiagnosticCode.UNRESOLVED_LINK,
-                `Unknown entity '${reference[0]}'.`,
+                `Unknown entity '${reference.head}'.`,
                 token,
             );
         }
 
-        const target = this.staticTarget(declaration.value, reference.slice(1), token);
+        const target = this.staticTarget(declaration.value, reference.access, token);
         const parameters = this.parameters(target);
         const locals = new Map<string, string>();
 
@@ -648,7 +655,7 @@ class Evaluator {
             );
         }
 
-        const callName = reference.join('.');
+        const callName = [reference.head, ...reference.access.map(segment => segment.name)].join('.');
 
         if (this.calling.includes(callName)) {
             deonError(
@@ -675,7 +682,7 @@ class Evaluator {
      */
     private staticTarget(
         node: ValueNode,
-        access: string[],
+        access: AccessSegment[],
         token: Token,
     ): ValueNode {
         let target = node;
@@ -683,13 +690,13 @@ class Evaluator {
         for (const segment of access) {
             if (target.type === 'map') {
                 const entries = target.entries.filter(
-                    entry => entry.type === 'entry' && entry.name === segment,
+                    entry => entry.type === 'entry' && entry.name === segment.name,
                 );
 
                 if (!entries.length) {
                     deonError(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        `Missing entity access segment '${segment}'.`,
+                        `Missing entity access segment '${segment.name}'.`,
                         token,
                     );
                 }
@@ -702,13 +709,13 @@ class Evaluator {
                 continue;
             }
 
-            if (target.type === 'list' && /^(0|[1-9][0-9]*)$/.test(segment)) {
-                const item = target.items[Number(segment)];
+            if (target.type === 'list' && segment.byIndex) {
+                const item = target.items[segment.index];
 
                 if (!item || item.type === 'spread-item') {
                     deonError(
                         DiagnosticCode.UNRESOLVED_LINK,
-                        `Invalid entity list access '[${segment}]'.`,
+                        `Invalid entity list access '[${segment.name}]'.`,
                         token,
                     );
                 }
@@ -719,7 +726,7 @@ class Evaluator {
 
             deonError(
                 DiagnosticCode.UNRESOLVED_LINK,
-                `Cannot access entity segment '${segment}'.`,
+                `Cannot access entity segment '${segment.name}'.`,
                 token,
             );
         }
@@ -755,7 +762,7 @@ export const entityParameters = (
     ) => {
         if (value.type === 'scalar') {
             for (const match of value.value.matchAll(/#\{([^}]+)\}/g)) {
-                const name = parseReference(match[1].trim())[0];
+                const name = parseReference(match[1]).reference.head;
 
                 if (name && !name.startsWith('$')) {
                     parameters.add(name);
@@ -1062,7 +1069,7 @@ class Interpreter {
         const reference = (
             value: Reference,
         ) => {
-            const name = value[0];
+            const name = value.head;
 
             if (!name || name.startsWith('$')) {
                 return;
@@ -1088,7 +1095,7 @@ class Interpreter {
         ): void => {
             if (value.type === 'scalar') {
                 for (const match of value.value.matchAll(/#\{([^}]+)\}/g)) {
-                    reference(parseReference(match[1].trim()));
+                    reference(parseReference(match[1]).reference);
                 }
             } else if (value.type === 'link') {
                 reference(value.reference);

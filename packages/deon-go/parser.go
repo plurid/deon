@@ -533,8 +533,16 @@ func (p *parser) structure() node {
 		row := []node{p.value()}
 		p.skipInline()
 		for p.peek() == ',' {
-			p.advance()
-			p.skipTrivia()
+			p.advance() // the cell-separating comma
+			// Inline trivia only, so a newline still ends the row and a comma before it reads as
+			// trailing rather than joining the next row's cells.
+			p.skipInline()
+			// A single trailing comma before the row's end contributes no cell, as in a map or a
+			// list (§4.1, §8): the row ends at the newline with balanced nesting, at the structure's
+			// closing ']', or at the end of input. The arity below is counted after it is discarded.
+			if isNewline(p.peek()) || p.peek() == ']' || p.atEnd() {
+				break
+			}
 			row = append(row, p.value())
 			p.skipInline()
 		}

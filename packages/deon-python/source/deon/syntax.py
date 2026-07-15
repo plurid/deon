@@ -14,26 +14,43 @@ from .token import Token
 
 
 @dataclass(frozen=True)
+class Access:
+    """One navigation step after a reference head (specification 6).
+
+    A dot segment is always a map key. A bracket segment is a **list index** only when its content is
+    a run of decimal digits — leading zeros permitted, read as the integer — and is otherwise a **map
+    key** (a quoted string, or the exact characters written between the brackets). `name` is the key,
+    or the digit run for an index; `by_index` and `index` carry the position an index resolves to.
+    """
+
+    name: str
+    by_index: bool = False
+    index: int = 0
+
+
+@dataclass(frozen=True)
 class Reference:
     """What a `#link`, a `...#spread`, or a `#{interpolation}` names.
 
-    `segments` is the head followed by every dot or bracket access, already unquoted. `environment`
-    marks the `#$NAME` form, which reads the evaluation environment rather than the declaration
-    namespace (specification 6).
+    `head` is the initial name; `access` is each dot or bracket step after it, already unquoted and
+    already classified as a key or an index. `environment` marks the `#$NAME` form, which reads the
+    evaluation environment rather than the declaration namespace (specification 6).
     """
 
-    segments: tuple[str, ...]
+    head: str
+    access: tuple[Access, ...] = ()
     environment: bool = False
 
     @property
-    def head(self) -> str:
-        return self.segments[0]
+    def receiving_key(self) -> str:
+        """The map key a shortened link contributes: its final access segment, or its head."""
+        return self.access[-1].name if self.access else self.head
 
     def __str__(self) -> str:
         if self.environment:
-            return "$" + self.segments[0]
+            return "$" + self.head
 
-        return ".".join(self.segments)
+        return ".".join([self.head, *(segment.name for segment in self.access)])
 
 
 # #region values

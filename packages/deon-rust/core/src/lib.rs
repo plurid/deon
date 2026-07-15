@@ -211,12 +211,16 @@ pub fn leaflinks(source: &str, options: &ParseOptions) -> DResult<Map> {
 /// caller. So the three public writers check first, and this is the check: it walks the value with an
 /// explicit stack rather than the call stack, so the guard itself cannot be what overflows.
 ///
-/// Depth counts enclosing values, matching the parser: the root is depth 1, so a value that would sit
-/// one past the limit is refused with the same [`DiagnosticCode::ParseExpected`] the parser raises.
+/// Depth counts enclosing values, matching the parser: the root is depth 0, its members depth 1, so a
+/// value that would sit one past the limit is refused with the same [`DiagnosticCode::ParseExpected`]
+/// the parser raises. The parser never runs its guard on the root container itself — the outermost
+/// `value()` call is the root's first child — so the writer, to agree on the boundary byte for byte,
+/// must not count the root either: a value 128 deep is written, one 129 deep is refused.
 fn guard_depth(value: &Value) -> DResult<()> {
-    // Each entry is a value still to visit, paired with how deeply it is nested. The root counts as
-    // one enclosing value, exactly as the parser's `depth` reaches 1 for the outermost value.
-    let mut stack: Vec<(&Value, usize)> = vec![(value, 1)];
+    // Each entry is a value still to visit, paired with how deeply it is nested. The root is not an
+    // enclosing value of itself, so it starts at zero and its members at one, exactly as the parser
+    // reaches depth 1 for the outermost value it checks.
+    let mut stack: Vec<(&Value, usize)> = vec![(value, 0)];
 
     while let Some((current, depth)) = stack.pop() {
         if depth > parser::MAX_DEPTH {

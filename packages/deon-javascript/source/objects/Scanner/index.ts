@@ -5,6 +5,7 @@
     } from '../../data/enumerations';
 
     import {
+        AccessSegment,
         Reference,
     } from '../../data/syntax';
 
@@ -142,82 +143,153 @@ export const decodeMinimal = (
 
 
 /**
- * Reads the text of a link into the segments it navigates: `entity.name`, `entity[name]`,
- * `items[0]`, or the environment `$NAME`. A quoted head may hold any character.
+ * A reference is malformed at a character the grammar did not allow: an empty or spaced bracket, or a
+ * dot with no name after it. `parseReference` throws this rather than a positioned diagnostic, because
+ * it reads a bare string and does not know where in the source that string sits; the caller — the
+ * scanner for a link, the interpolation check for `#{…}` — maps `offset` to the position it reports.
+ */
+export class ReferenceFault {
+    constructor(
+        public readonly offset: number,
+        public readonly message: string,
+    ) {}
+}
+
+
+const REFERENCE_NAME = /[A-Za-z0-9_-]/;
+
+/**
+ * The characters that end a bracket segment before its `]` — whitespace, a comma, a newline, and the
+ * bracketing delimiters — so a space inside a bracket is a fault at the space rather than a name that
+ * happens to contain one (specification 6).
+ */
+const BRACKET_STOP = ' \t\r\n,{}[]()<>\'`';
+
+
+const isBracketStop = (
+    character: string | undefined,
+) => character === undefined || BRACKET_STOP.includes(character);
+
+
+/**
+ * Reads the text of a reference into a head and the segments it navigates: `entity.name`,
+ * `entity[name]`, `items[0]`, a quoted head, or the environment `$NAME` (specification 6). A dot
+ * segment is always a map key. A bracket segment is a list index only when its content is a run of
+ * decimal digits — leading zeros allowed, read as the integer — and is otherwise a key: a quoted
+ * string, or the exact characters between the brackets. An empty or spaced bracket, and a trailing
+ * dot, are malformations raised through a `ReferenceFault` carrying the offset of the offending
+ * character. `end` is the index one past the reference, so a caller reading `#{…}` can tell a
+ * trailing space from the closing brace.
  */
 export const parseReference = (
     raw: string,
-): Reference => {
-    const segments: string[] = [];
+): { reference: Reference; end: number } => {
     let index = 0;
 
-    if (raw[index] === '\'') {
-        index += 1;
+    const bareName = () => {
+        const start = index;
+        while (index < raw.length && REFERENCE_NAME.test(raw[index])) {
+            index += 1;
+        }
 
-        // Decoded exactly as a singlequoted string is, so that a declaration and a link to it agree
-        // on what the name is.
-        let quoted = '';
+        if (index === start) {
+            throw new ReferenceFault(start, 'A reference name was expected here.');
+        }
+
+        return raw.slice(start, index);
+    };
+
+    // Decoded exactly as a singlequoted string is, so that a declaration and a link to it agree on
+    // what the name is.
+    const quoted = () => {
+        index += 1; // opening '
+        let value = '';
+
         while (index < raw.length && raw[index] !== '\'') {
             if (raw[index] === '\\' && index + 1 < raw.length) {
-                quoted += raw[index] + raw[index + 1];
+                value += raw[index] + raw[index + 1];
                 index += 2;
                 continue;
             }
 
-            quoted += raw[index];
+            value += raw[index];
             index += 1;
         }
-
-        segments.push(decodeMinimal(quoted, '\''));
 
         if (raw[index] === '\'') {
-            index += 1;
-        }
-    } else {
-        let end = index;
-        while (end < raw.length && raw[end] !== '.' && raw[end] !== '[') {
-            end += 1;
+            index += 1; // closing '
         }
 
-        segments.push(raw.slice(index, end));
-        index = end;
+        return decodeMinimal(value, '\'');
+    };
+
+    const bracket = (): AccessSegment => {
+        // A quoted bracket is a key, never an index.
+        if (raw[index] === '\'') {
+            return { name: quoted(), byIndex: false, index: 0 };
+        }
+
+        const start = index;
+        let digits = true;
+
+        while (index < raw.length && raw[index] !== ']' && !isBracketStop(raw[index])) {
+            if (raw[index] < '0' || raw[index] > '9') {
+                digits = false;
+            }
+
+            index += 1;
+        }
+
+        const text = raw.slice(start, index);
+        if (text === '') {
+            throw new ReferenceFault(start, 'A bracket access needs a name or an index.');
+        }
+
+        // A run of decimal digits is a list index; anything else — a decimal, a word — is a key.
+        return digits
+            ? { name: text, byIndex: true, index: Number(text) }
+            : { name: text, byIndex: false, index: 0 };
+    };
+
+    let head: string;
+    if (raw[index] === '$') {
+        index += 1;
+        head = '$' + bareName();
+    } else if (raw[index] === '\'') {
+        head = quoted();
+    } else {
+        head = bareName();
     }
+
+    const access: AccessSegment[] = [];
 
     while (index < raw.length) {
         if (raw[index] === '.') {
             index += 1;
-
-            let end = index;
-            while (end < raw.length && raw[end] !== '.' && raw[end] !== '[') {
-                end += 1;
-            }
-
-            segments.push(raw.slice(index, end));
-            index = end;
+            // A dot is always a map key; a trailing dot names nothing and is a fault.
+            access.push({ name: bareName(), byIndex: false, index: 0 });
             continue;
         }
 
         if (raw[index] === '[') {
-            const end = raw.indexOf(']', index + 1);
-            if (end === -1) {
-                segments.push(raw.slice(index + 1));
-                break;
+            index += 1;
+            access.push(bracket());
+
+            if (raw[index] !== ']') {
+                throw new ReferenceFault(index, 'A bracket access must be closed with \']\'.');
             }
 
-            const segment = raw.slice(index + 1, end);
-            segments.push(
-                segment.startsWith('\'') && segment.endsWith('\'')
-                    ? decodeMinimal(segment.slice(1, -1), '\'')
-                    : segment,
-            );
-            index = end + 1;
+            index += 1;
             continue;
         }
 
-        index += 1;
+        break;
     }
 
-    return segments;
+    return {
+        reference: { head, access },
+        end: index,
+    };
 }
 
 
@@ -370,7 +442,8 @@ class Scanner {
         line: number,
         column: number,
     ) {
-        this.advance();
+        this.advance(); // {
+        const contentStart = this.current;
 
         while (!this.atEnd() && this.peek() !== '}') {
             this.advance();
@@ -387,10 +460,63 @@ class Scanner {
             );
         }
 
-        this.advance();
+        const content = this.source.slice(contentStart, this.current);
+        this.advance(); // }
+
+        this.checkInterpolation(content);
 
         const lexeme = this.source.slice(start, this.current);
         this.add(TokenType.INTERPOLATE, lexeme, lexeme, start, line, column);
+    }
+
+
+    /**
+     * An interpolation names a reference written immediately between `#{` and `}`, with no
+     * surrounding whitespace and never empty (specification 10). The reference within is recovered by
+     * decoding and has no source position of its own, so a fault is pointed at relative to the
+     * interpolation's own `#` — column 1 the `#`, column 2 the `{`, column 3 the reference's first
+     * character — which is the position the strict implementations agree on (§11.2).
+     */
+    private checkInterpolation(
+        content: string,
+    ) {
+        let end: number;
+
+        try {
+            end = parseReference(content).end;
+        } catch (fault) {
+            if (fault instanceof ReferenceFault) {
+                this.failInterpolation(fault.offset);
+            }
+
+            throw fault;
+        }
+
+        // Anything between the reference and the `}` — a trailing space, another word — is not part of
+        // the reference and is refused where it begins.
+        if (end !== content.length) {
+            this.failInterpolation(end);
+        }
+    }
+
+
+    private failInterpolation(
+        offset: number,
+    ): never {
+        return deonError(
+            DiagnosticCode.PARSE_EXPECTED,
+            'An interpolation names a reference between #{ and }, with no surrounding spaces.',
+            new Token(
+                TokenType.INTERPOLATE,
+                '',
+                null,
+                1,
+                offset + 3,
+                this.current,
+                this.current,
+                this.sourceName,
+            ),
+        );
     }
 
 
@@ -499,6 +625,12 @@ class Scanner {
         line: number,
         column: number,
     ) {
+        // The `#` (or `...#`) is already consumed, so the cursor sits at the reference's first
+        // character. A reference does not cross a line, so an offset into `raw` maps to an absolute
+        // column by adding it to this one — which is how a malformed access is pointed at.
+        const rawLine = this.line;
+        const rawColumn = this.column;
+
         let raw = '';
         let brackets = 0;
 
@@ -571,10 +703,36 @@ class Scanner {
             );
         }
 
+        let reference: Reference;
+        try {
+            reference = parseReference(raw).reference;
+        } catch (fault) {
+            if (fault instanceof ReferenceFault) {
+                // A dot or bracket the access grammar did not allow. The offence is a character inside
+                // the reference, not the whole link, so it is pointed at where it stands (spec 6).
+                deonError(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    fault.message,
+                    new Token(
+                        type,
+                        raw,
+                        null,
+                        rawLine,
+                        rawColumn + fault.offset,
+                        start,
+                        this.current,
+                        this.sourceName,
+                    ),
+                );
+            }
+
+            throw fault;
+        }
+
         this.add(
             type,
             this.source.slice(start, this.current),
-            parseReference(raw),
+            reference,
             start,
             line,
             column,
@@ -613,8 +771,9 @@ class Scanner {
             }
 
             if (this.source.startsWith('#{', this.current)) {
-                this.advance();
-                this.advance();
+                this.advance(); // #
+                this.advance(); // {
+                const contentStart = this.current;
 
                 while (!this.atEnd() && this.peek() !== '}') {
                     this.advance();
@@ -631,7 +790,10 @@ class Scanner {
                     );
                 }
 
-                this.advance();
+                const content = this.source.slice(contentStart, this.current);
+                this.advance(); // }
+
+                this.checkInterpolation(content);
                 continue;
             }
 

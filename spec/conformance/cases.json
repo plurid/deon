@@ -52,6 +52,13 @@
             "expected": { "value": "" }
         },
         {
+            "id": "environment-ignores-the-host-process",
+            "required": true,
+            "source": "{ home #$HOME }",
+            "environment": {},
+            "expected": { "home": "" }
+        },
+        {
             "id": "interpolation-all-forms",
             "required": true,
             "source": "name world\n{ a hello #{name}\nb 'hello #{name}'\nc `hello #{name}`\nd '\\#{name}' }",
@@ -557,6 +564,112 @@
             "source": "{ a `one\ntwo` }",
             "expected": { "a": "one\ntwo" },
             "canonical": "{\n    a `one\ntwo`\n}\n"
+        },
+
+        {
+            "id": "access-index-allows-leading-zeros",
+            "required": true,
+            "source": "l [a, b, c]\n{ v #l[00] }",
+            "expected": { "v": "a" },
+            "canonical": "{\n    v a\n}\n"
+        },
+        {
+            "id": "access-decimal-index-is-a-key",
+            "required": true,
+            "source": "l [a, b, c]\n{ v #l[1.0] }",
+            "error": "DEON_UNRESOLVED_LINK",
+            "position": { "line": 2, "column": 5 }
+        },
+        {
+            "id": "access-quoted-index-is-a-key-not-a-position",
+            "required": true,
+            "source": "l [a, b]\n{ v #l['1'] }",
+            "error": "DEON_UNRESOLVED_LINK",
+            "position": { "line": 2, "column": 5 }
+        },
+        {
+            "id": "access-dot-into-a-list-is-a-key",
+            "required": true,
+            "source": "l [a, b]\n{ v #l.0 }",
+            "error": "DEON_UNRESOLVED_LINK",
+            "position": { "line": 2, "column": 5 }
+        },
+        {
+            "id": "access-space-in-a-bracket-is-an-error",
+            "required": true,
+            "source": "l [a, b, c]\n{ v #l[ 1 ] }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 2, "column": 8 }
+        },
+        {
+            "id": "access-empty-bracket-is-an-error",
+            "required": true,
+            "source": "l [a]\n{ v #l[] }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 2, "column": 8 }
+        },
+        {
+            "id": "access-trailing-dot-is-an-error",
+            "required": true,
+            "source": "m { a b }\n{ v #m.a. }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 2, "column": 10 }
+        },
+        {
+            "id": "access-index-overflow-is-unresolved-not-a-crash",
+            "required": true,
+            "source": "l [a]\n{ v #l[99999999999999999999999] }",
+            "error": "DEON_UNRESOLVED_LINK",
+            "position": { "line": 2, "column": 5 }
+        },
+        {
+            "id": "leading-comma-in-a-map-is-an-error",
+            "required": true,
+            "source": "{ ,a 1 }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "lone-comma-in-a-map-is-an-error",
+            "required": true,
+            "source": "{ , }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "leading-comma-in-a-list-is-an-error",
+            "required": true,
+            "source": "[, a]",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 2 }
+        },
+        {
+            "id": "interpolation-rejects-inner-whitespace",
+            "required": true,
+            "source": "{ a #{ x } }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "interpolation-rejects-an-empty-reference",
+            "required": true,
+            "source": "{ a #{} }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "structure-allows-a-trailing-comma",
+            "required": true,
+            "source": "{ p <a, b> [1, 2,] }",
+            "expected": { "p": [ { "a": "1", "b": "2" } ] },
+            "canonical": "{\n    p [\n        {\n            a 1\n            b 2\n        }\n    ]\n}\n"
+        },
+        {
+            "id": "structure-row-ends-at-a-newline-after-a-trailing-comma",
+            "required": true,
+            "source": "{ p <a, b> [1, 2,\n3, 4] }",
+            "expected": { "p": [ { "a": "1", "b": "2" }, { "a": "3", "b": "4" } ] },
+            "canonical": "{\n    p [\n        {\n            a 1\n            b 2\n        }\n        {\n            a 3\n            b 4\n        }\n    ]\n}\n"
         },
 
         {

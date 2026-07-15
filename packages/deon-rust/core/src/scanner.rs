@@ -3,15 +3,168 @@
 use std::rc::Rc;
 
 use crate::diagnostic::{err, DResult, DiagnosticCode, Span};
-use crate::syntax::Reference;
+use crate::syntax::{Access, Reference};
 use crate::token::{Literal, Token, TokenType};
 
 /// Stands in for an escaped `#{`, so that the interpolator, which runs later and over the evaluated
 /// string, does not mistake it for an interpolation to resolve.
 pub const ESCAPED_INTERPOLATION: &str = "\u{0}deon-interpolation\u{0}";
 
-/// A reference ends at any of these, when it is not inside a bracket access.
-const REFERENCE_STOPS: &str = " \t\r\n,{}()<>";
+/// A character that ends the head or a dot segment of a reference. A `.` or `[` continues the
+/// reference into another segment and is handled by the caller, so neither ends a name here.
+fn ends_reference_name(character: char) -> bool {
+    matches!(
+        character,
+        ' ' | '\t' | '\r' | '\n' | ',' | '{' | '}' | '(' | ')' | '<' | '>' | ']'
+    )
+}
+
+/// A character that ends the content of a bracket access. Whitespace inside a bracket ends the
+/// segment — a space before the `]` is therefore an error, not part of the key — as does any
+/// grouping delimiter or quote. A `.` does not, so `[1.0]` reads the key `1.0` (specification 6).
+fn ends_bracket_content(character: char) -> bool {
+    matches!(
+        character,
+        ' ' | '\t'
+            | '\r'
+            | '\n'
+            | ','
+            | '{'
+            | '}'
+            | '['
+            | '('
+            | ')'
+            | '<'
+            | '>'
+            | '\''
+            | '`'
+    )
+}
+
+/// A reference name character, matching `is_bare_name`: letters, digits, `_`, and `-`.
+fn is_reference_name(character: char) -> bool {
+    character.is_ascii_alphanumeric() || character == '_' || character == '-'
+}
+
+/// Classifies the already-extracted content of a bracket access into a key or an index. Quoted
+/// content is a decoded key; an all-decimal-digit run is an index read as the integer (leading zeros
+/// permitted, `None` on overflow); anything else is the exact characters as a key (specification 6).
+fn classify_bracket(content: &str) -> Access {
+    if content.len() >= 2 && content.starts_with('\'') && content.ends_with('\'') {
+        return Access::Key(decode_minimal(&content[1..content.len() - 1], Some('\'')));
+    }
+
+    if !content.is_empty() && content.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Access::Index {
+            index: content.parse::<usize>().ok(),
+            text: content.to_string(),
+        };
+    }
+
+    Access::Key(content.to_string())
+}
+
+/// Validates the reference inside a `#{...}` interpolation against the reference grammar (§6, §10),
+/// which forbids surrounding whitespace and an empty reference. Returns the 1-based column, *within
+/// the `#{...}` text*, of the first offending character, or `None` when the reference is well-formed.
+///
+/// The reference implementation parses the reference with a fresh cursor over just this text, so its
+/// diagnostic is positioned relative to the `#{`, not to the document — the `#` sits at column 1 and
+/// the reference therefore begins at column 3. A `#{ x }` and a `#{}` both fault at column 3, where a
+/// reference name was due; a `#{x }` faults at column 4, where the `}` was.
+fn interpolation_fault(inner: &str) -> Option<usize> {
+    let characters: Vec<char> = inner.chars().collect();
+    let column = |index: usize| index + 3;
+    let mut index = 0;
+
+    // The head: an environment name, a quoted name, or a bare-name run. It may not be empty and may
+    // not be preceded by whitespace, so a fault here is column 3.
+    match characters.first() {
+        Some('$') => {
+            index += 1;
+            let start = index;
+            while index < characters.len() && is_reference_name(characters[index]) {
+                index += 1;
+            }
+            if index == start {
+                return Some(column(index));
+            }
+        }
+        Some('\'') => {
+            index += 1;
+            while index < characters.len() && characters[index] != '\'' {
+                if characters[index] == '\\' && index + 1 < characters.len() {
+                    index += 1;
+                }
+                index += 1;
+            }
+            if characters.get(index) != Some(&'\'') {
+                return Some(column(index));
+            }
+            index += 1;
+        }
+        _ => {
+            let start = index;
+            while index < characters.len() && is_reference_name(characters[index]) {
+                index += 1;
+            }
+            if index == start {
+                return Some(column(index));
+            }
+        }
+    }
+
+    // The access segments.
+    while index < characters.len() {
+        match characters[index] {
+            '.' => {
+                index += 1;
+                let start = index;
+                while index < characters.len() && is_reference_name(characters[index]) {
+                    index += 1;
+                }
+                if index == start {
+                    return Some(column(index));
+                }
+            }
+            '[' => {
+                index += 1;
+                if characters.get(index) == Some(&'\'') {
+                    index += 1;
+                    while index < characters.len() && characters[index] != '\'' {
+                        if characters[index] == '\\' && index + 1 < characters.len() {
+                            index += 1;
+                        }
+                        index += 1;
+                    }
+                    if characters.get(index) != Some(&'\'') {
+                        return Some(column(index));
+                    }
+                    index += 1;
+                } else {
+                    let start = index;
+                    while index < characters.len()
+                        && characters[index] != ']'
+                        && !ends_bracket_content(characters[index])
+                    {
+                        index += 1;
+                    }
+                    if index == start {
+                        return Some(column(index));
+                    }
+                }
+                if characters.get(index) != Some(&']') {
+                    return Some(column(index));
+                }
+                index += 1;
+            }
+            // Anything else where a segment or the end was due: the `}` was expected here.
+            _ => return Some(column(index)),
+        }
+    }
+
+    None
+}
 
 /// A newline, a carriage return, or a tab that a string could not otherwise carry: an unquoted
 /// string ends at a newline, a singlequoted one cannot cross one, and a backticked one trims the
@@ -93,14 +246,17 @@ pub fn decode_minimal(raw: &str, delimiter: Option<char>) -> String {
     value
 }
 
-/// Reads the text of a link into the segments it navigates: `entity.name`, `entity[name]`,
-/// `items[0]`, or the environment `$NAME`. A quoted head may hold any character.
+/// Reads the text of a link into the head and the segments it navigates: `entity.name`,
+/// `entity[name]`, `items[0]`, or the environment `$NAME`. A quoted head may hold any character.
+///
+/// This is the infallible reader, used where the reference has already been validated — the inner
+/// text of an interpolation, whose faults are caught where the string is scanned. The scanner's own
+/// [`Scanner::reference`] is the fallible one, which reports the position of a malformed segment.
 pub fn parse_reference(raw: &str) -> Reference {
     let characters: Vec<char> = raw.chars().collect();
-    let mut segments: Vec<String> = Vec::new();
     let mut index = 0;
 
-    if characters.first() == Some(&'\'') {
+    let head = if characters.first() == Some(&'\'') {
         index += 1;
 
         // Decoded exactly as a singlequoted string is, so that a declaration and a link to it agree
@@ -119,34 +275,34 @@ pub fn parse_reference(raw: &str) -> Reference {
             index += 1;
         }
 
-        segments.push(decode_minimal(&quoted, Some('\'')));
-
         if characters.get(index) == Some(&'\'') {
             index += 1;
         }
-    } else {
-        let mut end = index;
 
-        while end < characters.len() && characters[end] != '.' && characters[end] != '[' {
-            end += 1;
+        decode_minimal(&quoted, Some('\''))
+    } else {
+        let start = index;
+
+        while index < characters.len() && characters[index] != '.' && characters[index] != '[' {
+            index += 1;
         }
 
-        segments.push(characters[index..end].iter().collect());
-        index = end;
-    }
+        characters[start..index].iter().collect()
+    };
+
+    let mut access: Vec<Access> = Vec::new();
 
     while index < characters.len() {
         if characters[index] == '.' {
             index += 1;
 
-            let mut end = index;
+            let start = index;
 
-            while end < characters.len() && characters[end] != '.' && characters[end] != '[' {
-                end += 1;
+            while index < characters.len() && characters[index] != '.' && characters[index] != '[' {
+                index += 1;
             }
 
-            segments.push(characters[index..end].iter().collect());
-            index = end;
+            access.push(Access::Key(characters[start..index].iter().collect()));
             continue;
         }
 
@@ -157,19 +313,13 @@ pub fn parse_reference(raw: &str) -> Reference {
                 .map(|at| index + 1 + at);
 
             let Some(closing) = closing else {
-                segments.push(characters[index + 1..].iter().collect());
+                let content: String = characters[index + 1..].iter().collect();
+                access.push(classify_bracket(&content));
                 break;
             };
 
-            let segment: String = characters[index + 1..closing].iter().collect();
-
-            segments.push(
-                if segment.len() >= 2 && segment.starts_with('\'') && segment.ends_with('\'') {
-                    decode_minimal(&segment[1..segment.len() - 1], Some('\''))
-                } else {
-                    segment
-                },
-            );
+            let content: String = characters[index + 1..closing].iter().collect();
+            access.push(classify_bracket(&content));
 
             index = closing + 1;
             continue;
@@ -178,7 +328,7 @@ pub fn parse_reference(raw: &str) -> Reference {
         index += 1;
     }
 
-    segments
+    Reference { head, access }
 }
 
 pub struct Scanner {
@@ -340,6 +490,17 @@ impl Scanner {
 
         let lexeme = self.slice(start, self.current).to_string();
 
+        // The reference between the braces must be a well-formed reference with no surrounding
+        // whitespace (specification 10). The strict implementations read it with a fresh cursor over
+        // this text, so a fault is positioned relative to the `#{` rather than to the document.
+        if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
+            return err(
+                DiagnosticCode::ParseExpected,
+                "An interpolation needs a reference immediately between its braces.",
+                &self.span(start, 1, fault),
+            );
+        }
+
         self.add(
             TokenType::Interpolate,
             Literal::String(lexeme),
@@ -424,6 +585,12 @@ impl Scanner {
         Ok(())
     }
 
+    /// Reads a link, spread, or interpolation-free reference from the cursor into its head and the
+    /// segments it navigates, reporting the position of a malformed segment (specification 6). A dot
+    /// segment is always a key; a bracket segment is an index only when it is all decimal digits, and
+    /// a key otherwise. An empty bracket, whitespace inside one, or a trailing dot is
+    /// `DEON_PARSE_EXPECTED` at the offending character, matching where the strict implementations
+    /// underline it.
     fn reference(
         &mut self,
         ty: TokenType,
@@ -431,66 +598,25 @@ impl Scanner {
         line: usize,
         column: usize,
     ) -> DResult<()> {
-        let mut raw = String::new();
-        let mut brackets = 0usize;
+        // The head: a quoted name, or a bare run up to the first '.', '[', or a terminator. An
+        // environment head keeps its leading '$', which the evaluator reads.
+        let head = if self.peek(0) == '\'' {
+            self.quoted_reference_name(start, line, column)?
+        } else {
+            let mut head = String::new();
 
-        if self.peek(0) == '\'' {
-            raw.push(self.advance());
-
-            while !self.at_end() && self.peek(0) != '\'' {
-                if self.peek(0) == '\\' && self.current + 1 < self.characters.len() {
-                    raw.push(self.advance());
-                }
-
-                raw.push(self.advance());
+            while !self.at_end()
+                && self.peek(0) != '.'
+                && self.peek(0) != '['
+                && !ends_reference_name(self.peek(0))
+            {
+                head.push(self.advance());
             }
 
-            if self.at_end() {
-                return self.fail(
-                    DiagnosticCode::LexUnterminated,
-                    "Unterminated quoted link name.",
-                    start,
-                    line,
-                    column,
-                );
-            }
+            head
+        };
 
-            raw.push(self.advance());
-        }
-
-        while !self.at_end() {
-            let character = self.peek(0);
-
-            if character == '[' {
-                brackets += 1;
-            }
-
-            if character == ']' {
-                if brackets == 0 {
-                    break;
-                }
-
-                brackets -= 1;
-            }
-
-            if brackets == 0 && REFERENCE_STOPS.contains(character) {
-                break;
-            }
-
-            raw.push(self.advance());
-        }
-
-        if brackets != 0 {
-            return self.fail(
-                DiagnosticCode::LexUnterminated,
-                "Unterminated bracket access.",
-                start,
-                line,
-                column,
-            );
-        }
-
-        if raw.is_empty() {
+        if head.is_empty() {
             return self.fail(
                 DiagnosticCode::LexInvalid,
                 "A link requires a reference.",
@@ -500,15 +626,148 @@ impl Scanner {
             );
         }
 
+        let mut access: Vec<Access> = Vec::new();
+
+        loop {
+            match self.peek(0) {
+                '.' => {
+                    self.advance();
+
+                    let (at, at_line, at_column) = (self.current, self.line, self.column);
+                    let mut name = String::new();
+
+                    while !self.at_end()
+                        && self.peek(0) != '.'
+                        && self.peek(0) != '['
+                        && !ends_reference_name(self.peek(0))
+                    {
+                        name.push(self.advance());
+                    }
+
+                    if name.is_empty() {
+                        return self.parse_expected(
+                            "A reference name was expected here.",
+                            at,
+                            at_line,
+                            at_column,
+                        );
+                    }
+
+                    access.push(Access::Key(name));
+                }
+                '[' => {
+                    self.advance();
+
+                    let (at, at_line, at_column) = (self.current, self.line, self.column);
+
+                    let segment = if self.peek(0) == '\'' {
+                        Access::Key(self.quoted_reference_name(start, line, column)?)
+                    } else {
+                        let mut content = String::new();
+
+                        while !self.at_end()
+                            && self.peek(0) != ']'
+                            && !ends_bracket_content(self.peek(0))
+                        {
+                            content.push(self.advance());
+                        }
+
+                        if content.is_empty() {
+                            return self.parse_expected(
+                                "A bracket access needs a name or an index.",
+                                at,
+                                at_line,
+                                at_column,
+                            );
+                        }
+
+                        classify_bracket(&content)
+                    };
+
+                    if self.peek(0) != ']' {
+                        return self.parse_expected(
+                            "A bracket access must be closed with ']'.",
+                            self.current,
+                            self.line,
+                            self.column,
+                        );
+                    }
+
+                    self.advance();
+
+                    access.push(segment);
+                }
+                _ => break,
+            }
+        }
+
+        // Any trailing characters that begin no segment and end no reference belong to nothing, but
+        // consuming them keeps the token boundary where it has always been — a reference runs to a
+        // separator or a grouping delimiter — so a following word is not read as a value of its own.
+        while !self.at_end() && !ends_reference_name(self.peek(0)) {
+            self.advance();
+        }
+
         self.add(
             ty,
-            Literal::Reference(parse_reference(&raw)),
+            Literal::Reference(Reference { head, access }),
             start,
             line,
             column,
         );
 
         Ok(())
+    }
+
+    /// Reads a single-quoted name from the cursor and decodes it, exactly as a single-quoted string
+    /// is, so that a declaration and a link to it agree on the name. Used for a quoted head and for a
+    /// quoted bracket key. An unterminated quote is the lexical error it is, at the reference's start.
+    fn quoted_reference_name(
+        &mut self,
+        start: usize,
+        line: usize,
+        column: usize,
+    ) -> DResult<String> {
+        self.advance();
+
+        let mut raw = String::new();
+
+        while !self.at_end() && self.peek(0) != '\'' {
+            if self.peek(0) == '\\' && self.current + 1 < self.characters.len() {
+                raw.push(self.advance());
+            }
+
+            raw.push(self.advance());
+        }
+
+        if self.at_end() {
+            return self.fail(
+                DiagnosticCode::LexUnterminated,
+                "Unterminated quoted link name.",
+                start,
+                line,
+                column,
+            );
+        }
+
+        self.advance();
+
+        Ok(decode_minimal(&raw, Some('\'')))
+    }
+
+    /// A `DEON_PARSE_EXPECTED` at a single character, for a malformed reference segment.
+    fn parse_expected<T>(
+        &self,
+        message: &str,
+        at: usize,
+        line: usize,
+        column: usize,
+    ) -> DResult<T> {
+        err(
+            DiagnosticCode::ParseExpected,
+            message,
+            &self.span(at, line, column),
+        )
     }
 
     /// An unquoted word. It ends at whitespace or at a grouping character, and it swallows any
@@ -541,6 +800,8 @@ impl Scanner {
             }
 
             if character == '#' && self.peek(1) == '{' {
+                let interpolation_start = self.current;
+
                 self.advance();
                 self.advance();
 
@@ -559,6 +820,19 @@ impl Scanner {
                 }
 
                 self.advance();
+
+                // An interpolation written inside a word carries the same reference grammar as one
+                // standing alone, and its fault is positioned relative to the `#{` (specification 10).
+                let lexeme = self.slice(interpolation_start, self.current).to_string();
+
+                if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
+                    return err(
+                        DiagnosticCode::ParseExpected,
+                        "An interpolation needs a reference immediately between its braces.",
+                        &self.span(interpolation_start, 1, fault),
+                    );
+                }
+
                 continue;
             }
 

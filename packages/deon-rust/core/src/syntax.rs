@@ -8,8 +8,65 @@ use std::rc::Rc;
 
 use crate::diagnostic::Span;
 
-/// The segments a link navigates: `entity.name` is `["entity", "name"]`.
-pub type Reference = Vec<String>;
+/// A link's head and the segments that navigate from it. `entity.name` is head `entity` with one
+/// key access `name`; `items[0]` is head `items` with one index access.
+///
+/// The head is a leaflink name, a local, a quoted name, or an environment name carrying its `$`. The
+/// distinction the segments preserve is the one a flat list of strings could not: whether a step is a
+/// map key or a list index (specification 6). A dot segment is always a key; a bracket segment is a
+/// list index only when its content is a run of decimal digits, and a key otherwise — so `l['1']` and
+/// `l.0` look up a key while `l[1]` reads a position, and the three can no longer be confused after
+/// parsing has forgotten how they were written.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Reference {
+    pub head: String,
+    pub access: Vec<Access>,
+}
+
+/// One navigation step after the head.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Access {
+    /// A dot segment, or a quoted or non-all-digit bracket segment: always a map key.
+    Key(String),
+
+    /// A bracket segment whose content is a run of decimal digits (leading zeros permitted). Against a
+    /// list it reads the position `index`; against a map it is the key `text`. `index` is `None` when
+    /// the digits overflow the machine index, which is well-formed but names no position a list holds.
+    Index { text: String, index: Option<usize> },
+}
+
+impl Access {
+    /// The written text of the segment: the key, or the digits of an index.
+    pub fn text(&self) -> &str {
+        match self {
+            Access::Key(text) => text,
+            Access::Index { text, .. } => text,
+        }
+    }
+}
+
+impl Reference {
+    /// The map key a shortened link or call contributes: the final access segment's text, or the head
+    /// with any environment sigil removed (specification 6).
+    pub fn receiving_key(&self) -> &str {
+        match self.access.last() {
+            Some(access) => access.text(),
+            None => self.head.strip_prefix('$').unwrap_or(&self.head),
+        }
+    }
+
+    /// A stable identifier for the whole reference, for cycle detection over a call.
+    pub fn identity(&self) -> String {
+        let mut identity = self.head.clone();
+
+        for access in &self.access {
+            identity.push('.');
+            identity.push_str(access.text());
+        }
+
+        identity
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum ValueNode {

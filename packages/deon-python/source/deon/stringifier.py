@@ -34,8 +34,11 @@ def depth_of(value: object) -> int:
     plain `list` have to be walked here, because whatever converts them will itself recurse, and it
     would hit the wall first.
     """
+    # The root is depth 0 and its members are depth 1, matching the parser's guard: a value nests
+    # when it *contains* another, so the depth is the count of enclosing values, and 128 of them is
+    # accepted while a 129th is refused (specification 11.1).
     deepest = 0
-    stack: list[tuple[object, int]] = [(value, 1)]
+    stack: list[tuple[object, int]] = [(value, 0)]
 
     while stack:
         current, depth = stack.pop()

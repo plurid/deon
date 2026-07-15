@@ -548,7 +548,13 @@ static node *parse_structure(parser *p) {
         skip_inline(p);
         while (peek(p) == ',') {
             advance(p);
-            skip_trivia(p);
+            skip_inline(p);
+            /* A logical row ends at a newline (spec 8). A single trailing comma before the
+             * row's end — a newline, the closing ']' , or end of input — contributes no cell
+             * and is not counted toward arity, as in a map or list (spec 4.1). Only inline
+             * trivia is skipped after the comma, so it cannot reach across the newline that
+             * ends the row into the next row. */
+            if (at_end(p) || peek(p) == ']' || is_newline(peek(p))) break;
             if (ncells < 256) row_cells[ncells] = parse_value(p);
             ncells++;
             skip_inline(p);

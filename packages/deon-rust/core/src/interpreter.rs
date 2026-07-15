@@ -232,9 +232,7 @@ impl<'a> Interpreter<'a> {
                           dependencies: &mut Vec<String>,
                           visited: &mut Vec<String>,
                           interpreter: &Self| {
-            let Some(name) = reference.first() else {
-                return;
-            };
+            let name = &reference.head;
 
             if name.is_empty() || name.starts_with('$') {
                 return;

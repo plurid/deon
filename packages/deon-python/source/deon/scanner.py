@@ -24,7 +24,7 @@ quadratic and would turn a large document into a hang.
 from __future__ import annotations
 
 from .diagnostic import DeonError, DiagnosticCode, Span, error
-from .syntax import Reference
+from .syntax import Access, Reference
 from .token import Token, TokenType
 
 
@@ -417,7 +417,7 @@ class Scanner:
 
             name = self.bare_name(start, "Expected an environment name after '$'.")
 
-            return Reference(segments=(name,), environment=True)
+            return Reference(head=name, environment=True)
 
         if self.peek() == "'":
             head_start = self.mark()
@@ -426,29 +426,42 @@ class Scanner:
         else:
             head = self.bare_name(start, "Expected a reference name after '#'.")
 
-        segments = [head]
+        access: list[Access] = []
 
         while True:
-            if self.peek() == "." and self.peek(1) in NAME_CHARACTERS:
+            # A dot segment is *always* a map key, and a name must follow the dot (specification 6):
+            # a dot with nothing a name can be made of after it is `DEON_PARSE_EXPECTED` at that spot,
+            # so `#m.a.` faults at the character after its trailing dot rather than resolving.
+            if self.peek() == ".":
                 self.advance()
-                segments.append(self.bare_name(start, "Expected a name after '.'."))
+
+                segment_start = self.mark()
+
+                if self.at_end() or self.peek() not in NAME_CHARACTERS:
+                    raise self.fail(
+                        DiagnosticCode.PARSE_EXPECTED,
+                        "Expected a name after '.'.",
+                        segment_start,
+                    )
+
+                begin = self.current
+
+                while not self.at_end() and self.peek() in NAME_CHARACTERS:
+                    self.advance()
+
+                access.append(Access(name=self.source[begin : self.current]))
                 continue
 
             if self.peek() == "[":
                 self.advance()
 
-                if self.peek() == "'":
-                    quoted_start = self.mark()
-                    self.single_string(quoted_start)
-                    segments.append(self.tokens.pop().raw)
-                else:
-                    segments.append(self.bare_name(start, "Expected a name or an index after '['."))
+                access.append(self.bracket_access())
 
                 if self.peek() != "]":
                     raise self.fail(
                         DiagnosticCode.PARSE_EXPECTED,
                         "Expected ']' after an access.",
-                        start,
+                        self.mark(),
                     )
 
                 self.advance()
@@ -456,7 +469,51 @@ class Scanner:
 
             break
 
-        return Reference(segments=tuple(segments))
+        return Reference(head=head, access=tuple(access))
+
+    def bracket_access(self) -> Access:
+        """The content between `[` and `]`, with the cursor just past the `[` (specification 6).
+
+        A quoted segment is a map key. Otherwise the exact characters up to the `]` — or up to the
+        whitespace or delimiter that ends the segment — are read: a run of decimal digits is a list
+        index (leading zeros permitted, read as the integer), and anything else is a map key. An
+        empty segment, or a space before the `]`, is `DEON_PARSE_EXPECTED` at the character it stops
+        on: `#l[]` faults at the `]`, and `#l[ 1 ]` at the space.
+        """
+        if self.peek() == "'":
+            quoted_start = self.mark()
+            self.single_string(quoted_start)
+
+            return Access(name=self.tokens.pop().raw)
+
+        start = self.mark()
+        begin = self.current
+        digits = True
+
+        while (
+            not self.at_end()
+            and self.peek() != "]"
+            and self.peek() not in TERMINATORS
+            and self.peek() not in "'`"
+        ):
+            if self.peek() not in "0123456789":
+                digits = False
+
+            self.advance()
+
+        text = self.source[begin : self.current]
+
+        if text == "":
+            raise self.fail(
+                DiagnosticCode.PARSE_EXPECTED,
+                "A bracket access needs a name or an index.",
+                start,
+            )
+
+        if digits:
+            return Access(name=text, by_index=True, index=int(text))
+
+        return Access(name=text)
 
     def bare_name(self, start: tuple[int, int, int, int], message: str) -> str:
         begin = self.current
