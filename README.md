@@ -368,14 +368,12 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 + [`JavaScript/TypeScript`](https://github.com/plurid/deon/tree/master/packages/deon-javascript)
 + [`Rust`](https://github.com/plurid/deon/tree/master/packages/deon-rust)
 + [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
++ [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
 
 and will be implemented for:
 
 + [`C`](https://github.com/plurid/deon/tree/master/packages/deon-c)
-+ [`C++`](https://github.com/plurid/deon/tree/master/packages/deon-cpp)
-+ [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
 + [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
-+ [`PHP`](https://github.com/plurid/deon/tree/master/packages/deon-php)
 + [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
 
 See [specifics](#specifics) for implementation details.

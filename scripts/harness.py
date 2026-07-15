@@ -46,6 +46,11 @@ IMPLEMENTATIONS = {
         "run": [sys.executable, "harness/adapter.py"],
         "environment": {"PYTHONPATH": "source"},
     },
+    "go": {
+        "build": ["go", "build", "-o", "harness/deon-harness", "./harness"],
+        "directory": ROOT / "packages" / "deon-go",
+        "run": ["./harness/deon-harness"],
+    },
 }
 
 

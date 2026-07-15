@@ -48,9 +48,11 @@ A token boundary is a position at which a token may begin. A comment marker *wit
 
 ### 4.3 Strings
 
-An unquoted string continues until an unnested comma, newline, or enclosing delimiter. Leading separator whitespace is excluded; other internal whitespace is retained as single source characters.
+An unquoted string continues until an unnested comma, newline, enclosing bracket, or link. Leading separator whitespace is excluded; other internal whitespace is retained as single source characters.
 
-An unquoted string MUST NOT contain a newline, a comma, or any of the delimiters `{`, `}`, `[`, `]`, `(`, `)`, `<`, `>`, `'`, and `` ` ``. These are delimiters wherever they occur and no surrounding text makes them ordinary: a value that requires one of them must be quoted, and one written bare is `DEON_PARSE_EXPECTED` at the delimiter. Every other character may appear, which is what allows a path, a URL, or a flag to be written with no quotes at all.
+An unquoted string ends at a comma, a newline, one of the bracketing delimiters `{`, `}`, `[`, `]`, `(`, `)`, `<`, and `>`, or a `#name` link. These end it wherever they occur and no surrounding text makes them ordinary: a value that requires a bracketing delimiter must be quoted, and one written bare is `DEON_PARSE_EXPECTED` at the delimiter. A `#` that begins a link ends the value the same way — `{ a x #y }` is `DEON_PARSE_EXPECTED` at the `#` — while the interpolation opener `#{` is part of the value. Every other character may appear, which is what allows a path, a URL, or a flag to be written with no quotes at all.
+
+A single quote or a backtick inside an unquoted string does **not** end it. It opens a region that runs to its matching close — a `'` region may not cross a line, a `` ` `` region may — whose own quote characters are kept as literal content: `x'a'y` is the five-character string `x'a'y`, and `p`q`r` keeps its backticks. The value an unquoted string spans is the source between its first and last character, with comments removed and every region included, decoded once; so an interpolation inside a region is still resolved and an escape is still read. An unterminated region is a lexical error at the quote that opened it.
 
 A single-quoted string is confined to one logical line. A backtick string may span lines. Boundary whitespace in a backtick string is removed through the first and last non-whitespace character; whitespace between those characters is preserved. Trimming applies to the source text before escapes are decoded, so an escaped line break is content rather than layout and is never trimmed.
 
@@ -109,7 +111,7 @@ people <id, name> [
 ]
 ```
 
-The signature contains unique map keys. Cells may contain any Deon value. A logical row ends at a newline with balanced nesting, and cells are comma separated. Every row MUST contain exactly the signature arity. The example evaluates to `[{ id: "1", name: "One" }, { id: "2", name: "Two" }]`.
+The signature contains unique map keys; a repeated field name is `DEON_STRUCTURE_ARITY` at the signature's opening `<`. Cells may contain any Deon value. A logical row ends at a newline with balanced nesting, and cells are comma separated. Every row MUST contain exactly the signature arity. The example evaluates to `[{ id: "1", name: "One" }, { id: "2", name: "Two" }]`.
 
 ## 9. Imports and injections
 
@@ -182,15 +184,24 @@ A value handed to a stringifier or to the typer by a host, rather than by the pa
 
 A cycle is reported at the **reference that closes it**, not at the declaration that opens it: the declaration is well-formed on its own, and it is the reference back into it that made the loop.
 
-A diagnostic arising from an imported or injected resource — a syntax error inside it, an unreadable target, a denied capability, an authenticator that is not a string — is reported at the span of the **statement that imported it**, and the resource's own location appears in the import trace. The document a caller is holding is the importing one, and the line they can go and look at is the import.
+A diagnostic arising from an imported or injected resource — a syntax error inside it, an unreadable target, a denied capability, an authenticator that is not a string — is reported at the span of the **statement that imported it**, and the resource's own location appears in the import trace. The document a caller is holding is the importing one, and the line they can go and look at is the import. An authenticator that is not a string is `DEON_TYPE_MISMATCH`, not a resource-format error: nothing has been fetched when it is evaluated, so there is no resource whose format could be wrong — only a value of the wrong shape.
+
+The remaining positions are fixed so that two implementations underline the same character:
+
+- a link's diagnostic — unresolved, or a cycle it closes — is at its `#`, not at the name after it;
+- a spread's diagnostic is at its `...`, the operator that asked for the merge, not at the reference it names;
+- an entity-call argument fault — an unknown, missing, duplicate, or non-string argument — is at the opening `(` of the argument list;
+- an interpolation's diagnostic is at the string that carries it, not at a position inside it: the reference within was recovered by decoding and has no source position of its own;
+- a structure signature with a repeated field is `DEON_STRUCTURE_ARITY` at its opening `<`;
+- a document with no root is `DEON_PARSE_ROOT` at the end of the input, the position past its last character, because the absence of a root is not certain until the document has been read to the end.
 
 ## 12. Stringification
 
 Ordinary stringification preserves list and final map write order. Defaults are readable output, four spaces, inline values, no generated header, and no generated section comments. Unsafe or ambiguous strings MUST be quoted.
 
-A string MUST be emitted in a form that reads back unchanged. A backtick string therefore carries a value only when that value begins and ends with a non-whitespace character and contains no carriage return; every other string that cannot stand unquoted is single-quoted, with its line breaks, tabs, and carriage returns written as escapes.
+A string MUST be emitted in a form that reads back unchanged. The backtick form is chosen for a value that carries a real line break and qualifies for it — one that begins and ends with a non-whitespace character and contains no carriage return — because that is the form that keeps the line break literal; every other string that cannot stand unquoted is single-quoted, with its line breaks, tabs, and carriage returns written as escapes. A value that qualifies for a backtick string but carries no line break, such as one holding only a tab, is single-quoted rather than backticked: the shorter safe form is the form.
 
-A string MUST be quoted when it is empty, when it begins or ends with whitespace, when it begins with `#`, when it contains a delimiter of section 4.3, when it contains `#{`, or when it contains a comment marker (`//` or `/*`). The comment marker is quoted even though a marker inside a token is ordinary text and would read back unchanged: two implementations may not disagree about the canonical form of a value (section 13), so where a shorter form and a safer one both read back correctly, the safer one is the form.
+A string MUST be quoted when it is empty, when it begins or ends with whitespace, when it begins with `#`, when it contains a delimiter of section 4.3, when it contains a backslash or a tab, when it contains `#{`, or when it contains a comment marker (`//` or `/*`). A backslash written bare is read as an escape and a tab written bare is read as separating whitespace, so a string carrying either does not read back unquoted. The comment marker is quoted even though a marker inside a token is ordinary text and would read back unchanged: two implementations may not disagree about the canonical form of a value (section 13), so where a shorter form and a safer one both read back correctly, the safer one is the form.
 
 With `readable: false` a map or list is emitted on one line, its entries separated by the comma that the grammar accepts wherever it accepts a newline. Canonical output is always readable.
 

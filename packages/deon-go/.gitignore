@@ -1,0 +1,14 @@
+### GO ###
+
+# The compiled command-line tool and the harness adapter, both built on demand by the harness scripts.
+/deon
+/harness/deon-harness
+
+# Test binaries and profiles.
+*.test
+*.out
+*.prof
+
+# Go workspace files.
+go.work
+go.work.sum

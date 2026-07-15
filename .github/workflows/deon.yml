@@ -78,6 +78,31 @@ jobs:
         working-directory: packages/deon-python
         run: PYTHONPATH=source python3 -m unittest discover -s tests -v
 
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      # The module must stay dependency-free. `go list -m all` printing anything but the module
+      # itself is a regression, whatever the tests say.
+      - name: no dependencies
+        working-directory: packages/deon-go
+        run: |
+          modules=$(go list -m all | grep -c .)
+          if [ "$modules" -ne 1 ]; then
+            echo "the module gained a dependency:"
+            go list -m all
+            exit 1
+          fi
+
+      - run: go vet ./...
+        working-directory: packages/deon-go
+      - run: go test ./...
+        working-directory: packages/deon-go
+
   mcp:
     runs-on: ubuntu-latest
     steps:
@@ -108,6 +133,9 @@ jobs:
         with:
           node-version: '24'
       - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

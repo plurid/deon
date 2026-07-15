@@ -48,6 +48,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUST = [str(ROOT / "packages/deon-rust/target/debug/deon")]
 JAVASCRIPT = ["node", str(ROOT / "packages/deon-javascript/binder/deon")]
 PYTHON = [sys.executable, "-m", "deon.cli"]
+GO = [str(ROOT / "packages/deon-go/deon")]
 
 #: Python runs from the source tree, as the other two do, so that nothing has to be installed first.
 PYTHON_ENVIRONMENT = dict(os.environ, PYTHONPATH=str(ROOT / "packages/deon-python/source"))
@@ -56,6 +57,7 @@ IMPLEMENTATIONS = (
     ("rust", RUST, None),
     ("javascript", JAVASCRIPT, None),
     ("python", PYTHON, PYTHON_ENVIRONMENT),
+    ("go", GO, None),
 )
 
 BUILDS = (
@@ -63,6 +65,7 @@ BUILDS = (
     # the feature `cargo build` reports success and produces nothing.
     (ROOT / "packages/deon-rust", ["cargo", "build", "--quiet", "--features", "cli"]),
     (ROOT / "packages/deon-javascript", ["npm", "run", "build"]),
+    (ROOT / "packages/deon-go", ["go", "build", "-o", "deon", "./cmd/deon"]),
 )
 
 #: `<path>:<line>:<column> <severity> <CODE> <message>` — everything but the message is normative.
