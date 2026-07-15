@@ -26,6 +26,14 @@
 
 
 
+> **Status: not yet implemented.** This package is a placeholder. The C source under `source/` is a skeleton — `parse` returns a stub and no part of the specification is implemented yet. The document below describes the `deon` language in general, not the state of this implementation. For working implementations, see [`deon-javascript`](../deon-javascript), [`deon-rust`](../deon-rust), and [`deon-python`](../deon-python).
+
+
+
+<br />
+
+
+
 `deon` is a notation format for structured data.
 
 `deon` is intended to be:

@@ -113,3 +113,9 @@ The same argument then applies one level up. `scripts/harness.py` proves the thr
 - **Rust's `lint` named every document `<memory>`**, because `lint(source)` took no source name and defaulted to one. The signature now takes the name, as the other two always did.
 
 Each of these was invisible to 48 fixtures and to 73 differential probes, and each was a one-line fix once seen.
+
+## The one normative section the conformance suite did not cover
+
+Datasign (§14.1) was written as a full normative section — the numeric grammar, the optionality rule, fail-safe on unknown types — and then had *zero* fixtures in `spec/conformance/cases.json`, which is the file §15 uses to *define* conformance. It was tested only by each implementation's own unit tests and by the cross-implementation harness, neither of which is the normative bar. A fourth implementation could have passed all 48 fixtures and implemented datasign wrong, and conformance would have said nothing — the exact blind spot this project keeps finding, one level up again.
+
+The wrinkle is that §14.1 makes datasign *optional*, so it does not belong in the *required* suite. The resolution is an **optional-feature fixture**: a case tagged `feature: "datasign"` is required of an implementation that offers datasign and filtered out of one that does not. Each conformance runner declares the features it supports, runs the fixtures for those, and skips the rest — and the coverage counter that already guards against a harness ignoring a field now balances over whatever set actually ran. Fifteen datasign fixtures were added this way, and §15 was amended to describe the mechanism, so that "optional" stops meaning "unchecked wherever it is in fact offered."

@@ -44,6 +44,15 @@
 interface ConformanceCase {
     id: string;
     required?: boolean;
+
+    /**
+     * An optional feature this fixture belongs to (specification 14.1 marks datasign optional). A
+     * fixture tagged with a feature runs only where the feature is supported, and is filtered out
+     * everywhere else — so an implementation that omits it skips these fixtures rather than failing
+     * them.
+     */
+    feature?: string;
+
     source?: string;
     file?: string;
     files?: Record<string, string>;
@@ -77,10 +86,27 @@ interface ConformanceCase {
     typed?: unknown;
 
     lint?: string[];
+
+    /**
+     * A datasign fixture (specification 14.1): the contract files and the root-key map to apply, and
+     * the typed value the document must become. Errors reuse `error` and `position`.
+     */
+    datasign?: {
+        files: string[];
+        map: Record<string, string>;
+        typed?: unknown;
+    };
 }
 
 const casesFile = path.resolve(__dirname, '../../../../spec/conformance/cases.json');
-const { cases } = JSON.parse(readFileSync(casesFile, 'utf8')) as { cases: ConformanceCase[] };
+const allCases = (JSON.parse(readFileSync(casesFile, 'utf8')) as { cases: ConformanceCase[] }).cases;
+
+//: The optional features this implementation offers.
+const SUPPORTED_FEATURES = new Set(['datasign']);
+
+const cases = allCases.filter(
+    testCase => !testCase.feature || SUPPORTED_FEATURES.has(testCase.feature),
+);
 
 
 const optionsFor = (
@@ -88,13 +114,22 @@ const optionsFor = (
 ) => {
     const options: PartialDeonParseOptions = {};
 
-    // A resource case is served entirely from the manifest, with the host denied.
-    if (testCase.file && testCase.files) {
+    // Any `files` are served from the manifest, with the host denied — a datasign contract lives
+    // here too, so it is loaded whether or not the document itself is served from a file.
+    if (testCase.files) {
         options.resources = testCase.files;
-        options.sourceName = testCase.file;
-        options.filebase = path.posix.dirname(testCase.file);
         options.allowFilesystem = false;
         options.allowNetwork = false;
+    }
+
+    if (testCase.file) {
+        options.sourceName = testCase.file;
+        options.filebase = path.posix.dirname(testCase.file);
+    }
+
+    if (testCase.datasign) {
+        options.datasignFiles = testCase.datasign.files;
+        options.datasignMap = testCase.datasign.map;
     }
 
     if (testCase.environment) {
@@ -154,6 +189,14 @@ describe('Deon conformance', () => {
                 return;
             }
 
+            if (testCase.datasign) {
+                // `parseSynchronous` applies the contract when a datasign map is set (specification
+                // 14.1), so the value it returns is already typed.
+                expect(
+                    deon.parseSynchronous(source, options),
+                ).toEqual(testCase.datasign.typed);
+            }
+
             if (testCase.canonical) {
                 expect(deon.canonical(source)).toEqual(testCase.canonical);
             }
@@ -193,7 +236,8 @@ describe('Deon conformance', () => {
                     || testCase.stringify !== undefined
                     || testCase.typed !== undefined
                     || testCase.expected !== undefined
-                    || testCase.lint !== undefined,
+                    || testCase.lint !== undefined
+                    || testCase.datasign !== undefined,
                 `the fixture '${testCase.id}' asserts nothing`,
             );
         });

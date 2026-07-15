@@ -97,6 +97,21 @@ def requests_from_cases() -> list[dict]:
         if case["id"] == "resource-io-unreadable":
             continue
 
+        # A datasign fixture (specification 14.1) is asked as a `datasign` request, not a canonical
+        # one: the artifact three implementations must agree on is the *typed* result the contract
+        # produces, and canonicalising the raw source would ignore the contract entirely.
+        if case.get("datasign") is not None:
+            asked.append(
+                {
+                    **base,
+                    "op": "datasign",
+                    "files": case.get("files") or base.get("files") or {},
+                    "datasignFiles": case["datasign"]["files"],
+                    "datasignMap": case["datasign"]["map"],
+                }
+            )
+            continue
+
         asked.append({**base, "op": "canonical"})
 
         if case.get("stringify") is not None:

@@ -43,6 +43,18 @@ class Checked:
     stringify: int = 0
     typed: int = 0
     lint: int = 0
+    datasign: int = 0
+
+
+#: The optional features this implementation offers (specification 14.1 marks datasign optional). A
+#: fixture tagged with a `feature` runs only where the feature is supported, and is filtered out
+#: everywhere else — so an implementation that omits datasign skips its fixtures cleanly rather than
+#: failing them, and the coverage counters below still balance over whatever set actually ran.
+SUPPORTED_FEATURES = frozenset({"datasign"})
+
+
+def supported(case: dict) -> bool:
+    return case.get("feature") is None or case["feature"] in SUPPORTED_FEATURES
 
 
 def declared_counts(cases: list[dict]) -> Checked:
@@ -66,12 +78,22 @@ def source_of(case: dict) -> str:
 def options_of(case: dict) -> ParseOptions:
     options = ParseOptions()
 
-    if "file" in case:
-        # Served entirely from the manifest, with the filesystem and the network denied. A conformance
-        # harness must not reach a public network service (specification 15).
+    # Any `files` are served from the manifest, with the filesystem and the network denied. A
+    # conformance harness must not reach a public network service (specification 15). A datasign
+    # fixture carries its contract here too, so it is loaded whether or not the document itself is
+    # served from a file.
+    if case.get("files"):
         options.resources = dict(case["files"])
+
+    if "file" in case:
         options.source_name = case["file"]
         options.filebase = posixpath.dirname(case["file"])
+
+    datasign = case.get("datasign")
+
+    if datasign is not None:
+        options.datasign_files = list(datasign.get("files", []))
+        options.datasign_map = dict(datasign.get("map", {}))
 
     # An *empty* environment is still an environment. `missing-environment-is-empty` declares `{}`,
     # and a truthiness test would skip it and quietly let the library fall back to something else.
@@ -172,7 +194,11 @@ def typed_matches(value, expected) -> bool:
 class Conformance(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.cases = json.loads(MANIFEST.read_text("utf-8"))["cases"]
+        cls.cases = [
+            case
+            for case in json.loads(MANIFEST.read_text("utf-8"))["cases"]
+            if supported(case)
+        ]
 
     def test_the_manifest_is_there(self):
         self.assertTrue(self.cases, "the conformance manifest is empty")
@@ -230,10 +256,29 @@ class Conformance(unittest.TestCase):
                     f"expected {case['error']}, but the document evaluated successfully"
                 )
 
+            # A datasign fixture that expects a refusal is still a datasign fixture: it declares the
+            # `datasign` field and the counter must see it, or the tally will not balance.
+            if case.get("datasign") is not None:
+                checked.datasign += 1
+
             # An error case asserts its error and nothing else.
             return
 
         asserted = False
+
+        if case.get("datasign") is not None:
+            # `parse_with` applies the contract when a datasign map is set (specification 14.1), so the
+            # value it returns is already typed. The expected result lives inside the datasign object,
+            # and is compared like any other typed value — booleans before numbers, since `True == 1`.
+            value = deon.parse_with(source, options)
+
+            self.assertTrue(
+                typed_matches(value, case["datasign"]["typed"]),
+                f"datasign typed to {value!r}, expected {case['datasign']['typed']!r}",
+            )
+
+            checked.datasign += 1
+            asserted = True
 
         if case.get("expected") is not None:
             value = deon.parse_with(source, options)
@@ -296,12 +341,22 @@ class Invariants(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.cases = json.loads(MANIFEST.read_text("utf-8"))["cases"]
+        cls.cases = [
+            case
+            for case in json.loads(MANIFEST.read_text("utf-8"))["cases"]
+            if supported(case)
+        ]
 
     def test_canonical_round_trips(self):
         """Specification 13: for every value `v`, `parse(canonical(v))` must equal `v`."""
         for case in self.cases:
             if case.get("error") is not None:
+                continue
+
+            # A datasign fixture's result is a *typed* value — it holds numbers and booleans, which
+            # the Deon data model has none of, so it is not a value `canonical` round-trips. Its own
+            # assertion covers it.
+            if case.get("feature") is not None:
                 continue
 
             with self.subTest(id=case["id"]):

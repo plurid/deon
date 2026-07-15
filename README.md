@@ -373,7 +373,6 @@ and will be implemented for:
 
 + [`C`](https://github.com/plurid/deon/tree/master/packages/deon-c)
 + [`C++`](https://github.com/plurid/deon/tree/master/packages/deon-cpp)
-+ [`denatural`](https://github.com/plurid/deon/tree/master/packages/deon-denatural)
 + [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
 + [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
 + [`PHP`](https://github.com/plurid/deon/tree/master/packages/deon-php)

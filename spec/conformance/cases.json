@@ -448,6 +448,136 @@
             "stringify": {
                 "expected": "{\n    a {\n        b {\n            c d\n        }\n    }\n    list [\n        [\n            x\n            y\n        ]\n    ]\n}\n"
             }
+        },
+
+        {
+            "id": "datasign-declaration-beats-a-guess",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id 007, age 007, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"}, "typed": {"account": {"id": "007", "age": 7, "admin": true}} }
+        },
+        {
+            "id": "datasign-optional-absent-unknown-key-kept",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id a, age 30, admin false, extra kept } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"}, "typed": {"account": {"id": "a", "age": 30, "admin": false, "extra": "kept"}} }
+        },
+        {
+            "id": "datasign-nested-entity-list",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ team { name Ops, members [{ id a, age 30, admin true }, { id b, age 40, admin false }] } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"team": "Team"}, "typed": {"team": {"name": "Ops", "members": [{"id": "a", "age": 30, "admin": true}, {"id": "b", "age": 40, "admin": false}]}} }
+        },
+        {
+            "id": "datasign-unknown-type-untouched",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ when 2024-01-01 }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"when": "Date"}, "typed": {"when": "2024-01-01"} }
+        },
+        {
+            "id": "datasign-unmapped-key-not-guessed",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id a, age 30, admin true }, loose 42 }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"}, "typed": {"account": {"id": "a", "age": 30, "admin": true}, "loose": "42"} }
+        },
+        {
+            "id": "datasign-number-leading-zero",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ a { id x, age 007, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"a": "Account"}, "typed": {"a": {"id": "x", "age": 7, "admin": true}} }
+        },
+        {
+            "id": "datasign-number-hexadecimal",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ a { id x, age 0x10, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"a": "Account"}, "typed": {"a": {"id": "x", "age": 16, "admin": true}} }
+        },
+        {
+            "id": "datasign-number-exponent",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ a { id x, age 1e3, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"a": "Account"}, "typed": {"a": {"id": "x", "age": 1000, "admin": true}} }
+        },
+        {
+            "id": "datasign-optional-after-the-type",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ a { id x } }",
+            "files": { "a.datasign": "data Account {\n    id: string;\n    nickname: string?;\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"a": "Account"}, "typed": {"a": {"id": "x"}} }
+        },
+        {
+            "id": "datasign-composed-type-not-an-entity",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ c { id x, extra 5 } }",
+            "files": { "a.datasign": "data Base {\n    id: string;\n}\n\nComposed = Base & {\n    extra: number;\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"c": "Composed"}, "typed": {"c": {"id": "x", "extra": "5"}} }
+        },
+        {
+            "id": "datasign-mismatch-not-a-number",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id a, age thirty, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"} },
+            "error": "DEON_TYPE_MISMATCH",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "datasign-underscore-not-a-number",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ a { id x, age 1_000, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"a": "Account"} },
+            "error": "DEON_TYPE_MISMATCH",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "datasign-missing-required-field",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id a, admin true } }",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"} },
+            "error": "DEON_TYPE_MISMATCH",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "datasign-root-not-a-map",
+            "required": false,
+            "feature": "datasign",
+            "source": "[ one ]",
+            "files": { "a.datasign": "// an account\n@graphql\ndata Account {\n    id: string;\n    age: number;\n    admin: boolean;\n    nickname?: string;      // optional\n}\n\ndata Team {\n    name: string;\n    members: Account[];\n}\n" },
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"} },
+            "error": "DEON_TYPE_MISMATCH",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "datasign-contract-needs-filesystem",
+            "required": false,
+            "feature": "datasign",
+            "source": "{ account { id a } }",
+            "datasign": { "files": ["a.datasign"], "map": {"account": "Account"} },
+            "error": "DEON_CAPABILITY_DENIED",
+            "position": { "line": 1, "column": 1 }
         }
     ]
 }

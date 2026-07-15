@@ -16,16 +16,21 @@ const MANIFEST: &str = include_str!("../../../spec/conformance/cases.json");
 fn conformance() {
     let manifest: Json = serde_json::from_str(MANIFEST).expect("the manifest is not valid JSON");
 
-    let cases = manifest["cases"]
+    let all = manifest["cases"]
         .as_array()
         .expect("the manifest has no cases");
 
-    assert!(!cases.is_empty(), "the conformance manifest is empty");
+    assert!(!all.is_empty(), "the conformance manifest is empty");
+
+    // Only the fixtures this implementation is meant to run: the core, plus any optional feature it
+    // supports. Both the loop and the coverage tally work over this same set, so the counters balance
+    // whatever the implementation offers.
+    let cases: Vec<&Json> = all.iter().filter(|case| supported(case)).collect();
 
     let mut failures: Vec<String> = Vec::new();
     let mut checked = Checked::default();
 
-    for case in cases {
+    for case in &cases {
         let id = case["id"].as_str().unwrap_or("<unnamed>");
 
         if let Err(why) = run(case, &mut checked) {
@@ -45,7 +50,7 @@ fn conformance() {
     // quietly reads none of a field it was given, because another assertion on the same fixture
     // would carry it. So what was actually checked is counted, and compared against what the
     // manifest holds: if a field stops being read, these stop agreeing.
-    let declared = declared_counts(cases);
+    let declared = declared_counts(&cases);
 
     assert_eq!(
         checked, declared,
@@ -63,14 +68,30 @@ struct Checked {
     stringify: usize,
     typed: usize,
     lint: usize,
+    datasign: usize,
 }
 
-fn declared_counts(cases: &[Json]) -> Checked {
+/// The optional features this implementation offers (specification 14.1 marks datasign optional). A
+/// fixture tagged with a `feature` runs only where the feature is supported, and is filtered out
+/// everywhere else — so an implementation that omits datasign skips its fixtures cleanly rather than
+/// failing them, and the counters below still balance over whatever set actually ran.
+const SUPPORTED_FEATURES: &[&str] = &["datasign"];
+
+fn supported(case: &Json) -> bool {
+    match case["feature"].as_str() {
+        None => true,
+        Some(feature) => SUPPORTED_FEATURES.contains(&feature),
+    }
+}
+
+fn declared_counts(cases: &[&Json]) -> Checked {
     let mut declared = Checked::default();
 
     let present = |case: &Json, field: &str| !case[field].is_null();
 
     for case in cases {
+        let case = *case;
+
         declared.expected += usize::from(present(case, "expected"));
         declared.error += usize::from(present(case, "error"));
         declared.position += usize::from(present(case, "position"));
@@ -78,6 +99,7 @@ fn declared_counts(cases: &[Json]) -> Checked {
         declared.stringify += usize::from(present(case, "stringify"));
         declared.typed += usize::from(present(case, "typed"));
         declared.lint += usize::from(present(case, "lint"));
+        declared.datasign += usize::from(present(case, "datasign"));
     }
 
     declared
@@ -86,6 +108,66 @@ fn declared_counts(cases: &[Json]) -> Checked {
 fn run(case: &Json, checked: &mut Checked) -> Result<(), String> {
     let source = source_of(case)?;
     let options = options_of(case);
+
+    // A datasign fixture is typed through the contract, which in this crate is a distinct entry point
+    // returning `Typed` rather than a flag on `parse_with` — a `Value` has nowhere to hold the number
+    // a contract produces. So it is handled here, whole, and does not fall through to the branches
+    // below, which type nothing.
+    if !case["datasign"].is_null() {
+        let result = deon::parse_signed(&source, &options);
+
+        if !case["error"].is_null() {
+            let expected = case["error"]
+                .as_str()
+                .ok_or_else(|| "the fixture's error is not a code".to_string())?;
+
+            let Err(error) = result else {
+                return Err(format!(
+                    "expected {expected}, but the document typed successfully",
+                ));
+            };
+
+            if error.code.as_str() != expected {
+                return Err(format!("expected {expected}, got {}", error.code));
+            }
+
+            checked.error += 1;
+
+            if !case["position"].is_null() {
+                let position = &case["position"];
+                let span = &error.diagnostics[0].span;
+
+                let line = position["line"].as_u64().unwrap_or(0) as usize;
+                let column = position["column"].as_u64().unwrap_or(0) as usize;
+
+                if span.line != line || span.column != column {
+                    return Err(format!(
+                        "{expected} expected at {line}:{column}, reported at {}:{}",
+                        span.line, span.column,
+                    ));
+                }
+
+                checked.position += 1;
+            }
+
+            checked.datasign += 1;
+
+            return Ok(());
+        }
+
+        let typed = result.map_err(|error| error.to_string())?;
+
+        if !typed_matches(&typed, &case["datasign"]["typed"]) {
+            return Err(format!(
+                "datasign: expected {}, got {typed:?}",
+                case["datasign"]["typed"],
+            ));
+        }
+
+        checked.datasign += 1;
+
+        return Ok(());
+    }
 
     if !case["error"].is_null() {
         let expected = case["error"]
@@ -240,18 +322,39 @@ fn source_of(case: &Json) -> Result<String, String> {
 fn options_of(case: &Json) -> ParseOptions {
     let mut options = ParseOptions::default();
 
-    // A resource case is served entirely from the manifest, with the host denied.
-    if let (Some(file), Some(files)) = (case["file"].as_str(), case["files"].as_object()) {
+    // Any `files` are served from the manifest, with the host denied — a datasign contract lives here
+    // too, so it is loaded whether or not the document itself is served from a file.
+    if let Some(files) = case["files"].as_object() {
         for (target, data) in files {
             options
                 .resources
                 .insert(target.clone(), data.as_str().unwrap_or_default().to_string());
         }
 
-        options.source_name = file.to_string();
-        options.filebase = deon::resources::directory_of(file).to_string();
         options.allow_filesystem = false;
         options.allow_network = false;
+    }
+
+    if let Some(file) = case["file"].as_str() {
+        options.source_name = file.to_string();
+        options.filebase = deon::resources::directory_of(file).to_string();
+    }
+
+    if let Some(datasign) = case["datasign"].as_object() {
+        if let Some(files) = datasign.get("files").and_then(Json::as_array) {
+            options.datasign_files = files
+                .iter()
+                .filter_map(|file| file.as_str().map(str::to_string))
+                .collect();
+        }
+
+        if let Some(map) = datasign.get("map").and_then(Json::as_object) {
+            for (key, declared) in map {
+                options
+                    .datasign_map
+                    .insert(key.clone(), declared.as_str().unwrap_or_default().to_string());
+            }
+        }
     }
 
     if let Some(environment) = case["environment"].as_object() {
