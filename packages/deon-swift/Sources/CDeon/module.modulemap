@@ -1,0 +1,7 @@
+// The C library of Deon, exposed to Swift as the module `CDeon`. The header wraps deon-c's own public
+// header, referenced in place — this package binds to that implementation rather than reimplementing it,
+// so there is one parser, one evaluator, one canonical writer, and nothing here can drift from them.
+module CDeon {
+    header "shim.h"
+    export *
+}

@@ -1,0 +1,6 @@
+{
+    "name": "@plurid/deon-swift",
+    "version": "0.0.0-11",
+    "description": "The Swift implementation of deon, the DeObject Notation Format.",
+    "license": "DEL"
+}

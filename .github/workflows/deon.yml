@@ -165,6 +165,46 @@ jobs:
         working-directory: packages/deon-java
         run: make cache
 
+  swift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      # Zero third-party dependencies: the Swift standard library, the C standard library and POSIX,
+      # and the sibling deon-c sources compiled in by `make`. There is no Package.swift, so there is no
+      # SwiftPM manifest through which a dependency could be pulled, and the binary links only the system
+      # C runtime, the Swift runtime, and deon-c. Anything else on the link line is a regression.
+      - name: no third-party libraries
+        working-directory: packages/deon-swift
+        run: |
+          if [ -f Package.swift ]; then
+            echo "the package uses SwiftPM, which can pull a dependency:"
+            cat Package.swift
+            exit 1
+          fi
+          make deon
+          extra=$(ldd build/deon | awk '{print $1}' | grep -vE '^(linux-vdso|libc|libm|libpthread|libdl|librt|ld-linux|/lib|libstdc\+\+|libgcc_s|libswift|libdispatch|libBlocksRuntime|libicu)' || true)
+          if [ -n "$extra" ]; then
+            echo "the tool links a third-party library:"
+            ldd build/deon
+            exit 1
+          fi
+
+      - name: conformance
+        working-directory: packages/deon-swift
+        run: make test
+
+      - name: network
+        working-directory: packages/deon-swift
+        run: make network
+
+      - name: cache
+        working-directory: packages/deon-swift
+        run: make cache
+
   mcp:
     runs-on: ubuntu-latest
     steps:
@@ -205,6 +245,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
 
       - run: npm install
         working-directory: packages/deon-javascript

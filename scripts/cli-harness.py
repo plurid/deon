@@ -51,6 +51,7 @@ PYTHON = [sys.executable, "-m", "deon.cli"]
 GO = [str(ROOT / "packages/deon-go/deon")]
 C = [str(ROOT / "packages/deon-c/build/deon")]
 JAVA = ["java", "-cp", str(ROOT / "packages/deon-java/build"), "cli.Cli"]
+SWIFT = [str(ROOT / "packages/deon-swift/build/deon")]
 
 #: Python runs from the source tree, as the other two do, so that nothing has to be installed first.
 PYTHON_ENVIRONMENT = dict(os.environ, PYTHONPATH=str(ROOT / "packages/deon-python/source"))
@@ -62,6 +63,7 @@ IMPLEMENTATIONS = (
     ("go", GO, None),
     ("c", C, None),
     ("java", JAVA, None),
+    ("swift", SWIFT, None),
 )
 
 BUILDS = (
@@ -72,6 +74,7 @@ BUILDS = (
     (ROOT / "packages/deon-go", ["go", "build", "-o", "deon", "./cmd/deon"]),
     (ROOT / "packages/deon-c", ["make", "deon"]),
     (ROOT / "packages/deon-java", ["make", "deon"]),
+    (ROOT / "packages/deon-swift", ["make", "deon"]),
 )
 
 #: `<path>:<line>:<column> <severity> <CODE> <message>` — everything but the message is normative.

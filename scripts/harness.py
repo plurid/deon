@@ -61,6 +61,11 @@ IMPLEMENTATIONS = {
         "directory": ROOT / "packages" / "deon-java",
         "run": ["java", "-cp", "build", "harness.Harness"],
     },
+    "swift": {
+        "build": ["make", "harness"],
+        "directory": ROOT / "packages" / "deon-swift",
+        "run": ["./build/harness"],
+    },
 }
 
 

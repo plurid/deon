@@ -1,0 +1,15 @@
+### SWIFT ###
+
+# The build directory: the compiled library, the tool, the harness adapter, and the test binaries,
+# together with the C object files of the sibling deon-c package, all built on demand by `make` and by
+# the harness scripts.
+/build/
+
+# SwiftPM's own directory, should anyone run `swift build` — this package builds with `make`, not
+# SwiftPM, because SwiftPM will not reach the sibling's sources outside the package root.
+/.build/
+Package.resolved
+
+# Object files and debug bundles.
+*.o
+*.dSYM/
