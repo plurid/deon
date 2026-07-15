@@ -87,6 +87,13 @@ jobs:
           node-version: '20'
       - run: npm install
         working-directory: packages/deon-javascript
+
+      # The MCP server depends on `@plurid/deon` by `file:` and compiles against its published type
+      # declarations, which live in `distribution/` and do not exist until the package is built. A
+      # clean checkout has none, so without this the MCP's `tsc` cannot find the module at all.
+      - run: npm run build
+        working-directory: packages/deon-javascript
+
       - run: npm install
         working-directory: packages/tooling/deon-mcp
       - run: npm test
