@@ -65,6 +65,15 @@ class Token:
 
     source: str
 
+    #: Set on the one word the scanner cannot classify by itself: a run that *began* with a `'` or a
+    #: backtick and never closed. A quote opens a string only where a value begins, and the scanner
+    #: knows a value's beginning from its middle no better than it knows a key from the text beside
+    #: it — both are token boundaries. So an unterminated quote is ambiguous where it is read:
+    #: value-initial it is `DEON_LEX_UNTERMINATED`, and continuing an unquoted value it is ordinary
+    #: literal text (specification 4.3). The scanner reads the run as a word and leaves the verdict to
+    #: the parser, which knows the position; this flag is how it hands the question on.
+    unterminated_quote: bool = False
+
     def span(self) -> Span:
         return Span(
             source=self.source,

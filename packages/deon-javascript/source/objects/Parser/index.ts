@@ -528,6 +528,12 @@ class Parser {
             return scalarNode(this.tokenValue(quoted), quoted);
         }
 
+        // A value that begins with a `'` or a backtick that never closes is a genuine unterminated
+        // string. The scanner could not tell this opening quote from one that merely continues an
+        // unquoted value — where it is literal — so it deferred the judgement to here, the head of
+        // the value (4.3).
+        this.requireTerminatedQuote();
+
         const fragments: string[] = [];
         let token: Token | null = null;
 
@@ -552,6 +558,23 @@ class Parser {
     }
 
 
+    /**
+     * Fails when the next token is a word the scanner read past a `'` or a backtick that opened a
+     * string and never closed. Such a word is literal content where it continues an unquoted value,
+     * and the scalar loop takes it as that; but where it stands at the head of a value, a key, or a
+     * target — everywhere this is called — the quote it opened is a genuine unterminated string, and
+     * the fault the scanner deferred is reported here, at the quote (4.3).
+     */
+    private requireTerminatedQuote() {
+        if (this.peek().unterminatedQuote) {
+            this.fail(
+                DiagnosticCode.LEX_UNTERMINATED,
+                'Unterminated string.',
+            );
+        }
+    }
+
+
     private tokenValue(
         token: Token,
     ) {
@@ -566,6 +589,10 @@ class Parser {
     private name(
         message: string,
     ) {
+        // A key or name that begins with an unterminated quote is that unterminated string, not an
+        // invalid bare word: the quote it opened is the fault, so it is reported as such (4.3).
+        this.requireTerminatedQuote();
+
         if (
             VALUE_TOKENS.has(this.peek().type)
             && this.peek().type !== TokenType.INTERPOLATE
@@ -599,6 +626,10 @@ class Parser {
     private atom(
         message: string,
     ) {
+        // As with a name, a target that begins with an unterminated quote is that unterminated
+        // string (4.3).
+        this.requireTerminatedQuote();
+
         if (
             VALUE_TOKENS.has(this.peek().type)
             && this.peek().type !== TokenType.INTERPOLATE
@@ -624,6 +655,12 @@ class Parser {
         entity: string,
     ) {
         if (!this.isBoundary(this.peek())) {
+            // A word the scanner read past a quote that never closed may stand where a separator was
+            // due: in `{ a 'x'' }` the value is the string `x`, and the trailing `'` opens a string
+            // that cannot close. That is the unterminated string it looks like, reported at the
+            // quote, and not a missing separator (4.3) — so the quote guard runs before that error.
+            this.requireTerminatedQuote();
+
             this.fail(
                 DiagnosticCode.PARSE_EXPECTED,
                 `Expected a comma or newline after ${entity}.`,

@@ -451,28 +451,84 @@
         },
 
         {
-            "id": "unquoted-keeps-a-single-quote-region",
+            "id": "unquoted-keeps-an-interior-single-quote",
             "required": true,
             "source": "{ a x'q'y }",
             "expected": { "a": "x'q'y" },
             "canonical": "{\n    a 'x\\'q\\'y'\n}\n"
         },
         {
-            "id": "unquoted-keeps-a-backtick-region",
+            "id": "unquoted-keeps-an-unbalanced-single-quote",
+            "required": true,
+            "source": "{ a it's }",
+            "expected": { "a": "it's" },
+            "canonical": "{\n    a 'it\\'s'\n}\n"
+        },
+        {
+            "id": "unquoted-keeps-interior-backticks",
             "required": true,
             "source": "{ a p`q`r }",
             "expected": { "a": "p`q`r" },
             "canonical": "{\n    a 'p`q`r'\n}\n"
         },
         {
-            "id": "unquoted-region-still-interpolates",
+            "id": "unquoted-interior-still-interpolates",
             "required": true,
             "source": "n hi\n{ a x `p#{n}q` }",
             "expected": { "a": "x `phiq`" },
             "canonical": "{\n    a 'x `phiq`'\n}\n"
         },
         {
-            "id": "link-ends-an-unquoted-value",
+            "id": "unquoted-keeps-an-interior-hash",
+            "required": true,
+            "source": "{ a x#y }",
+            "expected": { "a": "x#y" },
+            "canonical": "{\n    a 'x#y'\n}\n"
+        },
+        {
+            "id": "unquoted-value-may-begin-with-interpolation",
+            "required": true,
+            "source": "n hi\n{ a #{n} }",
+            "expected": { "a": "hi" },
+            "canonical": "{\n    a hi\n}\n"
+        },
+        {
+            "id": "unquoted-escaped-interpolation-is-literal",
+            "required": true,
+            "source": "{ a p\\#{q }",
+            "expected": { "a": "p#{q" },
+            "canonical": "{\n    a 'p\\#{q'\n}\n"
+        },
+        {
+            "id": "string-that-looks-like-a-spread-is-quoted",
+            "required": true,
+            "source": "{ a '...#x' }",
+            "expected": { "a": "...#x" },
+            "canonical": "{\n    a '...#x'\n}\n"
+        },
+        {
+            "id": "unquoted-keeps-a-spaced-interior-quote",
+            "required": true,
+            "source": "{ a x 'y }",
+            "expected": { "a": "x 'y" },
+            "canonical": "{\n    a 'x \\'y'\n}\n"
+        },
+        {
+            "id": "unquoted-keeps-a-spaced-interior-backtick",
+            "required": true,
+            "source": "{ a x `y }",
+            "expected": { "a": "x `y" },
+            "canonical": "{\n    a 'x `y'\n}\n"
+        },
+        {
+            "id": "unquoted-spaced-interior-quote-in-a-list",
+            "required": true,
+            "source": "[ x 'y ]",
+            "expected": ["x 'y"],
+            "canonical": "[\n    'x \\'y'\n]\n"
+        },
+        {
+            "id": "link-after-whitespace-ends-an-unquoted-value",
             "required": true,
             "source": "{ a x #y }",
             "error": "DEON_PARSE_EXPECTED",

@@ -305,5 +305,113 @@ class Cache(Served):
             self.assertEqual(Responder.hits.get("/cached.deon"), 2)
 
 
+class Waypoint(http.server.BaseHTTPRequestHandler):
+    """A loopback stop that either sends the client onward or records what reached it.
+
+    `/redirect` answers 302 to `location`; anything else records the Authorization it was handed and
+    serves a Deon document. Subclassed per role so two servers standing up at once keep their own
+    `location` and `seen` — `type(self)` binds each read and write to the concrete subclass. Loopback
+    only, 127.0.0.1 / localhost, per specification 15.
+    """
+
+    location = ""
+
+    #: The Authorization the landing request carried. The sentinel is distinct from None on purpose:
+    #: None is precisely what a *scrubbed* request produces, and telling the two apart is the test.
+    seen = "<<unset>>"
+
+    def do_GET(self):  # noqa: N802
+        if self.path == "/redirect":
+            self.send_response(302)
+            self.send_header("Location", type(self).location)
+            self.end_headers()
+            return
+
+        type(self).seen = self.headers.get("Authorization")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"{ name landed }")
+
+    def log_message(self, *_):  # keep the suite quiet
+        pass
+
+
+class Alpha(Waypoint):
+    """Cross-host source: bound on 127.0.0.1, its redirect names `localhost` — a different host."""
+
+
+class Beta(Waypoint):
+    """Cross-host target: records whether the bearer meant for Alpha followed the redirect to here."""
+
+
+class Loop(Waypoint):
+    """Same-host source and target at once: it redirects to its own landing on the identical origin."""
+
+
+class Redirects(unittest.TestCase):
+    """Specification 9: a bearer must not escape the host it was named for when a redirect crosses to
+    another origin, and must survive one that stays on the same origin. Python's urllib re-sends
+    request headers across a 302 even to a different host, so this is the one implementation that could
+    leak; the fix scrubs `Authorization` on a cross-origin hop and keeps it on a same-origin one. Every
+    server here is loopback (127.0.0.1 / localhost), per specification 15."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.servers = []
+
+        # The cross-host target (B) comes up first, so its port is known when A is pointed at it.
+        beta = http.server.HTTPServer(("127.0.0.1", 0), Beta)
+        cls.beta_port = beta.server_port
+
+        # The cross-host source (A) is bound on 127.0.0.1 but redirects to `localhost` on B's port —
+        # a different host by name and by port, so the hop is unmistakably cross-origin.
+        Alpha.location = f"http://localhost:{cls.beta_port}/landing"
+        alpha = http.server.HTTPServer(("127.0.0.1", 0), Alpha)
+        cls.alpha_port = alpha.server_port
+
+        # The same-host case is one origin that redirects to its own landing (same scheme/host/port).
+        loop = http.server.HTTPServer(("127.0.0.1", 0), Loop)
+        cls.loop_port = loop.server_port
+        Loop.location = f"http://127.0.0.1:{cls.loop_port}/landing"
+
+        for server in (beta, alpha, loop):
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            cls.servers.append(server)
+
+    @classmethod
+    def tearDownClass(cls):
+        for server in cls.servers:
+            server.shutdown()
+            server.server_close()
+
+    def test_a_bearer_does_not_survive_a_cross_host_redirect(self):
+        """The leak, closed: a bearer handed to Alpha must not arrive at Beta."""
+        Beta.seen = "<<unset>>"
+
+        value = parse_link(
+            f"http://127.0.0.1:{self.alpha_port}/redirect",
+            ParseOptions(allow_network=True, token="s3cret"),
+        )
+
+        # The redirect was followed — Beta served the document ...
+        self.assertEqual(value, {"name": "landed"})
+        # ... but the bearer was scrubbed at the cross-host hop, so Beta never saw it.
+        self.assertIsNone(Beta.seen)
+
+    def test_a_bearer_survives_a_same_host_redirect(self):
+        """The friendly half: a redirect that never leaves the origin still authenticates."""
+        Loop.seen = "<<unset>>"
+
+        value = parse_link(
+            f"http://127.0.0.1:{self.loop_port}/redirect",
+            ParseOptions(allow_network=True, token="s3cret"),
+        )
+
+        self.assertEqual(value, {"name": "landed"})
+        self.assertEqual(Loop.seen, "Bearer s3cret")
+
+
 if __name__ == "__main__":
     unittest.main()

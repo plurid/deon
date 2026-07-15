@@ -353,10 +353,10 @@ static deon_value *apply_access(interpreter *in, deon_value *value, access_seg *
             value = member;
         } else if (value->kind == DEON_LIST) {
             if (!seg.by_index) deon_fail(in->ctx, DEON_UNRESOLVED_LINK, "A list is indexed by a number.", span);
-            if (seg.index < 0 || (size_t)seg.index >= value->as.list.len) {
+            if (seg.index < 0 || (unsigned long long)seg.index >= value->as.list.len) {
                 deon_fail(in->ctx, DEON_UNRESOLVED_LINK, "The list index is out of range.", span);
             }
-            value = value->as.list.items[seg.index];
+            value = value->as.list.items[(size_t)seg.index];
         } else {
             deon_fail(in->ctx, DEON_UNRESOLVED_LINK, "A string has no members to access.", span);
         }

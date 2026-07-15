@@ -63,9 +63,9 @@ bool     utf8_valid(const char *s, size_t len);
 
 /* #region syntax tree */
 typedef struct access_seg {
-    deon_str name;
-    int      index;
-    bool     by_index;
+    deon_str  name;
+    long long index;   /* a list index, held in 64 bits so a large one is not truncated; -1 marks out of range */
+    bool      by_index;
 } access_seg;
 
 typedef struct {

@@ -1,3 +1,8 @@
+(* Deon grammar (ISO/IEC 14977 EBNF). Quoted terminals use C-style escapes: "\\" is one backslash,
+   "\t" a tab, "\n" a line feed, "\r\n" a carriage return then line feed. The lexical boundary rules
+   for unquoted strings and links (section 4.3) are context-sensitive and cannot be fully captured
+   here; where this grammar and section 4.3 differ on a boundary, section 4.3 governs. *)
+
 document          = trivia, { top-level, trivia }, EOF ;
 top-level         = import | inject | root | declaration ;
 root              = map | list ;
@@ -13,9 +18,11 @@ authenticator     = string | link ;
 target            = unquoted-string | single-string ;
 
 value             = structure | map | list | call | spread | link | string ;
-map               = "{", trivia, { map-entry, separator, trivia }, "}" ;
-map-entry         = spread | name, [ required-space, value ] ;
-list              = "[", trivia, { list-item, separator, trivia }, "]" ;
+map               = "{", trivia,
+                    [ map-entry, { separator, map-entry }, [ separator ] ], "}" ;
+map-entry         = spread | link | call | name, [ required-space, value ] ;
+list              = "[", trivia,
+                    [ list-item, { separator, list-item }, [ separator ] ], "]" ;
 list-item         = spread | value ;
 
 structure         = "<", trivia, name, { trivia, ",", trivia, name }, trivia,
@@ -37,12 +44,33 @@ dot-access        = ".", bare-name ;
 bracket-access    = "[", ( bare-name | quoted-name | digits ), "]" ;
 
 string            = unquoted-string | single-string | multiline-string ;
-single-string     = "'", { single-character | escape | interpolation }, "'" ;
-multiline-string  = "`", { multiline-character | escape | interpolation }, "`" ;
-unquoted-string   = unquoted-character,
-                    { unquoted-character | space | escape | interpolation } ;
+
+(* An unquoted string is any value that does not begin with a quote. After its first character a
+   quote and a "#" that does not open "#{" are ordinary literal content; the string ends only at an
+   unnested comma, newline, bracketing delimiter, or a "#" that starts a link at a token boundary.
+   These are lexical rules — section 4.3 is authoritative — and a recognized escape or a "#{"
+   interpolation takes precedence over a literal character by longest match. *)
+unquoted-string   = ( unquoted-first | escape | interpolation ),
+                    { unquoted-rest | escape | interpolation } ;
+unquoted-first    = any-character - ( space | newline | "," | "{" | "}" | "[" | "]"
+                    | "(" | ")" | "<" | ">" | "'" | "`" | "#" | "\\" ) ;
+unquoted-rest     = any-character - ( newline | "," | "{" | "}" | "[" | "]"
+                    | "(" | ")" | "<" | ">" ) ;
+
+single-string     = "'", { single-character | single-escape | interpolation }, "'" ;
+multiline-string  = "`", { multiline-character | multiline-escape | interpolation }, "`" ;
+single-character  = any-character - ( "'" | "\\" | newline ) ;
+multiline-character = any-character - ( "`" | "\\" ) ;
+
 interpolation     = "#{", reference, "}" ;
-escape            = "\\", ( "\\" | "'" | "`" | "#{" | "n" | "r" | "t" ) ;
+
+(* An unquoted string has no active quote delimiter, so it recognizes only the shared escapes; a
+   single string additionally reads "\'" and a multiline string "\`" as their delimiter. Every other
+   backslash sequence is preserved literally wherever it appears. *)
+common-escape     = "\\", ( "\\" | "#{" | "n" | "r" | "t" ) ;
+escape            = common-escape ;
+single-escape     = common-escape | "\\'" ;
+multiline-escape  = common-escape | "\\`" ;
 
 name              = bare-name | quoted-name ;
 bare-name         = name-character, { name-character } ;
@@ -60,4 +88,5 @@ block-comment     = "/*", { any-character - "*/" }, "*/" ;
 letter            = "A"…"Z" | "a"…"z" ;
 digit             = "0"…"9" ;
 digits            = digit, { digit } ;
+any-character     = ? any Unicode scalar value ? ;
 EOF               = ? end of input ? ;

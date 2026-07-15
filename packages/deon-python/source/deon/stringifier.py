@@ -66,11 +66,12 @@ def can_be_bare(text: str) -> bool:
     if any(character in UNSAFE for character in text):
         return False
 
-    if "#{" in text:
-        return False
-
-    # A leading `#` would be read as a link.
-    if text[0] == "#":
+    # A `#` forces a quote wherever it falls. At a token boundary a bare `#` reads back as a link and
+    # `#{` as an interpolation; an interior `#` is harmless literal text under specification 4.3, and
+    # is quoted all the same, because where a shorter safe form and a safer one both read back the
+    # canonical form (specification 12, 13) is the safer one, and every implementation must agree on
+    # it. So `x#y`, `c#minor`, and `...#x` are all single-quoted rather than left bare.
+    if "#" in text:
         return False
 
     # A comment marker anywhere is quoted, and not only a leading one. Read back, a `//` in the middle

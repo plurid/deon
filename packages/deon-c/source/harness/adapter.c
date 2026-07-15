@@ -178,14 +178,16 @@ static void answer_error(buf *out, const char *id, const deon_error *e) {
     bputc(out, '}');
 }
 
-/* A writer reported a bare code (a host-built value that nests too deep) rather than a document error
- * with a span, so the position is 0:0. The code is normative; the position is not (diagnostics.md). */
+/* A writer refused a value that nests past the limit (section 11.1). The value carries no source span
+ * of its own, so — as the other implementations do — the refusal is reported at the head of the
+ * document that produced it, line 1 column 1. A position is normative and one-based (diagnostics.md
+ * section 15), so this must be a real span and never 0:0. */
 static void answer_error_code(buf *out, const char *id, deon_code code) {
     bputs(out, "{\"id\":");
     json_string(out, id, strlen(id));
     bputs(out, ",\"ok\":\"false\",\"code\":");
     json_string(out, deon_code_name(code), strlen(deon_code_name(code)));
-    bputs(out, ",\"line\":\"0\",\"column\":\"0\"}");
+    bputs(out, ",\"line\":\"1\",\"column\":\"1\"}");
 }
 
 static void perform(const deon_value *req, const char *id, buf *out) {

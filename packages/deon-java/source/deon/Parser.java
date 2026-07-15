@@ -376,9 +376,11 @@ final class Parser {
             if (c == '<') {
                 return parseStructure();
             }
-            if (c == '#') {
+            if (c == '#' && peekAt(1) != '{') {
                 return parseLinkOrCall();
             }
+            // A value that begins with "#{" is an unquoted string opening with an interpolation, not a
+            // link; every other leading '#' is a link or call (section 4.3).
             if (c == '\'') {
                 int start = pos;
                 ScalarNode n = new ScalarNode();
@@ -924,37 +926,6 @@ final class Parser {
         }
     }
 
-    // A `'` or `` ` `` inside an unquoted value opens a literal region rather than ending the value: the
-    // region runs to its match, its delimiters are kept as literal source, and the value is decoded once
-    // so an interpolation inside a region is still resolved (section 4.3).
-    private void consumeQuoteRegion(StringBuilder raw) {
-        int quote = peek();
-        Span open = point();
-        raw.appendCodePoint(advance()); // opening quote, kept literal
-        for (;;) {
-            if (atEnd()) {
-                throw fail(Code.LEX_UNTERMINATED, "A string was opened and never closed.", open);
-            }
-            int r = peek();
-            if (quote == '\'' && isNewline(r)) {
-                throw fail(Code.LEX_UNTERMINATED, "A single-quoted string may not cross a line.", open);
-            }
-            if (r == '\\') {
-                raw.appendCodePoint(advance());
-                if (atEnd()) {
-                    throw fail(Code.LEX_UNTERMINATED, "A string ended in an unfinished escape.", open);
-                }
-                raw.appendCodePoint(advance());
-                continue;
-            }
-            if (r == quote) {
-                raw.appendCodePoint(advance()); // closing quote, kept literal
-                return;
-            }
-            raw.appendCodePoint(advance());
-        }
-    }
-
     private Node parseUnquoted() {
         int start = pos;
         StringBuilder raw = new StringBuilder();
@@ -964,11 +935,9 @@ final class Parser {
             if (r == ',' || isNewline(r) || isHardDelimiter(r)) {
                 break;
             }
-            // A link (#name) is its own value and ends this one; an interpolation (#{) is part of it.
-            if (r == '#' && peekAt(1) != '{') {
-                break;
-            }
             if (isSpace(r)) {
+                // Separating whitespace is a token boundary: a following link (#name) is its own value
+                // and ends this one, while more literal text continues the run with the spaces kept.
                 int save = pos;
                 StringBuilder spaces = new StringBuilder();
                 interWord(spaces);
@@ -979,18 +948,25 @@ final class Parser {
                 pos = save;
                 break;
             }
-            if (r == '\'' || r == '`') {
-                consumeQuoteRegion(raw);
-                continue;
-            }
+            // "#{" opens an interpolation wherever it appears. A bare '#' not at a token boundary, and an
+            // interior quote or backtick, are ordinary literal content that open nothing (section 4.3):
+            // they fall through to be kept verbatim, so x#y, word#, it's, and p`q`r are their own text.
             if (startsWith("#{")) {
                 consumeInterpolationRaw(raw);
                 continue;
             }
             if (r == '\\') {
+                // Keep the backslash and the character it escapes verbatim; decode() reads them once. "\#{"
+                // is three source characters taken as a unit, so its '{' is not mistaken for a bracketing
+                // delimiter that would end the value.
                 raw.appendCodePoint(advance());
                 if (!atEnd()) {
-                    raw.appendCodePoint(advance());
+                    if (peek() == '#' && peekAt(1) == '{') {
+                        raw.appendCodePoint(advance());
+                        raw.appendCodePoint(advance());
+                    } else {
+                        raw.appendCodePoint(advance());
+                    }
                 }
                 continue;
             }

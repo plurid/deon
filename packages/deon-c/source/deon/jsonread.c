@@ -19,6 +19,14 @@ static void jfail(jparser *p) {
     deon_fail(p->ctx, DEON_RESOURCE_FORMAT, "The resource is not valid JSON.", p->at);
 }
 
+/* Nesting past the value-nesting limit is not a JSON-syntax fault but the same depth refusal the parser
+ * raises on an over-deep Deon document (section 11.1): DEON_PARSE_EXPECTED, not DEON_RESOURCE_FORMAT.
+ * Reporting it here — inside the import's re-anchoring boundary — anchors it to the importing statement
+ * rather than leaving a too-deep value to be caught later at a writer with no position to point at. */
+static void jdepth(jparser *p) {
+    deon_fail(p->ctx, DEON_PARSE_EXPECTED, "The resource nests more deeply than Deon will read.", p->at);
+}
+
 static void jws(jparser *p) {
     while (p->s < p->end) {
         char c = *p->s;
@@ -90,7 +98,10 @@ static deon_str jstring_raw(jparser *p) {
 }
 
 static deon_value *jvalue(jparser *p) {
-    if (++p->depth > 512) jfail(p);
+    /* jvalue reaches p->depth == K + 1 for a value nested K enclosing values below the root, so this
+     * refuses exactly the values guard_depth (stringifier.c) would — nothing that parses here can then
+     * be rejected later at a writer. The +1 keeps the two counts aligned; DEON_MAX_DEPTH is the limit. */
+    if (++p->depth > DEON_MAX_DEPTH + 1) jdepth(p);
     jws(p);
     if (p->s >= p->end) jfail(p);
     char c = *p->s;

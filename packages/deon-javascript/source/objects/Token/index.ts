@@ -15,6 +15,12 @@
  *
  * `leading` is the whitespace read before the token. An unquoted value may be written across
  * several tokens, and this is what puts it back together with the spacing it was given.
+ *
+ * `unterminatedQuote` marks a word the scanner read where a `'` or a backtick opened a quoted
+ * string that never closed. The scanner cannot tell whether that quote begins a value — a real
+ * unterminated string — or merely continues an unquoted one, where the quote is ordinary literal
+ * content (4.3); it defers that to the parser, which knows the position, and this is the flag it
+ * reads.
  */
 class Token {
     public type: TokenType;
@@ -26,6 +32,7 @@ class Token {
     public end: number;
     public source: string;
     public leading: string;
+    public unterminatedQuote: boolean;
     public endLine: number;
     public endColumn: number;
 
@@ -39,6 +46,7 @@ class Token {
         end = start,
         source = '<memory>',
         leading = '',
+        unterminatedQuote = false,
     ) {
         this.type = type;
         this.lexeme = lexeme;
@@ -49,6 +57,7 @@ class Token {
         this.end = end;
         this.source = source;
         this.leading = leading;
+        this.unterminatedQuote = unterminatedQuote;
 
         // A token may span lines, and a column counts characters rather than code units, so that an
         // editor underlines what a reader would call one character.

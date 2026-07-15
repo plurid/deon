@@ -6,8 +6,9 @@
 /* The three string forms of section 4.3, and the shared escape and interpolation decoding. Each form
  * collects the raw source it spans, then decodes that source once: escapes are read, `#{reference}` is
  * turned into a part, and the active quote delimiter is preserved verbatim. A single quote is confined
- * to one line; a backtick may span lines and trims its boundary whitespace; an unquoted string keeps a
- * quote inside it as a literal region rather than ending at it. */
+ * to one line; a backtick may span lines and trims its boundary whitespace; an unquoted string treats an
+ * interior quote or `#` as ordinary literal text, ending only at an unnested comma, newline, bracketing
+ * delimiter, or a link-starting `#` at a token boundary. */
 
 typedef struct {
     string_part *parts;
@@ -127,42 +128,39 @@ string_part *parse_backtick_string(parser *p, size_t *out_len) {
     deon_span open = p_point(p);
     p_advance(p); /* ` */
 
-    /* Collect the raw inner code points, respecting escapes only enough to find the true close. */
-    size_t cap = 32, len = 0;
-    uint32_t *runes = malloc(cap * sizeof(uint32_t));
+    /* Collect the raw inner source, respecting escapes only enough to find the true close. The checked
+     * string builder holds it, like every other allocation here, so an out-of-memory aborts cleanly
+     * instead of dereferencing a NULL or leaking the original block on a failed grow. */
+    sb raw = {0};
     for (;;) {
         if (p_at_end(p)) {
-            free(runes);
+            sb_free(&raw);
             deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A backtick string was opened and never closed.", open);
         }
         uint32_t r = p_peek(p);
         if (r == '`') { p_advance(p); break; }
         if (r == '\\') {
-            if (len + 2 > cap) { cap *= 2; runes = realloc(runes, cap * sizeof(uint32_t)); }
-            runes[len++] = p_advance(p);
+            sb_put_rune(&raw, p_advance(p));
             if (p_at_end(p)) {
-                free(runes);
+                sb_free(&raw);
                 deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A backtick string ended in an unfinished escape.", open);
             }
-            runes[len++] = p_advance(p);
+            sb_put_rune(&raw, p_advance(p));
             continue;
         }
-        if (len + 1 > cap) { cap *= 2; runes = realloc(runes, cap * sizeof(uint32_t)); }
-        runes[len++] = p_advance(p);
+        sb_put_rune(&raw, p_advance(p));
     }
 
     /* Trim boundary whitespace of the source, before escapes are decoded: an escaped line break at an
      * edge is content and survives, where a real one is layout and does not. A backslash is not
-     * whitespace, so \n written at an edge is kept. */
-    size_t start = 0, end = len;
-    while (start < end && is_trimmable(runes[start])) start++;
-    while (end > start && is_trimmable(runes[end - 1])) end--;
+     * whitespace, so \n written at an edge is kept. Every trimmable rune (space, tab, newline) is a
+     * single ASCII byte and no byte of a UTF-8 multibyte sequence equals one, so trimming bytes at the
+     * edges removes exactly the runes the rune-wise trim did. */
+    size_t start = 0, end = raw.len;
+    while (start < end && is_trimmable((unsigned char)raw.data[start])) start++;
+    while (end > start && is_trimmable((unsigned char)raw.data[end - 1])) end--;
 
-    sb raw = {0};
-    for (size_t i = start; i < end; i++) sb_put_rune(&raw, runes[i]);
-    free(runes);
-
-    string_part *parts = decode(p->ctx, raw.data ? raw.data : "", raw.len, '`', out_len);
+    string_part *parts = decode(p->ctx, raw.data ? raw.data + start : "", end - start, '`', out_len);
     sb_free(&raw);
     return parts;
 }
@@ -193,34 +191,10 @@ static void inter_word(parser *p, sb *out) {
     }
 }
 
-/* consume_quote_region copies a quoted region into an unquoted string's raw source, delimiters and
- * all, validating only that it is terminated. The content is decoded later along with the rest of the
- * value, so the quote marks survive as literal characters while an interpolation inside is still read. */
-static void consume_quote_region(parser *p, sb *raw) {
-    uint32_t quote = p_peek(p);
-    deon_span open = p_point(p);
-    sb_put_rune(raw, p_advance(p)); /* opening quote, kept literal */
-    for (;;) {
-        if (p_at_end(p)) {
-            deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A string was opened and never closed.", open);
-        }
-        uint32_t r = p_peek(p);
-        if (quote == '\'' && is_newline(r)) {
-            deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A single-quoted string may not cross a line.", open);
-        }
-        if (r == '\\') {
-            sb_put_rune(raw, p_advance(p));
-            if (p_at_end(p)) {
-                deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A string ended in an unfinished escape.", open);
-            }
-            sb_put_rune(raw, p_advance(p));
-            continue;
-        }
-        if (r == quote) { sb_put_rune(raw, p_advance(p)); return; } /* closing quote, kept literal */
-        sb_put_rune(raw, p_advance(p));
-    }
-}
-
+/* An unquoted string ends only at an unnested comma, a newline, a bracketing delimiter, or a
+ * link-starting `#` at a token boundary. Section 4.3 makes an interior quote (`'` or backtick) and an
+ * interior `#` ordinary literal text — they open nothing and end nothing — while `#{` is the
+ * interpolation opener wherever it appears, including as the value's first character. */
 node *parse_unquoted(parser *p) {
     size_t start = p->pos;
     sb raw = {0};
@@ -228,8 +202,12 @@ node *parse_unquoted(parser *p) {
     while (!p_at_end(p)) {
         uint32_t r = p_peek(p);
         if (r == ',' || is_newline(r) || is_hard_delimiter(r)) break;
-        /* A link (#name) is its own value and ends this one; an interpolation (#{) is part of it. */
-        if (r == '#' && peek_at(p, 1) != '{') break;
+
+        /* `#{` is part of the value everywhere. A bare `#` at a token boundary would start a link, but
+         * parse_value routes a value-initial `#` to the link parser and the after-whitespace boundary is
+         * handled in the is_space branch below (via unquoted_continues), so here a bare `#` is always
+         * interior and falls through to the literal writer at the foot of the loop. */
+        if (p_starts_with(p, "#{")) { consume_interpolation_raw(p, &raw); continue; }
 
         if (is_space(r)) {
             size_t save = p->pos;
@@ -244,13 +222,19 @@ node *parse_unquoted(parser *p) {
             p->pos = save;
             break;
         }
-        if (r == '\'' || r == '`') { consume_quote_region(p, &raw); continue; }
-        if (p_starts_with(p, "#{")) { consume_interpolation_raw(p, &raw); continue; }
         if (r == '\\') {
-            sb_put_rune(&raw, p_advance(p));
-            if (!p_at_end(p)) sb_put_rune(&raw, p_advance(p));
+            sb_put_rune(&raw, p_advance(p)); /* the backslash */
+            if (!p_at_end(p)) {
+                uint32_t n = p_peek(p);
+                sb_put_rune(&raw, p_advance(p)); /* the escaped character */
+                /* `\#{` is one escape that decodes to the literal `#{`. Its `{` is a bracketing
+                 * delimiter, so the raw collector must take it here, or the loop would stop at the `{`
+                 * and split the escape into `\#` and a stray `{`. decode reads the three bytes back. */
+                if (n == '#' && !p_at_end(p) && p_peek(p) == '{') sb_put_rune(&raw, p_advance(p));
+            }
             continue;
         }
+        /* Any other rune — including an interior `'`, backtick, or bare `#` — is literal content. */
         sb_put_rune(&raw, p_advance(p));
     }
 

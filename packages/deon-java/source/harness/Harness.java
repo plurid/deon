@@ -230,7 +230,11 @@ public final class Harness {
         } else if (v instanceof Boolean bool) {
             b.append(bool ? "true" : "false");
         } else if (v instanceof Double d) {
-            if (d == Math.rint(d) && !d.isInfinite()) {
+            // A whole number within signed 64-bit range writes as a bare integer, matching the sibling
+            // adapters. Anything larger must not narrow through a long: (long) 1e19 saturates to
+            // Long.MAX_VALUE and would hand back a different number than the one typed (spec 14). Such a
+            // value, and every fractional one, writes through its shortest round-tripping decimal.
+            if (d == Math.rint(d) && Math.abs(d) < 0x1p63) {
                 b.append(Long.toString(d.longValue()));
             } else {
                 b.append(d.toString());

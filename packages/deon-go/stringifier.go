@@ -204,23 +204,24 @@ func needsQuote(s string) bool {
 	if s == "" {
 		return true
 	}
-	first := []rune(s)[0]
 	runes := []rune(s)
+	first := runes[0]
 	last := runes[len(runes)-1]
 	if isSpace(first) || isSpace(last) || first == '\n' || last == '\n' {
 		return true
 	}
-	if first == '#' {
-		return true
-	}
 	for _, r := range s {
-		// A backslash or tab written bare would be read back as an escape or as separating whitespace,
-		// so a string carrying one is quoted, where the escape is explicit and unambiguous.
-		if isDelimiter(r) || r == ',' || r == '\n' || r == '\r' || r == '\t' || r == '\\' {
+		// Each of these carries structural meaning where a value may begin or continue, so a string
+		// holding one does not read back unquoted (specification 12): a bare backslash reads as an
+		// escape, a bare tab as separating whitespace, a bracketing delimiter as the edge of a group,
+		// and a comma or line feed as a separator. A `#` is quoted wherever it falls — a leading one
+		// opens a link, a `...#` a spread, `#{` an interpolation — and even a harmless interior `#` is
+		// quoted so two implementations agree on the canonical form (specification 13).
+		if isDelimiter(r) || r == ',' || r == '#' || r == '\n' || r == '\r' || r == '\t' || r == '\\' {
 			return true
 		}
 	}
-	if strings.Contains(s, "#{") || strings.Contains(s, "//") || strings.Contains(s, "/*") {
+	if strings.Contains(s, "//") || strings.Contains(s, "/*") {
 		return true
 	}
 	return false

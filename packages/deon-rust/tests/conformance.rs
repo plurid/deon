@@ -599,11 +599,19 @@ fn a_bare_name_outside_ascii_is_refused_where_it_is_written() {
 }
 
 /// The column of a diagnostic counts code points, so a character outside ASCII counts as one.
+///
+/// The key is quoted, and so valid, precisely so that the unterminated value is the diagnostic under
+/// test: an unterminated quote is now literal content wherever it is not a value's first character
+/// (specification 4.3), so the scanner no longer fails ahead of the parser, and a bare non-ASCII key
+/// would be refused as an invalid name first — the reference behaves the same way. The `'ключ'` before
+/// the value places the reported quote at column 12, four code points and eight bytes past where a
+/// byte count would have put it.
 #[test]
 fn a_column_counts_code_points() {
-    let error = deon::parse("{\n    ключ 'unterminated\n}\n").expect_err("the string is unterminated");
+    let error =
+        deon::parse("{\n    'ключ' 'unterminated\n}\n").expect_err("the string is unterminated");
 
     assert_eq!(error.code, DiagnosticCode::LexUnterminated);
     assert_eq!(error.diagnostics[0].span.line, 2);
-    assert_eq!(error.diagnostics[0].span.column, 10);
+    assert_eq!(error.diagnostics[0].span.column, 12);
 }

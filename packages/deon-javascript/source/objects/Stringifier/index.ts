@@ -154,9 +154,11 @@ const multiline = (
 
 
 /**
- * Characters that would otherwise be read as syntax.
+ * Characters that would otherwise be read as syntax. A number sign is quoted wherever it falls, not
+ * only at a token boundary: section 4.3 makes an interior `#` harmless literal text, but section 12
+ * quotes it all the same so two implementations cannot disagree about the canonical form (section 13).
  */
-const unsafe = /^#|^\.\.\.#|\\|[\[\]{},()<>]|\/\/|\/\*|#\{|['`]/;
+const unsafe = /#|\\|[\[\]{},()<>]|\/\/|\/\*|['`]/;
 
 
 /**

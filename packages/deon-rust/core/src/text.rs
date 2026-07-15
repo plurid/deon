@@ -108,7 +108,11 @@ pub fn is_absolute_path(value: &str) -> bool {
 
 /// The characters that would be read as syntax if a string were written without quotes.
 ///
-/// `^#|^\.\.\.#|\\|[\[\]{},()<>]|//|/\*|#\{|['`]`
+/// A number sign is unsafe wherever it falls, not only at the start or before a brace: an interior
+/// `#` is harmless literal text on the way in (section 4.3), but section 12 quotes it all the same,
+/// so that two implementations cannot disagree about the canonical form of a value carrying one.
+///
+/// `^#|^\.\.\.#|\\|[#\[\]{},()<>]|//|/\*|#\{|['`]`
 pub fn is_unsafe_scalar(value: &str) -> bool {
     if value.starts_with('#') || value.starts_with("...#") {
         return true;
@@ -121,7 +125,7 @@ pub fn is_unsafe_scalar(value: &str) -> bool {
     value.chars().any(|character| {
         matches!(
             character,
-            '\\' | '[' | ']' | '{' | '}' | ',' | '(' | ')' | '<' | '>' | '\'' | '`'
+            '#' | '\\' | '[' | ']' | '{' | '}' | ',' | '(' | ')' | '<' | '>' | '\'' | '`'
         )
     })
 }

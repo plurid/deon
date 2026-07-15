@@ -27,6 +27,13 @@ pub enum TokenType {
     Link,
     Interpolate,
 
+    /// A `'` or backtick that opened a string and never closed it. The scanner cannot tell an opening
+    /// quote from a quote that is ordinary content further along an unquoted value — that is a matter
+    /// of position only the parser knows — so it defers the judgment under this token: it is
+    /// `DEON_LEX_UNTERMINATED` where a value, name, or target begins with it, and literal text where it
+    /// merely continues an unquoted run (4.3).
+    Unterminated,
+
     Eof,
 }
 
@@ -43,6 +50,9 @@ impl TokenType {
                 | Self::Inject
                 | Self::From
                 | Self::With
+                // An unterminated quote continues an unquoted value as literal text; the parser rejects
+                // it only where it stands first (4.3).
+                | Self::Unterminated
         )
     }
 

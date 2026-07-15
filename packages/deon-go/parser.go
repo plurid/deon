@@ -411,7 +411,9 @@ func (p *parser) value() node {
 		return p.listValue()
 	case p.peek() == '<':
 		return p.structure()
-	case p.peek() == '#':
+	case p.peek() == '#' && p.peekAt(1) != '{':
+		// `#name` is a link or call. `#{` is an interpolation opener, which is part of an unquoted
+		// string even at the value's first character, so it falls through to the default below.
 		return p.linkOrCall()
 	case p.peek() == '\'':
 		start := p.pos

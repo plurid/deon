@@ -1,5 +1,6 @@
 #include "parser_internal.h"
 
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -389,7 +390,9 @@ static node *parse_value(parser *p) {
     if (c == '{') result = parse_map(p);
     else if (c == '[') result = parse_list(p);
     else if (c == '<') result = parse_structure(p);
-    else if (c == '#') result = parse_link_or_call(p);
+    /* A bare `#` begins a link or call; `#{` is the interpolation opener of an unquoted string and may
+     * open a value (section 4.3), so it falls through to parse_unquoted. */
+    else if (c == '#' && !starts_with(p, "#{")) result = parse_link_or_call(p);
     else if (c == '\'') {
         size_t start = p->pos, len;
         string_part *parts = parse_single_string(p, &len);
@@ -712,7 +715,14 @@ static access_seg parse_bracket_access(parser *p) {
     deon_str text = arena_str(p->ctx->a, slice(p, start, p->pos).data, p->byte_off[p->pos] - p->byte_off[start]);
     if (digits) {
         seg.by_index = true;
-        seg.index = (int)strtol(text.data, NULL, 10);
+        /* Parse the index as a 64-bit integer. One that overflows even that, or that carries any
+         * non-digit tail, cannot name a real position, so it is marked out of range (-1) rather than
+         * truncated into a wrong-but-valid index — the interpreter then reports it the same way it
+         * reports 5 on a three-item list (specification section 6). */
+        errno = 0;
+        char *tail = NULL;
+        long long value = strtoll(text.data, &tail, 10);
+        seg.index = (errno == ERANGE || tail == text.data || *tail != '\0' || value < 0) ? -1 : value;
         seg.name = text;
     } else {
         seg.name = text;

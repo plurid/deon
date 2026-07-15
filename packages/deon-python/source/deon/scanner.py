@@ -23,14 +23,18 @@ quadratic and would turn a large document into a hang.
 
 from __future__ import annotations
 
-from .diagnostic import DiagnosticCode, Span, error
+from .diagnostic import DeonError, DiagnosticCode, Span, error
 from .syntax import Reference
 from .token import Token, TokenType
 
 
 #: A word ends here. Everything else is a character an unquoted string may contain, including `/`,
-#: `:`, `.`, and `\`, which is what lets a path, a URL, and a flag be written without quoting.
-TERMINATORS = frozenset(" \t\n,{}[]()<>'`")
+#: `:`, `.`, `\`, and — a `'` or `` ` `` among them. A quote that is not the first character of an
+#: unquoted value is ordinary literal text and opens nothing (specification 4.3): it is `token` that
+#: opens a quoted string, and only when a value *begins* with a quote, so a word already under way
+#: reads `it's` and `p`q`r` straight through. That is what lets a path, a URL, a flag, and an
+#: apostrophe be written with no quotes at all.
+TERMINATORS = frozenset(" \t\n,{}[]()<>")
 
 NAME_CHARACTERS = frozenset(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
@@ -112,6 +116,7 @@ class Scanner:
         start: tuple[int, int, int, int],
         raw: str = "",
         literal=None,
+        unterminated_quote: bool = False,
     ) -> None:
         self.tokens.append(
             Token(
@@ -127,6 +132,7 @@ class Scanner:
                 end_line=self.line,
                 end_column=self.column,
                 source=self.source_name,
+                unterminated_quote=unterminated_quote,
             )
         )
 
@@ -219,11 +225,11 @@ class Scanner:
             return
 
         if character == "'":
-            self.single_string(start)
+            self.quoted_or_word(start, self.single_string)
             return
 
         if character == "`":
-            self.multiline_string(start)
+            self.quoted_or_word(start, self.multiline_string)
             return
 
         # `...#reference` spreads. Any other run of dots is an ordinary word, which is what lets
@@ -254,7 +260,33 @@ class Scanner:
 
         self.word(start)
 
-    def word(self, start: tuple[int, int, int, int]) -> None:
+    def quoted_or_word(self, start: tuple[int, int, int, int], reader) -> None:
+        """A value that begins with a quote is a quoted string; read it as one (specification 4.3).
+
+        A quote opens a string only at a value's first character, and the scanner cannot see a
+        value's first character apart from its later ones — a `'` after a key, after a word, and
+        after separating whitespace all arrive here the same way. When the string closes, that
+        ambiguity never surfaced: the run was a quoted string wherever it stood. When it does *not*
+        close it does surface, because now the two readings differ — value-initial the run is the
+        `DEON_LEX_UNTERMINATED` the reader would raise, and continuing an unquoted value it is
+        ordinary literal text. The scanner declines to guess: it rolls the cursor back, reads the run
+        as a word, and marks the word, leaving the parser — which knows whether a value begins here —
+        to give the verdict.
+        """
+        checkpoint = (self.current, self.byte, self.line, self.line_start)
+
+        try:
+            reader(start)
+        except DeonError as failure:
+            if failure.code != DiagnosticCode.LEX_UNTERMINATED:
+                raise
+
+            self.current, self.byte, self.line, self.line_start = checkpoint
+            self.word(start, unterminated_quote=True)
+
+    def word(
+        self, start: tuple[int, int, int, int], unterminated_quote: bool = False
+    ) -> None:
         while not self.at_end():
             character = self.peek()
 
@@ -283,7 +315,7 @@ class Scanner:
 
         raw = self.source[start[0] : self.current]
 
-        self.emit(TokenType.WORD, start, raw=raw)
+        self.emit(TokenType.WORD, start, raw=raw, unterminated_quote=unterminated_quote)
 
     def interpolation(self, start: tuple[int, int, int, int]) -> None:
         """Consume `#{ ... }` inside a string.

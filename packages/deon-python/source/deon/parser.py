@@ -104,6 +104,17 @@ class Parser:
     def fail(self, code: str, message: str, token: Token | None = None):
         return error(code, message, (token or self.peek()).span())
 
+    def reject_unterminated(self, token: Token) -> None:
+        """The verdict the scanner deferred (specification 4.3).
+
+        A word the scanner marked began with a quote that never closed. That is ordinary literal text
+        only where it *continues* an unquoted value; standing where a value, a name, or a target
+        begins, it is the unterminated string it looks like, reported at its opening quote — which is
+        this token's own start.
+        """
+        if token.unterminated_quote:
+            raise self.fail(DiagnosticCode.LEX_UNTERMINATED, "Unterminated string.", token)
+
     def separators(self) -> None:
         while self.peek().type in BOUNDARIES:
             self.advance()
@@ -399,6 +410,9 @@ class Parser:
     def scalar(self, stops: frozenset[str]) -> Scalar:
         first = self.peek()
 
+        # A value that *begins* with an unterminated quote is the unterminated string it looks like.
+        self.reject_unterminated(first)
+
         if first.type in stops:
             return Scalar(raw="", token=first)
 
@@ -434,6 +448,12 @@ class Parser:
                     ),
                     token,
                 )
+
+            # An unterminated quote is literal only where it continues an *unquoted* value — one whose
+            # first token is a word. After a value-initial quoted string the value has already ended,
+            # so a stray unterminated quote here is the error it looks like, not more of the value.
+            if first.type != TokenType.WORD:
+                self.reject_unterminated(token)
 
             last = self.advance()
             started = True
@@ -475,6 +495,9 @@ class Parser:
     def name(self, message: str) -> str:
         token = self.peek()
 
+        # A name that begins with an unterminated quote is the unterminated string it looks like.
+        self.reject_unterminated(token)
+
         if token.type == TokenType.STRING:
             self.advance()
             return token.raw
@@ -501,6 +524,9 @@ class Parser:
 
     def atom(self, message: str) -> str:
         token = self.peek()
+
+        # A target that begins with an unterminated quote is the unterminated string it looks like.
+        self.reject_unterminated(token)
 
         if token.type in (TokenType.WORD, TokenType.STRING):
             self.advance()

@@ -435,6 +435,13 @@ impl Parser {
     /// An unquoted value is made of every token up to its boundary, put back together with the
     /// whitespace that separated them, so that `two words` stays two words.
     fn scalar(&mut self, stops: Stops) -> DResult<ValueNode> {
+        // A value that begins with a quote is a quoted string. One whose opening quote never closed is
+        // an unterminated string — but it is an error precisely because the quote is the value's first
+        // character. The scanner cannot know that, so it deferred the judgment to here (4.3).
+        if self.check(TokenType::Unterminated) {
+            return self.fail(DiagnosticCode::LexUnterminated, "Unterminated string.");
+        }
+
         // A string is quoted only when the value begins with the quote. Anywhere else the quote is
         // an ordinary character of an unquoted string, which runs to the boundary (4.3).
         if self.check(TokenType::String) {
@@ -475,6 +482,12 @@ impl Parser {
     /// A name is a bare word or a singlequoted string. A backticked string may span lines, which a
     /// name may not.
     fn name(&mut self, message: &str) -> DResult<Token> {
+        // A name may be a singlequoted string; one whose quote never closed is an unterminated string,
+        // which the scanner left for the parser to place (4.3).
+        if self.check(TokenType::Unterminated) {
+            return self.fail(DiagnosticCode::LexUnterminated, "Unterminated string.");
+        }
+
         if !self.peek().ty.is_value() || self.check(TokenType::Interpolate) {
             return self.fail(DiagnosticCode::ParseExpected, message);
         }
@@ -498,6 +511,12 @@ impl Parser {
     /// A resource target is one token, and it may not be a backticked string, whose trimming would
     /// make the target something other than what was written.
     fn atom(&mut self, message: &str) -> DResult<Token> {
+        // A target may be a singlequoted string; an unterminated one is the same lexical error here as
+        // anywhere a quote opens a value (4.3).
+        if self.check(TokenType::Unterminated) {
+            return self.fail(DiagnosticCode::LexUnterminated, "Unterminated string.");
+        }
+
         if !self.peek().ty.is_value() || self.check(TokenType::Interpolate) {
             return self.fail(DiagnosticCode::ParseExpected, message);
         }
@@ -518,6 +537,12 @@ impl Parser {
     fn require_boundary(&mut self, entity: &str) -> DResult<()> {
         if self.peek().ty.is_boundary() {
             return Ok(());
+        }
+
+        // A quote standing where a separator was due opens a string; when that string never closed, the
+        // failure is the unterminated quote at its opening character, not the missing separator (4.3).
+        if self.check(TokenType::Unterminated) {
+            return self.fail(DiagnosticCode::LexUnterminated, "Unterminated string.");
         }
 
         self.fail(

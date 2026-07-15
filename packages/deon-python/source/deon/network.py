@@ -37,6 +37,56 @@ from .resources import (
 TIMEOUT = 30
 
 
+#: Headers that name a caller and must not follow a redirect to a host they were not named for. A
+#: bearer is the one Deon sets; `Cookie` is here because urllib would forward it just the same, and
+#: the leak is the same shape.
+_UNSAFE_ACROSS_ORIGIN = frozenset({"authorization", "cookie"})
+
+
+def _same_origin(current: str, target: str) -> bool:
+    """Whether a redirect stays on the origin a credential was named for.
+
+    Conservative on purpose: a difference in scheme, hostname, or port is a different origin, and a
+    bearer for the first has no business travelling to the second (specification 9). Default ports are
+    not normalised — `:80` against an implicit port reads as a change — because erring here can only
+    drop a credential that would have been kept, never keep one that should have been dropped.
+    """
+    here, there = urlsplit(current), urlsplit(target)
+
+    return (
+        here.scheme == there.scheme
+        and (here.hostname or "").lower() == (there.hostname or "").lower()
+        and here.port == there.port
+    )
+
+
+class _CredentialGuardRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follows redirects, but does not let a credential leave the host it was handed to.
+
+    Python's urllib re-sends every request header when it follows a 302 — `Authorization` and
+    `Cookie` included — even when the target is a different origin, so a bearer meant for one host
+    would arrive at the next. Go, Java, and Node all strip the credential across origins, and Rust's
+    ureq never forwards it; this is what brings Python in line. A same-origin redirect
+    (`http://h/a` to `http://h/b`) is untouched and stays authenticated (specification 9).
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        if new is not None and not _same_origin(req.full_url, new.full_url):
+            for name in [key for key in new.headers if key.lower() in _UNSAFE_ACROSS_ORIGIN]:
+                del new.headers[name]
+
+        return new
+
+
+#: One opener, built once and shared. It behaves exactly like the module-level `urlopen` except that
+#: a credential cannot ride a cross-origin redirect. `build_opener` installs the guard in place of the
+#: stock `HTTPRedirectHandler` because it is a subclass of it; every other default handler — including
+#: the `https` one — is left as it was, so nothing else about the request changes.
+_OPENER = urllib.request.build_opener(_CredentialGuardRedirectHandler)
+
+
 def accept(kind: str) -> str:
     """What a resource is asked for.
 
@@ -69,7 +119,10 @@ def get(url: str, headers: dict[str, str]) -> Optional[str]:
     request = urllib.request.Request(url, headers=headers, method="GET")
 
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        # `_OPENER`, not `urlopen`: identical in every respect but one — a credential in `headers`
+        # will not survive a redirect to a different host (specification 9). Both `get`'s callers, the
+        # importer and `parse_link`, come through here, so both are covered by this one substitution.
+        with _OPENER.open(request, timeout=TIMEOUT) as response:
             if not 200 <= response.status < 300:
                 return None
 

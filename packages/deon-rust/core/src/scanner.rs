@@ -384,13 +384,7 @@ impl Scanner {
             }
 
             if delimiter == '\'' && character == '\n' {
-                return self.fail(
-                    DiagnosticCode::LexUnterminated,
-                    "Singlequoted strings cannot cross a newline.",
-                    start,
-                    line,
-                    column,
-                );
+                return self.unterminated_quote(start, line, column);
             }
 
             // An escaped delimiter must not end the string, so a backslash always takes the next
@@ -404,13 +398,30 @@ impl Scanner {
             raw.push(self.advance());
         }
 
-        self.fail(
-            DiagnosticCode::LexUnterminated,
-            "Unterminated string.",
-            start,
-            line,
-            column,
-        )
+        self.unterminated_quote(start, line, column)
+    }
+
+    /// A `'` or backtick that opened a string and never closed it. Whether that is an error is a
+    /// question of position — an opening quote must close, but a quote partway through an unquoted
+    /// value is ordinary content that opens nothing (4.3) — and the scanner, which has no notion of a
+    /// key against a value, cannot answer it. So rather than fail here, it rewinds to the opening quote
+    /// and re-reads the run as literal text under an `Unterminated` token; the parser raises
+    /// `DEON_LEX_UNTERMINATED` only where that token stands at the head of a value, name, or target.
+    fn unterminated_quote(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
+        self.current = start;
+        self.line = line;
+        self.column = column;
+
+        // The opening quote is not a boundary character, so this consumes it and then the rest of the
+        // word, stopping where any unquoted value would (whitespace, a grouping character, a comma).
+        self.consume_bare_run(start, line, column)?;
+
+        let lexeme = self.slice(start, self.current).to_string();
+        let literal = Literal::String(decode_minimal(&lexeme, None));
+
+        self.add(TokenType::Unterminated, literal, start, line, column);
+
+        Ok(())
     }
 
     fn reference(
@@ -503,6 +514,21 @@ impl Scanner {
     /// An unquoted word. It ends at whitespace or at a grouping character, and it swallows any
     /// interpolation written inside it, which is resolved later against the evaluated value.
     fn bare(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
+        self.consume_bare_run(start, line, column)?;
+
+        let lexeme = self.slice(start, self.current).to_string();
+        let ty = keyword(&lexeme).unwrap_or(TokenType::Signifier);
+        let literal = Literal::String(decode_minimal(&lexeme, None));
+
+        self.add(ty, literal, start, line, column);
+
+        Ok(())
+    }
+
+    /// Reads an unquoted run from the cursor to its boundary — whitespace, a grouping character, or a
+    /// comma — swallowing any interpolation written inside it. Shared by the ordinary bare word and by
+    /// the recovery that re-reads an unterminated quote as the literal content it is (4.3).
+    fn consume_bare_run(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
         while !self.at_end() {
             let character = self.peek(0);
 
@@ -545,12 +571,6 @@ impl Scanner {
 
             self.advance();
         }
-
-        let lexeme = self.slice(start, self.current).to_string();
-        let ty = keyword(&lexeme).unwrap_or(TokenType::Signifier);
-        let literal = Literal::String(decode_minimal(&lexeme, None));
-
-        self.add(ty, literal, start, line, column);
 
         Ok(())
     }

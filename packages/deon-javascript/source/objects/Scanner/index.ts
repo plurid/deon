@@ -68,6 +68,37 @@ const REFERENCE_STOPS = ' \t\r\n,{}()<>';
 
 
 /**
+ * A column counts Unicode code points, not UTF-16 code units, because that is the position the
+ * specification requires (`spec/diagnostics.md`: one-based Unicode code-point line/column). An
+ * astral character — anything above the Basic Multilingual Plane — is written in JavaScript as a
+ * surrogate pair, two code units, and must still count as a single column. These recognise the two
+ * halves of such a pair so that the trailing half advances the byte offset without the column.
+ */
+const isHighSurrogate = (
+    character: string | undefined,
+) => {
+    if (character === undefined) {
+        return false;
+    }
+
+    const code = character.charCodeAt(0);
+    return code >= 0xD800 && code <= 0xDBFF;
+}
+
+
+const isLowSurrogate = (
+    character: string | undefined,
+) => {
+    if (character === undefined) {
+        return false;
+    }
+
+    const code = character.charCodeAt(0);
+    return code >= 0xDC00 && code <= 0xDFFF;
+}
+
+
+/**
  * Decodes the escapes of a string. `delimiter` is the quote the string was written in, if any: a
  * backslash before it means the quote itself, rather than the end of the string.
  *
@@ -291,7 +322,17 @@ class Scanner {
         }
 
         if (character === '\'' || character === '`') {
-            this.string(character, start, line, column);
+            if (this.stringTerminates(character)) {
+                this.string(character, start, line, column);
+            } else {
+                // A quote that opens a string which never closes is not, on its own, an error: only
+                // the first character of a value opens a quoted string, so a `'` or a backtick that
+                // continues an unquoted value is ordinary literal content (4.3). The scanner cannot
+                // tell a value's first token from a later one, so rather than fail here it reads the
+                // run as a bare word and marks it — the parser raises the unterminated-string error
+                // if, and only if, the word begins a value, a key, or a target.
+                this.bare(start, line, column, true);
+            }
             return;
         }
 
@@ -350,6 +391,42 @@ class Scanner {
 
         const lexeme = this.source.slice(start, this.current);
         this.add(TokenType.INTERPOLATE, lexeme, lexeme, start, line, column);
+    }
+
+
+    /**
+     * Whether a string opened at the cursor would find its closing delimiter, looked ahead without
+     * consuming. It walks the same characters `string` would — honouring the escape that carries the
+     * next character, and, for a singlequote, stopping at the newline it may not cross — and reports
+     * whether the delimiter is reached. When it is not, the opening quote begins no string: the caller
+     * reads the run as a bare word instead of failing, and the parser decides by position whether that
+     * is a real unterminated string or literal content (4.3).
+     */
+    private stringTerminates(
+        delimiter: string,
+    ) {
+        let index = this.current;
+
+        while (index < this.source.length) {
+            const character = this.source[index];
+
+            if (character === delimiter) {
+                return true;
+            }
+
+            if (delimiter === '\'' && character === '\n') {
+                return false;
+            }
+
+            if (character === '\\' && index + 1 < this.source.length) {
+                index += 2;
+                continue;
+            }
+
+            index += 1;
+        }
+
+        return false;
     }
 
 
@@ -508,11 +585,16 @@ class Scanner {
     /**
      * An unquoted word. It ends at whitespace or at a grouping character, and it swallows any
      * interpolation written inside it, which is resolved later against the evaluated value.
+     *
+     * `unterminatedQuote` is set when the word began with a `'` or a backtick that opened a string
+     * which never closed: the word is read literally, and the flag is carried to the parser, which
+     * raises the unterminated-string error only where such a word begins a value, a key, or a target.
      */
     private bare(
         start: number,
         line: number,
         column: number,
+        unterminatedQuote = false,
     ) {
         while (!this.atEnd()) {
             const character = this.peek();
@@ -572,6 +654,7 @@ class Scanner {
             start,
             line,
             column,
+            unterminatedQuote,
         );
     }
 
@@ -583,6 +666,7 @@ class Scanner {
         start: number,
         line: number,
         column: number,
+        unterminatedQuote = false,
     ) {
         this.tokens.push(
             new Token(
@@ -595,6 +679,7 @@ class Scanner {
                 this.current,
                 this.sourceName,
                 this.leading,
+                unterminatedQuote,
             ),
         );
 
@@ -637,7 +722,11 @@ class Scanner {
         if (character === '\n') {
             this.line += 1;
             this.column = 1;
-        } else {
+        } else if (!(isLowSurrogate(character) && isHighSurrogate(this.source[this.current - 2]))) {
+            // The trailing half of a surrogate pair completes the astral character its leading half
+            // began, so it does not open a new column: the pair is one code point, and therefore one
+            // column. `current` still advances by a code unit, so byte offsets and lexeme slices are
+            // untouched — only the column counts code points.
             this.column += 1;
         }
 

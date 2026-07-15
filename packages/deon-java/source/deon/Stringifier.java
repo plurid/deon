@@ -103,15 +103,12 @@ final class Stringifier {
         if (space(first) || space(last) || first == '\n' || last == '\n') {
             return true;
         }
-        if (first == '#') {
-            return true;
-        }
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (delim(c) || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\') {
-                return true;
-            }
-            if (c == '#' && i + 1 < s.length() && s.charAt(i + 1) == '{') {
+            // A '#' anywhere forces a quote (section 12): even where section 4.3 makes it harmless
+            // literal text — an interior '#', or a leading one that is not a link — the safer form is the
+            // canonical one, so two implementations never disagree about a value's canonical text.
+            if (delim(c) || c == '#' || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\') {
                 return true;
             }
             if (c == '/' && i + 1 < s.length() && (s.charAt(i + 1) == '/' || s.charAt(i + 1) == '*')) {

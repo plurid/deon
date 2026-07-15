@@ -6,7 +6,7 @@ JAVA ?= java
 JFLAGS ?= -d build
 LIB := $(wildcard source/deon/*.java)
 
-.PHONY: all deon harness test network cache depth clean
+.PHONY: all deon harness test network cache depth number clean
 
 all: deon harness
 
@@ -53,6 +53,14 @@ build/.depth: $(LIB) $(wildcard tests/DepthTest.java)
 	@mkdir -p build
 	$(JAVAC) $(JFLAGS) $(LIB) tests/DepthTest.java
 	@touch build/.depth
+
+number: build/.number
+	$(JAVA) -cp build tests.NumberTest
+
+build/.number: $(LIB) $(wildcard source/harness/*.java) $(wildcard tests/NumberTest.java)
+	@mkdir -p build
+	$(JAVAC) $(JFLAGS) $(LIB) source/harness/*.java tests/NumberTest.java
+	@touch build/.number
 
 clean:
 	rm -rf build

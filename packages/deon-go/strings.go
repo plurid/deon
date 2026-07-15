@@ -88,16 +88,14 @@ func (p *parser) backtickString() []stringPart {
 
 func isTrimmable(r rune) bool { return r == ' ' || r == '\t' || r == '\n' }
 
-// unquoted parses an unquoted string. Section 4.3 describes it as ending at a delimiter "wherever it
-// occurs", but the reference reads more than that: a quote inside an unquoted value opens a region that
-// is kept as literal source (its own delimiters included) rather than ending the value, so `x'a'y` is
-// one string of five characters and `p`q`r` keeps its backticks. Only a comma, a newline, an enclosing
-// bracket, or a `#name` link ends the value. What the value spans is recovered as the source between
-// its first and last character — comments cut out, inter-word whitespace kept — and then decoded once,
-// so an interpolation inside a quote region is still resolved and an escape is still read.
-//
-// This is a deliberate divergence from §4.3 as written; it matches the reference and is pinned by the
-// differential corpus. It is logged as a specification defect in this package's notes.
+// unquoted parses an unquoted string (section 4.3): a value that does not begin with a quote. It ends
+// only at an unnested comma, a newline, an enclosing bracket, or a `#` that starts a link at a token
+// boundary — the value's first character (routed away by the caller's dispatch) or a `#` after
+// separating whitespace (stopped by unquotedContinues). Everywhere else a `'`, a backtick, and a `#`
+// are ordinary literal content: `x'q'y` is five characters, `p`q`r` keeps its backticks, and `x#y`
+// keeps its `#`. A `#{` opens an interpolation wherever it appears. What the value spans is recovered
+// as the source between its first and last character — comments cut out, inter-word whitespace kept —
+// and decoded once, so an interpolation is resolved and an escape is read in the same pass.
 func (p *parser) unquoted() node {
 	start := p.pos
 	var raw []rune
@@ -105,10 +103,6 @@ func (p *parser) unquoted() node {
 	for !p.atEnd() {
 		r := p.peek()
 		if r == ',' || isNewline(r) || isHardDelimiter(r) {
-			break
-		}
-		// A link (`#name`) is its own value and ends this one; an interpolation (`#{`) is part of it.
-		if r == '#' && p.peekAt(1) != '{' {
 			break
 		}
 
@@ -124,20 +118,25 @@ func (p *parser) unquoted() node {
 			break
 		}
 
-		if r == '\'' || r == '`' {
-			p.consumeQuoteRegion(&raw)
-			continue
-		}
+		// `#{` opens an interpolation wherever it appears, the value's first character included; a `#`
+		// that does not open one (`x#y`, `word#`) is ordinary literal text and falls to the default
+		// below. A `#` that starts a link only does so at a token boundary, which never reaches here:
+		// at the value's start the caller's dispatch routes it away, and after whitespace
+		// unquotedContinues stops the value before the `#` is read.
 		if p.startsWith("#{") {
 			p.consumeInterpolationRaw(&raw)
 			continue
 		}
 		if r == '\\' {
 			// A backslash takes the character after it, so an escaped delimiter does not end anything;
-			// both characters are kept raw for the single decode pass below.
+			// both characters are kept raw for the single decode pass below. `\#{` is the three-character
+			// escape for a literal `#{`, so its `{` is taken too rather than left to end the value.
 			raw = append(raw, p.advance())
 			if !p.atEnd() {
 				raw = append(raw, p.advance())
+				if raw[len(raw)-1] == '#' && p.peek() == '{' {
+					raw = append(raw, p.advance())
+				}
 			}
 			continue
 		}
@@ -165,37 +164,6 @@ func (p *parser) unquotedContinues() bool {
 		return false
 	}
 	return true
-}
-
-// consumeQuoteRegion copies a quoted region into an unquoted string's raw source, delimiters and all,
-// validating only that it is terminated. Its content is decoded later along with the rest of the
-// value, so the quote marks survive as literal characters while an interpolation inside is still read.
-func (p *parser) consumeQuoteRegion(raw *[]rune) {
-	quote := p.peek()
-	open := p.pos
-	*raw = append(*raw, p.advance()) // opening quote, kept literal
-	for {
-		if p.atEnd() {
-			fail(LexUnterminated, "A string was opened and never closed.", p.spanAt(open))
-		}
-		r := p.peek()
-		if quote == '\'' && isNewline(r) {
-			fail(LexUnterminated, "A single-quoted string may not cross a line.", p.spanAt(open))
-		}
-		if r == '\\' {
-			*raw = append(*raw, p.advance())
-			if p.atEnd() {
-				fail(LexUnterminated, "A string ended in an unfinished escape.", p.spanAt(open))
-			}
-			*raw = append(*raw, p.advance())
-			continue
-		}
-		if r == quote {
-			*raw = append(*raw, p.advance()) // closing quote, kept literal
-			return
-		}
-		*raw = append(*raw, p.advance())
-	}
 }
 
 // consumeInterpolationRaw copies a `#{ ... }` opener and its reference into the raw source, so the one

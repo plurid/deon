@@ -30,11 +30,12 @@ static bool needs_quote(deon_str s) {
     char first = s.data[0];
     char last = s.data[s.len - 1];
     if (c_space(first) || c_space(last) || first == '\n' || last == '\n') return true;
-    if (first == '#') return true;
     for (size_t i = 0; i < s.len; i++) {
         char c = s.data[i];
-        if (c_delim(c) || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\') return true;
-        if (c == '#' && i + 1 < s.len && s.data[i + 1] == '{') return true;
+        /* A quote and an interior `#`, which section 4.3 makes harmless literal text, are quoted all the
+         * same: two implementations may not disagree about the canonical form of a value (section 13), so
+         * where a shorter safe form and a safer one both read back, the safer one is the form. */
+        if (c_delim(c) || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\' || c == '#') return true;
         if (c == '/' && i + 1 < s.len && (s.data[i + 1] == '/' || s.data[i + 1] == '*')) return true;
     }
     return false;
