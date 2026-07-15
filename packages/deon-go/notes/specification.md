@@ -57,3 +57,15 @@ And §12's other half — "a backtick string carries a value only when that valu
 ---
 
 Nothing here changed what Deon *means* — every behaviour above is what the three existing implementations already do. What it changes is what the specification says about itself: one rule it states backwards (§4.3 on quotes), one it never states (where a link ends a value), and eight positions it leaves to be guessed. The first is worth a careful amendment, because it is the rare case where following the specification faithfully produces a parser that is *wrong*, and a fifth implementer reading only the prose would write it the same wrong way.
+
+---
+
+## Resolution
+
+All of the above are now closed, so a fifth implementation cannot inherit them:
+
+- **The prose is amended.** §4.3 now separates the eight bracketing delimiters (which end an unquoted string) from the two quotes (which open a literal, still-decoded region), and states that a `#name` link ends a value; §11.2 fixes the five diagnostic positions; §12 adds backslash and tab to the quoting list and says when the backtick form is chosen; §8 names the code and position for a repeated structure field.
+
+- **The normative suite enforces it.** Seven required fixtures were added to `spec/conformance/cases.json` — `unquoted-keeps-a-single-quote-region`, `unquoted-keeps-a-backtick-region`, `unquoted-region-still-interpolates`, `link-ends-an-unquoted-value`, `unquoted-backslash-is-quoted`, `unquoted-tab-is-quoted`, and `canonical-uses-backtick-for-a-line-break`. The headline finding was pinned only in the differential corpus, which catches a mistake only when every implementation is run together; §15 defines conformance against `cases.json`, so a from-the-spec implementation running the required suite alone is now held to it too. Each fixture was shown to go red against a deliberately-wrong deon-go before it was trusted — a fixture never seen fail proves nothing.
+
+The position anchorings and the structure-field rule already had required fixtures; only the quote-region behaviour, the link-ends-value rule, and the backslash/tab/backtick-form canonical choices were missing, and those are what the seven new fixtures add.

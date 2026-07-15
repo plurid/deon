@@ -451,6 +451,59 @@
         },
 
         {
+            "id": "unquoted-keeps-a-single-quote-region",
+            "required": true,
+            "source": "{ a x'q'y }",
+            "expected": { "a": "x'q'y" },
+            "canonical": "{\n    a 'x\\'q\\'y'\n}\n"
+        },
+        {
+            "id": "unquoted-keeps-a-backtick-region",
+            "required": true,
+            "source": "{ a p`q`r }",
+            "expected": { "a": "p`q`r" },
+            "canonical": "{\n    a 'p`q`r'\n}\n"
+        },
+        {
+            "id": "unquoted-region-still-interpolates",
+            "required": true,
+            "source": "n hi\n{ a x `p#{n}q` }",
+            "expected": { "a": "x `phiq`" },
+            "canonical": "{\n    a 'x `phiq`'\n}\n"
+        },
+        {
+            "id": "link-ends-an-unquoted-value",
+            "required": true,
+            "source": "{ a x #y }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 7
+            }
+        },
+        {
+            "id": "unquoted-backslash-is-quoted",
+            "required": true,
+            "source": "{ a x\\qy }",
+            "expected": { "a": "x\\qy" },
+            "canonical": "{\n    a 'x\\\\qy'\n}\n"
+        },
+        {
+            "id": "unquoted-tab-is-quoted",
+            "required": true,
+            "source": "{ a x\\ty }",
+            "expected": { "a": "x\ty" },
+            "canonical": "{\n    a 'x\\ty'\n}\n"
+        },
+        {
+            "id": "canonical-uses-backtick-for-a-line-break",
+            "required": true,
+            "source": "{ a `one\ntwo` }",
+            "expected": { "a": "one\ntwo" },
+            "canonical": "{\n    a `one\ntwo`\n}\n"
+        },
+
+        {
             "id": "datasign-declaration-beats-a-guess",
             "required": false,
             "feature": "datasign",
