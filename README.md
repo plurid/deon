@@ -370,10 +370,10 @@ imageneName hypod.cloud/package-name:$SHORT_SHA
 + [`Python`](https://github.com/plurid/deon/tree/master/packages/deon-python)
 + [`Go`](https://github.com/plurid/deon/tree/master/packages/deon-go)
 + [`C`](https://github.com/plurid/deon/tree/master/packages/deon-c)
++ [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
 
 and will be implemented for:
 
-+ [`Java`](https://github.com/plurid/deon/tree/master/packages/deon-java)
 + [`Swift`](https://github.com/plurid/deon/tree/master/packages/deon-swift)
 
 See [specifics](#specifics) for implementation details.

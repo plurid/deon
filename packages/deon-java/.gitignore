@@ -1,0 +1,9 @@
+### JAVA ###
+
+# The build directory: the compiled library, the tool, the harness adapter, and the test classes, all
+# built on demand by `make` and by the harness scripts.
+/build/
+
+# Class files and packaged archives.
+*.class
+*.jar

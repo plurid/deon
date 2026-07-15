@@ -31,7 +31,6 @@ def main():
 
     readme_paths = [
         'packages/tooling/deon-grammar/vscode-language-server/README.md',
-        'packages/deon-c/README.md',
         'packages/deon-javascript/README.md',
         'packages/deon-rust/README.md',
     ]

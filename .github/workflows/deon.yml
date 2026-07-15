@@ -133,6 +133,38 @@ jobs:
         working-directory: packages/deon-c
         run: make cache
 
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # Zero third-party dependencies: the Java standard library only. A jar on the build path is a
+      # regression, whatever the tests say.
+      - name: no third-party libraries
+        working-directory: packages/deon-java
+        run: |
+          if find . -name '*.jar' | grep -q .; then
+            echo "the package vendors a jar:"
+            find . -name '*.jar'
+            exit 1
+          fi
+
+      - name: conformance
+        working-directory: packages/deon-java
+        run: make test
+
+      - name: network
+        working-directory: packages/deon-java
+        run: make network
+
+      - name: cache
+        working-directory: packages/deon-java
+        run: make cache
+
   mcp:
     runs-on: ubuntu-latest
     steps:
@@ -169,6 +201,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
       - run: npm install
         working-directory: packages/deon-javascript
