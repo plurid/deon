@@ -104,7 +104,7 @@ func (in *interpreter) mapAbsolute(target string) string {
 // load fetches a resource, gating on the capability it needs. In-memory resources supplied to the
 // evaluator are consulted first, so a document handed its own resources reaches neither a disk nor a
 // network to find them.
-func (in *interpreter) load(target, kind string, span Span) fetched {
+func (in *interpreter) load(target, kind, token string, span Span) fetched {
 	filetype := ""
 	if kind == "import" {
 		filetype = extensionOf(target)
@@ -119,7 +119,7 @@ func (in *interpreter) load(target, kind string, span Span) fetched {
 			fail(CapabilityDenied,
 				"The resource '"+target+"' was not permitted: network access is not allowed.", span)
 		}
-		data := in.fetchOverNetwork(target, kind, span)
+		data := in.fetchOverNetwork(target, kind, token, span)
 		return fetched{data: data, filetype: filetype, filebase: directoryOf(target), resourceID: target}
 	}
 
@@ -143,8 +143,7 @@ func (in *interpreter) evalImport(decl *declaration) Value {
 	token := in.resolveAuthenticator(decl)
 	target := in.importTarget(in.resolveTarget(decl.target))
 
-	f := in.load(target, "import", decl.span)
-	_ = token
+	f := in.load(target, "import", token, decl.span)
 
 	if in.opened[f.resourceID] {
 		// A resource that imports its way back to itself is a cycle, reported at the statement that
@@ -192,9 +191,9 @@ func (in *interpreter) importDeon(f fetched, at Span) Value {
 }
 
 func (in *interpreter) evalInject(decl *declaration) Value {
-	_ = in.resolveAuthenticator(decl)
+	token := in.resolveAuthenticator(decl)
 	target := in.resolveTarget(decl.target)
-	f := in.load(target, "inject", decl.span)
+	f := in.load(target, "inject", token, decl.span)
 	return f.data
 }
 
@@ -260,11 +259,26 @@ func (in *interpreter) jsonAtStatement(data string, at Span) Value {
 	return value
 }
 
-// fetchOverNetwork retrieves a resource over HTTP once the network has been granted. The conformance
-// suite never reaches a public network (specification 15), so this exists for real use rather than for
-// the fixtures, which supply their resources in memory.
-func (in *interpreter) fetchOverNetwork(target, kind string, span Span) string {
-	return httpGet(target, kind, in.tokenFor(target), span)
+// fetchOverNetwork retrieves a resource over HTTP once the network has been granted. The credential is
+// the declaration's `with` authenticator when it gave one, and the authorization option for the host
+// otherwise (specification 9). The response cache, keyed by the credential, is consulted first and
+// written after, so a document is never served across credentials. The conformance suite never reaches
+// a public network (specification 15), so this exists for real use rather than for the fixtures.
+func (in *interpreter) fetchOverNetwork(target, kind, token string, span Span) string {
+	credential := token
+	if credential == "" {
+		credential = in.tokenFor(target)
+	}
+
+	if cached, ok := cacheRead(target, credential, in.options); ok {
+		if text, ok := cached.(string); ok {
+			return text
+		}
+	}
+
+	body := httpGet(target, kind, credential, span)
+	cacheWrite(target, credential, body, in.options)
+	return body
 }
 
 // tokenFor is the bearer credential for a host, from the authorization option keyed by exact

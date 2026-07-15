@@ -71,6 +71,26 @@ func ReadJSON(data, sourceName string) (value Value, err error) {
 	return jsonToValue(data, headSpan(sourceName)), nil
 }
 
+// ParseLink fetches a Deon document from a URL and evaluates it. The network must be granted, and the
+// target is refused before any request when it is not — a denial that opened a socket first would look
+// the same from the outside and would not be the same thing (specification 9). The headers are
+// deliberately not an importer's: a link is asked for as Deon and nothing else, because a caller who
+// said ParseLink said what they expect to get.
+func ParseLink(link string, options ParseOptions) (value Value, err error) {
+	defer recoverError(&err)
+
+	if !options.AllowNetwork {
+		fail(CapabilityDenied, "'"+link+"' was not fetched: network access is not allowed.", headSpan(link))
+	}
+
+	interpreter := newInterpreter(&options)
+	data := interpreter.fetchOverNetwork(link, "link", options.Token, headSpan(link))
+
+	options.SourceName = link
+	options.Filebase = directoryOf(link)
+	return ParseWith(data, options)
+}
+
 // ParseSyntax parses a document into a syntax tree without evaluating it, reaching nothing and needing
 // no capability. It is the seam an editor reaches through to read what a document declares.
 func ParseSyntax(source, sourceName string) (err error) {

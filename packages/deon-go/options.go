@@ -42,6 +42,16 @@ type ParseOptions struct {
 	AllowFilesystem bool
 	AllowNetwork    bool
 
+	// Cache turns on the on-disk response cache for fetched resources (specification 9). It is off by
+	// default: a cache is a performance decision, and a library that wrote to a shared directory
+	// without being asked would be making it for the caller.
+	Cache bool
+
+	// CacheDuration is how long a cached response stays fresh, in milliseconds; CacheDirectory is where
+	// entries are written. Zero values mean the defaults — one hour, and ~/.deon-cache.
+	CacheDuration  int
+	CacheDirectory string
+
 	// DatasignFiles are the .datasign contracts that type the parsed data, and DatasignMap the root
 	// keys each type applies to (specification 14.1). Both are needed: an empty map is the identity,
 	// and reading a contract without one to apply would be reading a file for nothing.

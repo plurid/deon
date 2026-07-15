@@ -15,9 +15,15 @@ func httpGet(target, kind, token string, span Span) string {
 		fail(ResourceIO, "Unable to reach resource '"+target+"'.", span)
 	}
 
-	if kind == "import" {
+	switch kind {
+	case "import":
+		// An import will be parsed, so it asks for the things that can be parsed.
 		request.Header.Set("Accept", "text/plain,application/json,application/deon")
-	} else {
+	case "link":
+		// A link was asked for by name as Deon, and nothing else.
+		request.Header.Set("Accept", "application/deon")
+	default:
+		// An injection is bound as text without being parsed, so it asks for anything.
 		request.Header.Set("Accept", "*/*")
 	}
 	if token != "" {
