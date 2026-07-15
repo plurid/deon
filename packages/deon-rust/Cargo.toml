@@ -1,3 +1,7 @@
+[workspace]
+members = ["core", "macros"]
+
+
 [package]
 name = "deon"
 version = "0.0.0-11"
@@ -21,27 +25,24 @@ path = "src/lib.rs"
 [features]
 default = []
 
-# Reaching a remote target needs TLS, and TLS is the one thing that must not be hand-rolled: a
-# mistake in certificate validation is a silent machine-in-the-middle. So it is the single optional
-# dependency, and it is off by default — `cargo add deon` still pulls nothing at all.
-#
-# A host that would rather bring its own client does not need this feature: `ResourceLoader` is a
-# public trait, and implementing it is the supported way in.
-network = ["dep:ureq"]
+# The network is off by default and lives in the core; the facade forwards the feature. `cargo add
+# deon` still pulls nothing at all.
+network = ["deon-core/network"]
 
 cli = ["network"]
 
 
 [dependencies]
-# The library proper has none, and one rule of the specification forbids the obvious candidate
-# outright: a JSON number must arrive as the spelling it was written with (9.1), which every general
-# JSON parser has already destroyed. So the JSON reader is written here, and with it everything else.
-ureq = { version = "3", optional = true, default-features = false, features = ["rustls"] }
+# Both first-party, both part of this workspace. `deon` is a thin facade: it re-exports the core in
+# full and adds the two compile-time macros. There are no third-party dependencies in the default
+# build — `cargo tree` shows only these crates, which are this project's own.
+deon-core = { path = "core" }
+deon-macros = { path = "macros" }
 
 
 [dev-dependencies]
 # Reads the language-neutral fixture manifest, `spec/conformance/cases.json`, and nothing else. The
-# library must not depend on it, or the number rule above would be lost.
+# library must not depend on it, or the number rule would be lost.
 serde_json = "1"
 
 

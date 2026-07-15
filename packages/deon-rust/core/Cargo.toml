@@ -1,0 +1,33 @@
+[package]
+name = "deon-core"
+version = "0.0.0-11"
+authors = ["ly3xqhl8g9 <ly3xqhl8g9@plurid.com>"]
+license = "DEL"
+description = "The core of deon: the parser, the evaluator, and the canonical writer. Re-exported in full by the deon crate."
+homepage = "https://github.com/plurid/deon"
+repository = "https://github.com/plurid/deon"
+keywords = ["deon", "notation", "parser"]
+categories = ["parser-implementations", "data-structures"]
+edition = "2021"
+rust-version = "1.70"
+
+
+[lib]
+name = "deon_core"
+path = "src/lib.rs"
+
+
+[features]
+default = []
+
+# Reaching a remote target needs TLS, and TLS is the one thing that must not be hand-rolled: a
+# mistake in certificate validation is a silent machine-in-the-middle. So it is the single optional
+# dependency, and it is off by default.
+network = ["dep:ureq"]
+
+
+[dependencies]
+# The core proper has none, and one rule of the specification forbids the obvious candidate outright:
+# a JSON number must arrive as the spelling it was written with (9.1), which every general JSON parser
+# has already destroyed. So the JSON reader is written here, and with it everything else.
+ureq = { version = "3", optional = true, default-features = false, features = ["rustls"] }

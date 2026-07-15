@@ -34,8 +34,23 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 name = "deon"
 version = "0.0.0-11"
 dependencies = [
+ "deon-core",
+ "deon-macros",
  "serde_json",
+]
+
+[[package]]
+name = "deon-core"
+version = "0.0.0-11"
+dependencies = [
  "ureq",
+]
+
+[[package]]
+name = "deon-macros"
+version = "0.0.0-11"
+dependencies = [
+ "deon-core",
 ]
 
 [[package]]

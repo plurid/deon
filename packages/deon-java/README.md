@@ -26,7 +26,7 @@
 
 
 
-The `Java` implementation of `deon`, written from the specification. It has **zero third-party dependencies** — the Java standard library only, with `java.net.http` for the network and `MessageDigest` for the response cache. It passes every fixture in [`spec/conformance/cases.json`](../../spec/conformance/cases.json) with the right diagnostic code *and* position, and it agrees character for character with the `JavaScript`, `Rust`, `Python`, `Go`, and `C` implementations under the [cross-implementation harness](../../spec/harness).
+The `Java` implementation of `deon`, written from the specification. It has **zero third-party dependencies** — the Java standard library only, with `java.net.http` for the network and `MessageDigest` for the response cache. It passes every fixture in [`spec/conformance/cases.json`](../../spec/conformance/cases.json) with the right diagnostic code *and* position, and it agrees character for character with the `JavaScript`, `Rust`, `Python`, `Go`, `C`, and `Swift` implementations under the [cross-implementation harness](../../spec/harness).
 
 ## Reading a document
 

@@ -1,0 +1,24 @@
+[package]
+name = "deon-macros"
+version = "0.0.0-11"
+authors = ["ly3xqhl8g9 <ly3xqhl8g9@plurid.com>"]
+license = "DEL"
+description = "The compile-time deon! and include_deon! macros for the deon crate."
+homepage = "https://github.com/plurid/deon"
+repository = "https://github.com/plurid/deon"
+keywords = ["deon", "notation", "macro"]
+categories = ["parser-implementations"]
+edition = "2021"
+rust-version = "1.70"
+
+
+[lib]
+proc-macro = true
+
+
+[dependencies]
+# The core parser, run at compile time so a malformed document is a compile error rather than a
+# runtime one. This is a first-party dependency, not a third-party one — it is the same code the
+# `deon` facade re-exports — and it is why the macros live in their own crate: a proc-macro that runs
+# the parser cannot live in the crate that re-exports it, or the dependency would be a cycle.
+deon-core = { path = "../core" }

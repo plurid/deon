@@ -120,7 +120,7 @@ const data = {
 ``` rust
 // Rust
 
-let data = deon!({
+let data = deon!(r#"{
     entities [
         {
             id 01
@@ -133,8 +133,9 @@ let data = deon!({
             active false
         }
     ]
-    time: 1598439736
-});
+    time 1598439736
+}
+"#);
 ```
 
 ``` python
@@ -1360,20 +1361,18 @@ main();
 ### Rust
 
 ``` rust
-use deon::{deon}
-
+use deon::deon;
 
 fn main() {
-    let data = deon!(
-        // handles full-fledged deon data
-        // with imports, injects, leaflinks, etc.
-        {
-            key value
-        }
-    );
+    // Parsed and validated at compile time; a raw string is the pleasant way to write
+    // a multi-line document without escaping.
+    let data = deon!(r#"{
+    key value
+}
+"#);
 
-    // { key: 'value' }
-    println!("{}", data.to_string());
+    // { key: "value" }
+    println!("{}", deon::canonical(&data));
 }
 ```
 
@@ -1767,13 +1766,10 @@ The `.deon` file that will be used for environment variables can use all the fea
 
 ### Rust
 
-In order to parse `deon` data the `Deon` implementation or the `deon!` macro can be used.
+In order to parse `deon` data the `deon::parse` function is used; a document known at compile time can be written with the `deon!` macro, which parses and validates it while the crate builds.
 
 ``` rust
-use deon::{
-    Deon,
-    deon!,
-}
+use deon::deon;
 
 fn main() {
     let deon_data = "
@@ -1782,14 +1778,9 @@ fn main() {
         }
     ";
 
-    let deon_object = Deon::new();
-    let deon_object_parsed = Deon::parse(deon_data);
+    let deon_parsed = deon::parse(deon_data);          // -> Result<Value, DeonError>
 
-    let deon_macro_parsed = deon!(
-        {
-            key value
-        }
-    );
+    let deon_literal = deon!("{\n    key value\n}\n"); // -> Value, checked at compile time
 }
 ```
 

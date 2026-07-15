@@ -37,23 +37,28 @@ jobs:
         with:
           components: clippy
 
-      # The crate must stay dependency-free by default. `cargo tree --edges normal` printing anything
-      # but the crate itself is a regression, whatever the tests say.
-      - name: no default dependencies
+      # The crate must stay free of third-party dependencies by default. The workspace is three
+      # first-party crates — `deon` (the facade), `deon-core` (the parser), and `deon-macros` (the
+      # compile-time macros) — so the default `cargo tree` shows those three and nothing else. Any
+      # other crate on the normal edges is a regression, whatever the tests say.
+      - name: no third-party dependencies
         working-directory: packages/deon-rust
         run: |
-          tree=$(cargo tree --edges normal | grep -c .)
-          if [ "$tree" -ne 1 ]; then
-            echo "the default build gained a dependency:"
-            cargo tree --edges normal
+          extra=$(cargo tree --edges normal -p deon \
+            | sed -E 's/^[^a-zA-Z]*//; s/ .*//' \
+            | grep -vxE 'deon|deon-core|deon-macros' \
+            | grep -c . || true)
+          if [ "$extra" -ne 0 ]; then
+            echo "the default build gained a third-party dependency:"
+            cargo tree --edges normal -p deon
             exit 1
           fi
 
-      - run: cargo test
+      - run: cargo test --workspace
         working-directory: packages/deon-rust
       - run: cargo test --features cli
         working-directory: packages/deon-rust
-      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
         working-directory: packages/deon-rust
 
   python:
