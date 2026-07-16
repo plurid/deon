@@ -37,17 +37,20 @@ final class StringPart {
     final boolean isInterp;
     final String literal;
     final Reference interp;
+    final String raw; // the verbatim `#{...}` source, so a name position can render it literally
 
     StringPart(String literal) {
         this.isInterp = false;
         this.literal = literal;
         this.interp = null;
+        this.raw = null;
     }
 
-    StringPart(Reference interp) {
+    StringPart(Reference interp, String raw) {
         this.isInterp = true;
         this.literal = null;
         this.interp = interp;
+        this.raw = raw;
     }
 }
 

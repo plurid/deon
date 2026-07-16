@@ -328,6 +328,18 @@ final class Interpreter {
             int scheme = t.indexOf("://");
             int slash = t.indexOf('/', scheme + 3);
             path = slash < 0 ? "" : t.substring(slash);
+            // The query and fragment are not part of the path: the format is read from the path
+            // alone (section 9), so `data.json?v=2` is JSON, not the extension `.json?v=2`.
+            int query = path.indexOf('?');
+            int fragment = path.indexOf('#');
+            int cut = path.length();
+            if (query >= 0) {
+                cut = query;
+            }
+            if (fragment >= 0 && fragment < cut) {
+                cut = fragment;
+            }
+            path = path.substring(0, cut);
         }
         int lastSlash = path.lastIndexOf('/');
         String seg = lastSlash < 0 ? path : path.substring(lastSlash + 1);
@@ -347,8 +359,13 @@ final class Interpreter {
                 continue;
             }
             if (seg.equals("..")) {
-                if (!segs.isEmpty()) {
+                // Above the base there is nothing to pop, so a relative path keeps the `..` it
+                // cannot resolve (section 9): `a/../../b` normalizes to `../b`, not `b`. A rooted
+                // path instead drops what it cannot climb above its root.
+                if (!segs.isEmpty() && !segs.peekLast().equals("..")) {
                     segs.removeLast();
+                } else if (!absolute) {
+                    segs.addLast("..");
                 }
                 continue;
             }

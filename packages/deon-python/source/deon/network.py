@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from typing import Optional
 from urllib.parse import urlsplit
 
@@ -214,7 +215,8 @@ def parse_link(link: str, options: Optional[ParseOptions] = None):
             Span.head(link),
         )
 
-    options.source_name = link
-    options.filebase = directory_of(link)
+    # A copy, never the caller's own. A link names *this* document; threading the rename through a fresh
+    # options object leaves a shared one pristine for whatever the caller parses next (specification 9).
+    options = replace(options, source_name=link, filebase=directory_of(link))
 
     return parse_with(data, options)

@@ -5,7 +5,10 @@ document cannot — hand it a value the parser never saw, hand it JSON the decod
 ask it a question about a document without evaluating one.
 """
 
+import copy
 import json
+import os
+import tempfile
 import unittest
 
 import deon
@@ -143,6 +146,26 @@ class Capabilities(unittest.TestCase):
         value = deon.parse_with("{ home #$HOME }", ParseOptions(environment={"HOME": "/somewhere"}))
 
         self.assertEqual(value, {"home": "/somewhere"})
+
+    def test_parse_file_does_not_grant_the_filesystem_to_the_callers_options(self):
+        """A caller's options are theirs. Naming a file grants the filesystem to *that* parse, on a
+        copy — so a caller who reuses one options object for a later parse they meant to sandbox does
+        not silently inherit the grant (specification 9). The whole object must come back unchanged."""
+        options = ParseOptions()
+        before = copy.deepcopy(options)
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "document.deon")
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write("{ a one }")
+
+            value = deon.parse_file(path, options)
+
+        # The parse still happened, on a copy that carried the grant and the resolved name ...
+        self.assertEqual(value, {"a": "one"})
+        # ... and the caller's own object is untouched: no filesystem, no rewritten name or base.
+        self.assertFalse(options.allow_filesystem)
+        self.assertEqual(options, before)
 
 
 class RoundTrip(unittest.TestCase):

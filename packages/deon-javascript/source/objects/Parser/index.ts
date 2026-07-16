@@ -29,6 +29,7 @@
 
     import {
         decodeMinimal,
+        finalizeName,
     } from '../Scanner';
 
     import Token from '../Token';
@@ -189,7 +190,7 @@ class Parser {
 
         return {
             type: keyword.type === TokenType.IMPORT ? 'import' : 'inject',
-            name: this.tokenValue(name),
+            name: this.nameValue(name),
             target: this.tokenValue(target),
             authenticator,
             token: keyword,
@@ -207,7 +208,7 @@ class Parser {
 
         return {
             type: 'leaflink',
-            name: this.tokenValue(name),
+            name: this.nameValue(name),
             value,
             token: name,
         };
@@ -265,7 +266,7 @@ class Parser {
 
                 entries.push({
                     type: 'entry',
-                    name: this.tokenValue(name),
+                    name: this.nameValue(name),
                     value,
                     token: name,
                 });
@@ -341,7 +342,7 @@ class Parser {
             !this.check(TokenType.RIGHT_ANGLE_BRACKET)
             && !this.check(TokenType.EOF)
         ) {
-            fields.push(this.tokenValue(this.name('Expected a structure field.')));
+            fields.push(this.nameValue(this.name('Expected a structure field.')));
             this.skipNewlines();
 
             if (!this.match(TokenType.COMMA)) {
@@ -496,7 +497,7 @@ class Parser {
                 : this.value(CALL_STOPS);
 
             args.push({
-                name: this.tokenValue(name),
+                name: this.nameValue(name),
                 value,
                 token: name,
             });
@@ -585,6 +586,18 @@ class Parser {
         token: Token,
     ) {
         return typeof token.literal === 'string' ? token.literal : token.lexeme;
+    }
+
+
+    /**
+     * The literal a name token stands for. A name is never interpolated (specification 4.4), so the
+     * sentinel an escaped `\#{` leaves behind — which the interpolator resolves for a value, never for
+     * a name — is turned into the literal `#{` here, so `'a\#{n}'` and `'a#{n}'` name the same key.
+     */
+    private nameValue(
+        token: Token,
+    ) {
+        return finalizeName(this.tokenValue(token));
     }
 
 

@@ -89,6 +89,71 @@ def escaped_interpolation_end(text: str, hash_index: int) -> "int | None":
     return None
 
 
+def decode_name(raw: str) -> str:
+    r"""A quoted name's escapes, decoded.
+
+    A name is never interpolated (specification 4.4). A quoted name is lexed like a single-quoted
+    string and its escapes decode identically — `\\`, `\'`, `` \` ``, `\n`, `\r`, `\t` — with the
+    single difference that a `#{…}` in name position is literal text rather than a resolved reference.
+    A `\#{` therefore decodes through the common escape to the two literal characters `#{`, never
+    through an escaped interpolation, so both `'a#{n}'` and `'a\#{n}'` are the one literal name
+    `a#{n}` — which is exactly what a value canonically writes back as `'a\#{n}'` and reads in again.
+    """
+    out: list[str] = []
+    index = 0
+    length = len(raw)
+
+    while index < length:
+        character = raw[index]
+
+        if character == "\\" and index + 1 < length:
+            following = raw[index + 1]
+
+            if following == "\\":
+                out.append("\\")
+                index += 2
+                continue
+
+            if following in ("'", "`"):
+                out.append(following)
+                index += 2
+                continue
+
+            if following == "n":
+                out.append("\n")
+                index += 2
+                continue
+
+            if following == "r":
+                out.append("\r")
+                index += 2
+                continue
+
+            if following == "t":
+                out.append("\t")
+                index += 2
+                continue
+
+            if raw.startswith("#{", index + 1):
+                # The common escape: `\#{` is the two literal characters `#{`. A name is never
+                # interpolated, so this never consumes a closing `}` the way an escaped interpolation
+                # does in a value — the rest of the name is ordinary literal text.
+                out.append("#{")
+                index += 3
+                continue
+
+            # Every other backslash sequence is preserved literally (specification 4.3).
+            out.append("\\")
+            index += 1
+            continue
+
+        # An unescaped `#{…}` is literal text in name position, so `#`, `{`, and `}` are ordinary.
+        out.append(character)
+        index += 1
+
+    return "".join(out)
+
+
 class Scanner:
     def __init__(self, source: str, source_name: str = "<memory>") -> None:
         self.source = normalize(source)
@@ -455,7 +520,7 @@ class Scanner:
         if self.peek() == "'":
             head_start = self.mark()
             self.single_string(head_start)
-            head = self.tokens.pop().raw
+            head = decode_name(self.tokens.pop().raw)
         else:
             head = self.bare_name(start, "Expected a reference name after '#'.")
 
@@ -517,7 +582,7 @@ class Scanner:
             quoted_start = self.mark()
             self.single_string(quoted_start)
 
-            return Access(name=self.tokens.pop().raw)
+            return Access(name=decode_name(self.tokens.pop().raw))
 
         start = self.mark()
         begin = self.current

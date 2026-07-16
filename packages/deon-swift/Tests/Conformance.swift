@@ -458,11 +458,10 @@ func report(_ s: String) {
 
 private func matchError(_ c: JSON, _ document: Document, _ id: String, _ did: inout Coverage) -> Bool {
     let want = c.get("error")?.asString ?? ""
-    if document.ok {
+    guard let error = document.error else {
         fail(id, "expected \(want), but it evaluated")
         return false
     }
-    let error = document.error
     if error.code != want {
         fail(id, "expected \(want), got \(error.code)")
         return false
@@ -492,8 +491,8 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
                 did.datasign += 1
             }
         } else if !document.ok {
-            fail(id, "datasign: \(document.error.code)")
-        } else if let want = datasign.get("typed"), typedMatches(document.value(), want) {
+            fail(id, "datasign: \(document.error?.code ?? "?")")
+        } else if let want = datasign.get("typed"), let root = document.value(), typedMatches(root, want) {
             did.datasign += 1
         } else {
             fail(id, "datasign: value does not match")
@@ -512,8 +511,8 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
     if let expected = c.get("expected") {
         let document = Deon.parseWith(source, options)
         if !document.ok {
-            fail(id, "expected a value, got \(document.error.code)")
-        } else if matches(document.value(), expected) {
+            fail(id, "expected a value, got \(document.error?.code ?? "?")")
+        } else if let root = document.value(), matches(root, expected) {
             did.expected += 1
             asserted = true
         } else {
@@ -524,7 +523,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
     if let canonical = c.get("canonical")?.asString {
         let document = Deon.parseWith(source, options)
         if !document.ok {
-            fail(id, "canonical: \(document.error.code)")
+            fail(id, "canonical: \(document.error?.code ?? "?")")
         } else if try! document.canonical() == canonical {
             did.canonical += 1
             asserted = true
@@ -536,7 +535,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
     if let stringify = c.get("stringify"), case .object = stringify {
         let document = Deon.parseWith(source, options)
         if !document.ok {
-            fail(id, "stringify: \(document.error.code)")
+            fail(id, "stringify: \(document.error?.code ?? "?")")
         } else {
             let produced = try! document.stringify(stringifyOptionsOf(stringify.get("options")))
             if produced == (stringify.get("expected")?.asString ?? "\u{0}mismatch") {
@@ -551,7 +550,7 @@ private func runCase(_ c: JSON, _ did: inout Coverage) {
     if let typed = c.get("typed") {
         let document = Deon.parseWith(source, options)
         if !document.ok {
-            fail(id, "typed: \(document.error.code)")
+            fail(id, "typed: \(document.error?.code ?? "?")")
         } else if typedMatches(try! document.typed(), typed) {
             did.typed += 1
             asserted = true
@@ -611,8 +610,32 @@ private func invariants() {
     let document = Deon.parse("{\n    \u{43A}\u{43B}\u{44E}\u{447} value\n}\n")
     if document.ok {
         fail("column-code-points", "expected an error")
-    } else if document.error.line != 2 || document.error.column != 5 {
-        fail("column-code-points", "expected 2:5, got \(document.error.line):\(document.error.column)")
+    } else if document.error?.line != 2 || document.error?.column != 5 {
+        fail("column-code-points", "expected 2:5, got \(document.error?.line ?? 0):\(document.error?.column ?? 0)")
+    }
+}
+
+// The binding must not trap on the unhappy path. A failed parse has no C root, so `value()` is nil rather
+// than a crash; and a well-formed document carries no diagnostic, so `error` is nil rather than a
+// fabricated DEON_OK. (A failed parse still reports its error; a good parse still yields its value.)
+private func crashSafety() {
+    let broken = Deon.parse("'unterminated")   // a single-quoted string that never closes: no root
+    if broken.ok {
+        fail("crash-safety", "the invalid document was expected to fail")
+    }
+    if broken.value() != nil {                  // nil, and — the point of the fix — no trap
+        fail("crash-safety", "value() on a failed parse must be nil")
+    }
+    if broken.error == nil {
+        fail("crash-safety", "a failed parse must still carry an error")
+    }
+
+    let good = Deon.parse("{ a b }")            // well formed: a value, and no error
+    if good.error != nil {
+        fail("crash-safety", "error must be nil on success")
+    }
+    if good.value() == nil {
+        fail("crash-safety", "value() on a good parse must not be nil")
     }
 }
 // #endregion
@@ -650,6 +673,7 @@ func run() -> Int32 {
     }
 
     invariants()
+    crashSafety()
 
     if did != want {
         report("coverage mismatch:\n  checked:  \(did)\n  declared: \(want)\n")

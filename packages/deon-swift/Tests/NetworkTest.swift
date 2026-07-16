@@ -172,7 +172,7 @@ func run() -> Int32 {
     // a non-success status is DEON_RESOURCE_IO: it was allowed and it failed
     do {
         let document = Deon.parseWith("import m from \(base)/missing\n{\n    #m\n}\n", network)
-        check(!document.ok && document.error.code == "DEON_RESOURCE_IO", "non-success status is RESOURCE_IO")
+        check(!document.ok && document.error?.code == "DEON_RESOURCE_IO", "non-success status is RESOURCE_IO")
     }
 
     // parse_link fetches and evaluates a document by URL
@@ -184,7 +184,7 @@ func run() -> Int32 {
     // the network is refused before any socket opens when it was not granted
     do {
         let document = Deon.parse("import c from \(base)/child.deon\n{\n    #c\n}\n")
-        check(!document.ok && document.error.code == "DEON_CAPABILITY_DENIED", "network denied by default")
+        check(!document.ok && document.error?.code == "DEON_CAPABILITY_DENIED", "network denied by default")
     }
 
     if failures == 0 {
@@ -196,7 +196,7 @@ func run() -> Int32 {
 }
 
 func lookup(_ document: Document, _ key: String) -> DeonValue? {
-    guard document.ok, case .map(let entries) = document.value() else {
+    guard document.ok, let root = document.value(), case .map(let entries) = root else {
         return nil
     }
     for entry in entries where entry.key == key {

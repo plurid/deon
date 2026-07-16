@@ -44,6 +44,36 @@ func (p *parser) singleString() []stringPart {
 	}
 }
 
+// singleName parses a single-quoted name (§4.4). It is lexed exactly like a single-quoted string —
+// confined to one logical line, sharing the same escapes so `\\`, `\'`, `\n`, `\r`, `\t`, and `\#{`
+// decode identically — with the one difference the grammar draws (quoted-name in deon.ebnf): a name is
+// never interpolated, so a `#{` is not an interpolation opener here but two ordinary characters. The
+// key written `'a#{n}'` is therefore the literal name `a#{n}`, never a lookup of `n` and never the
+// truncated `a`, and matches the escaped spelling `'a\#{n}'`, whose `\#{` decodes to a literal `#{`.
+func (p *parser) singleName() string {
+	open := p.pos
+	p.advance() // '
+	var b strings.Builder
+
+	for {
+		if p.atEnd() {
+			fail(LexUnterminated, "A single-quoted string was opened and never closed.", p.spanAt(open))
+		}
+		r := p.peek()
+		switch {
+		case r == '\'':
+			p.advance()
+			return b.String()
+		case isNewline(r):
+			fail(LexUnterminated, "A single-quoted string may not cross a line.", p.spanAt(open))
+		case r == '\\':
+			b.WriteString(p.decodeEscape('\''))
+		default:
+			b.WriteRune(p.advance())
+		}
+	}
+}
+
 // backtickString parses a backtick string, which may span lines. Boundary whitespace is removed
 // through the first and last non-whitespace character; the trimming is of the *source* text, before
 // escapes are decoded, so an escaped line break is content and is never trimmed.

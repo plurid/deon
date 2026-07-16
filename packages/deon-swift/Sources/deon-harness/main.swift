@@ -121,8 +121,8 @@ private func perform(_ request: DeonValue, _ id: String) -> String {
     // entities and lint reach nothing and need no capability.
     if op == "entities" {
         let (document, entities) = Deon.entities(source, sourceName)
-        if !document.ok {
-            return errorResponse(id, document.error)
+        if let error = document.error {
+            return errorResponse(id, error)
         }
         var j = "["
         for (i, entity) in entities.enumerated() {
@@ -156,8 +156,8 @@ private func perform(_ request: DeonValue, _ id: String) -> String {
     }
 
     let document = Deon.parseWith(source, optionsOf(request))
-    if !document.ok {
-        return errorResponse(id, document.error)
+    if let error = document.error {
+        return errorResponse(id, error)
     }
     do {
         switch op {
@@ -177,7 +177,8 @@ private func perform(_ request: DeonValue, _ id: String) -> String {
     }
     switch op {
     case "datasign":
-        return okResponse(id, document.value().json()) // parseWith already applied the contracts
+        guard let root = document.value() else { return panicResponse(id) }
+        return okResponse(id, root.json()) // parseWith already applied the contracts
     default:
         return panicResponse(id)
     }
@@ -200,8 +201,8 @@ while let line = readLine(strippingNewline: true) {
         continue
     }
     let request = Deon.readJSON(line, "<request>")
-    guard request.ok, case .map = request.value() else {
+    guard request.ok, let root = request.value(), case .map = root else {
         continue
     }
-    emit(answer(request.value()))
+    emit(answer(root))
 }

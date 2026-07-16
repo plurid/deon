@@ -98,6 +98,20 @@ public final class NetworkTest {
             check(e.code == Code.CAPABILITY_DENIED, "network denied by default");
         }
 
+        // parseLink settles the fetched document's name and base on a copy: the caller's options,
+        // reused for the next parse, come back exactly as they were handed in (specification 9).
+        ParseOptions linkOpts = new ParseOptions();
+        linkOpts.allowNetwork = true;
+        try {
+            Deon.parseLink(base + "/child.deon", linkOpts);
+            boolean untouched = linkOpts.sourceName.isEmpty()
+                    && linkOpts.filebase.isEmpty()
+                    && linkOpts.allowNetwork;
+            check(untouched, "parseLink does not mutate the caller's options");
+        } catch (DeonException e) {
+            check(false, "parseLink does not mutate the caller's options (" + e.code.wire() + ")");
+        }
+
         server.stop(0);
 
         if (failures == 0) {

@@ -367,8 +367,7 @@ func (p *parser) targetWord() string {
 func (p *parser) name() (string, Span) {
 	start := p.pos
 	if p.peek() == '\'' {
-		parts := p.singleString()
-		return literalOf(parts), p.spanBetween(start, p.pos)
+		return p.singleName(), p.spanBetween(start, p.pos)
 	}
 
 	for !p.wordStop(p.peek()) {
@@ -649,7 +648,7 @@ func (p *parser) reference() reference {
 
 	var head string
 	if p.peek() == '\'' {
-		head = literalOf(p.singleString())
+		head = p.singleName()
 	} else {
 		head = p.bareName()
 	}
@@ -673,7 +672,7 @@ func (p *parser) reference() reference {
 
 func (p *parser) bracketAccess() accessSegment {
 	if p.peek() == '\'' {
-		return accessSegment{name: literalOf(p.singleString())}
+		return accessSegment{name: p.singleName()}
 	}
 	start := p.pos
 	digits := true

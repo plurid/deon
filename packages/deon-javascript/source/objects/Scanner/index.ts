@@ -143,6 +143,21 @@ export const decodeMinimal = (
 
 
 /**
+ * Resolves a scanned name to the literal it stands for. A name is never interpolated (specification
+ * 4.4): the interpolator that turns the sentinel an escaped `\#{` leaves behind back into `#{` runs
+ * only over an evaluated value, never over a name. So a name resolves that sentinel to the literal
+ * `#{` here instead, and one written `'a\#{n}'` finalizes to the very same literal `a#{n}` as one
+ * written `'a#{n}'` — the `#{` carried as text, never a reference.
+ *
+ * It takes the already-decoded string, not the raw source, so it can finalize both a name the
+ * scanner decoded into a token literal and one `parseReference` decodes for a reference.
+ */
+export const finalizeName = (
+    decoded: string,
+) => decoded.split(ESCAPED_INTERPOLATION).join('#{');
+
+
+/**
  * A reference is malformed at a character the grammar did not allow: an empty or spaced bracket, or a
  * dot with no name after it. `parseReference` throws this rather than a positioned diagnostic, because
  * it reads a bare string and does not know where in the source that string sits; the caller — the
@@ -220,7 +235,7 @@ export const parseReference = (
             index += 1; // closing '
         }
 
-        return decodeMinimal(value, '\'');
+        return finalizeName(decodeMinimal(value, '\''));
     };
 
     const bracket = (): AccessSegment => {

@@ -105,7 +105,7 @@ private func buildOptions(_ options: Options, _ retainer: Retainer) -> deon_opti
     native.allow_filesystem = options.allowFilesystem
     native.allow_network = options.allowNetwork
     native.cache = options.cache
-    native.cache_duration = Int32(options.cacheDuration)
+    native.cache_duration = Int32(clamping: options.cacheDuration)
     native.cache_directory = options.cacheDirectory.isEmpty ? nil : retainer.dup(options.cacheDirectory)
 
     func pairs(_ dict: [String: String]) -> (UnsafePointer<deon_pair>?, Int) {
@@ -197,10 +197,13 @@ public final class Document {
         deon_document_ok(handle)
     }
 
-    /// The failure code and the position of the first diagnostic — what the harness compares.
-    public var error: DeonError {
+    /// The failure code and the position of the first diagnostic — what the harness compares — or nil
+    /// when the document is well formed. A success carries no diagnostic to report (the C api returns a
+    /// null error), so this reports nil rather than fabricating a DEON_OK; read it after finding ``ok``
+    /// false.
+    public var error: DeonError? {
         guard let raw = deon_document_error(handle) else {
-            return DeonError(code: "DEON_OK", message: "", line: 0, column: 0, source: "<memory>", severity: "error")
+            return nil
         }
         let e = raw.pointee
         let diagnostic = e.diagnostics.pointee
@@ -222,9 +225,14 @@ public final class Document {
         return readDiagnostics(raw.pointee.diagnostics, raw.pointee.diagnostics_len)
     }
 
-    /// The evaluated root as a Swift value.
-    public func value() -> DeonValue {
-        bridge(deon_document_root(handle)!)
+    /// The evaluated root as a Swift value, or nil when there is none. A document that failed to parse or
+    /// evaluate has no root — the C api returns NULL — so reading it must not trap; guard on ``ok`` first,
+    /// or bind the optional.
+    public func value() -> DeonValue? {
+        guard let root = deon_document_root(handle) else {
+            return nil
+        }
+        return bridge(root)
     }
 
     /// The conservative typer's view of the root (specification 14). A value built by hand rather than
@@ -261,9 +269,9 @@ public final class Document {
         var native = deon_default_stringify_options()
         native.canonical = options.canonical
         native.readable = options.readable
-        native.indentation = Int32(options.indentation)
+        native.indentation = Int32(clamping: options.indentation)
         native.leaflinks = options.leaflinks
-        native.leaflink_level = Int32(options.leaflinkLevel)
+        native.leaflink_level = Int32(clamping: options.leaflinkLevel)
         native.leaflink_shortening = options.leaflinkShortening
         native.generated_header = options.generatedHeader
         native.generated_comments = options.generatedComments

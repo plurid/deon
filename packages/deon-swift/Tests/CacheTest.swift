@@ -201,7 +201,7 @@ func run() -> Int32 {
     // a different credential is a different key, so it misses — and with the server gone, fails
     options.authorization = ["127.0.0.1": "other"]
     let third = Deon.parseWith(source, options)
-    check(!third.ok && third.error.code == "DEON_RESOURCE_IO", "a different token misses the cache")
+    check(!third.ok && third.error?.code == "DEON_RESOURCE_IO", "a different token misses the cache")
 
     removeDirectory(directory)
 
@@ -214,7 +214,7 @@ func run() -> Int32 {
 }
 
 func mapHas(_ document: Document, _ key: String) -> Bool {
-    guard document.ok, case .map(let entries) = document.value() else {
+    guard document.ok, let root = document.value(), case .map(let entries) = root else {
         return false
     }
     return entries.contains { $0.key == key }

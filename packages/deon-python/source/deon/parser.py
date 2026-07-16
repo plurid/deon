@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from .diagnostic import Diagnostic, DiagnosticCode, error
 from .options import DEFAULT_SOURCE_NAME
-from .scanner import NAME_CHARACTERS, scan
+from .scanner import NAME_CHARACTERS, decode_name, scan
 from .syntax import (
     Argument,
     Call,
@@ -536,7 +536,10 @@ class Parser:
 
         if token.type == TokenType.STRING:
             self.advance()
-            return token.raw
+
+            # A quoted name decodes its escapes like a single-string value, except that a `#{…}` here
+            # is literal text and never a resolved reference (specification 4.4).
+            return decode_name(token.raw)
 
         if token.type != TokenType.WORD:
             raise self.fail(DiagnosticCode.PARSE_EXPECTED, message)

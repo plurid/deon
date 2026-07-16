@@ -8,6 +8,10 @@
     import type {
         PartialDeonParseOptions,
     } from '@plurid/deon';
+
+    import {
+        realpath,
+    } from './confine.js';
     // #endregion external
 // #endregion imports
 
@@ -87,19 +91,25 @@ export const fileOptions = (
 /**
  * Whether a path lies inside one of the roots.
  *
- * Compared after resolution, so that `../` cannot climb out of a root and a symbolic link cannot
- * point out of one. A server with no roots can reach nothing, which is the safe way to be wrong.
+ * Compared after resolving every symbolic link, so that `../` cannot climb out of a root and a
+ * symlink inside a root cannot point out of one: it is the real paths that are compared, not the
+ * spelling of them. A path that does not resolve — because it is missing, or a broken link — is
+ * inside no root. A server with no roots can reach nothing, which is the safe way to be wrong.
  */
 export const withinRoots = (
     file: string,
     options: ServerOptions,
 ) => {
-    const resolved = path.resolve(file);
+    const resolved = realpath(path.resolve(file));
+
+    if (!resolved) {
+        return false;
+    }
 
     return options.roots.some(root => {
-        const base = path.resolve(root);
+        const base = realpath(path.resolve(root));
 
-        return resolved === base || resolved.startsWith(base + path.sep);
+        return !!base && (resolved === base || resolved.startsWith(base + path.sep));
     });
 }
 // #endregion module

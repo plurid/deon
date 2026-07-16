@@ -10,6 +10,16 @@ use crate::token::{Literal, Token, TokenType};
 /// string, does not mistake it for an interpolation to resolve.
 pub const ESCAPED_INTERPOLATION: &str = "\u{0}deon-interpolation\u{0}";
 
+/// Finalizes a decoded name, turning the escaped-interpolation sentinel back into the literal `#{`
+/// it stands for. A name — a map key, a declaration or argument name, a structure field, a reference
+/// head, or a bracket-access key — is never interpolated (§4.4), so unlike a string value it has no
+/// later interpolation pass to undo the sentinel; it is undone here, the instant the name is fixed,
+/// so a name can never carry the sentinel out. Both `'a#{n}'` and `'a\#{n}'` name the same literal
+/// `a#{n}`. The replace is a no-op for a name that carried no escaped interpolation.
+pub fn finalize_name(name: &str) -> String {
+    name.replace(ESCAPED_INTERPOLATION, "#{")
+}
+
 /// A character that ends the head or a dot segment of a reference. A `.` or `[` continues the
 /// reference into another segment and is handled by the caller, so neither ends a name here.
 fn ends_reference_name(character: char) -> bool {
@@ -51,7 +61,10 @@ fn is_reference_name(character: char) -> bool {
 /// permitted, `None` on overflow); anything else is the exact characters as a key (specification 6).
 fn classify_bracket(content: &str) -> Access {
     if content.len() >= 2 && content.starts_with('\'') && content.ends_with('\'') {
-        return Access::Key(decode_minimal(&content[1..content.len() - 1], Some('\'')));
+        return Access::Key(finalize_name(&decode_minimal(
+            &content[1..content.len() - 1],
+            Some('\''),
+        )));
     }
 
     if !content.is_empty() && content.bytes().all(|byte| byte.is_ascii_digit()) {
@@ -259,8 +272,8 @@ pub fn parse_reference(raw: &str) -> Reference {
     let head = if characters.first() == Some(&'\'') {
         index += 1;
 
-        // Decoded exactly as a singlequoted string is, so that a declaration and a link to it agree
-        // on what the name is.
+        // Decoded and finalized exactly as a singlequoted name is, so that a declaration and a link
+        // to it agree on what the name is.
         let mut quoted = String::new();
 
         while index < characters.len() && characters[index] != '\'' {
@@ -279,7 +292,7 @@ pub fn parse_reference(raw: &str) -> Reference {
             index += 1;
         }
 
-        decode_minimal(&quoted, Some('\''))
+        finalize_name(&decode_minimal(&quoted, Some('\'')))
     } else {
         let start = index;
 
@@ -752,7 +765,7 @@ impl Scanner {
 
         self.advance();
 
-        Ok(decode_minimal(&raw, Some('\'')))
+        Ok(finalize_name(&decode_minimal(&raw, Some('\''))))
     }
 
     /// A `DEON_PARSE_EXPECTED` at a single character, for a malformed reference segment.

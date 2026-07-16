@@ -217,6 +217,30 @@
             }
         },
         {
+            "id": "quoted-map-key-is-literal-not-interpolated",
+            "required": true,
+            "source": "{ 'a#{n}' v }",
+            "expected": { "a#{n}": "v" }
+        },
+        {
+            "id": "quoted-name-escaped-interpolation-is-the-same-literal",
+            "required": true,
+            "source": "{ 'a\\#{n}' v }",
+            "expected": { "a#{n}": "v" }
+        },
+        {
+            "id": "quoted-link-head-is-literal",
+            "required": true,
+            "source": "'a#{n}' hi\n{ #'a#{n}' }",
+            "expected": { "a#{n}": "hi" }
+        },
+        {
+            "id": "canonical-quoted-name-escapes-literal-interpolation",
+            "required": true,
+            "source": "{ 'a#{n}' v }",
+            "canonical": "{\n    'a\\#{n}' v\n}\n"
+        },
+        {
             "id": "structure-row-arity",
             "required": true,
             "source": "{ people <id, name> [1, One\n2] }",
@@ -415,6 +439,26 @@
                 }
             },
             "expected": { "a": "exact", "b": "short", "c": "long" }
+        },
+        {
+            "id": "relative-base-preserves-unmatched-dotdot",
+            "required": true,
+            "file": "a/main.deon",
+            "files": {
+                "a/main.deon": "import x from ../../x\n{ ...#x }",
+                "../x.deon": "{ v preserved }"
+            },
+            "expected": { "v": "preserved" }
+        },
+        {
+            "id": "url-format-detection-ignores-query",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import x from https://host/data.json?v=2\n{ ...#x }",
+                "https://host/data.json?v=2": "{ \"k\": \"v\" }"
+            },
+            "expected": { "k": "v" }
         },
 
         {

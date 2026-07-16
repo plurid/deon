@@ -22,7 +22,7 @@ loop already has the way to say so:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
 
 from .datasign import Field, apply_datasign, parse_datasign, read_datasign, type_datasign
@@ -155,9 +155,15 @@ def parse_file(path: str, options: Optional[ParseOptions] = None) -> Value:
     """
     options = options or ParseOptions()
 
-    options.source_name = path
-    options.filebase = os.path.dirname(path)
-    options.allow_filesystem = True
+    # A copy, never the caller's own. Naming a file grants the filesystem to *this* parse; a caller who
+    # reuses one options object for a later `parse` they meant to sandbox must not silently inherit that
+    # grant (specification 9). `replace` leaves the passed-in object untouched.
+    options = replace(
+        options,
+        source_name=path,
+        filebase=os.path.dirname(path),
+        allow_filesystem=True,
+    )
 
     return parse_with(read_file(path), options)
 # #endregion parsing

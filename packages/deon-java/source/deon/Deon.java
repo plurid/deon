@@ -32,6 +32,7 @@ public final class Deon {
 
     /** Reads a document with the capabilities and surroundings the caller decides. */
     public static Object parseWith(String source, ParseOptions options) {
+        options = new ParseOptions(options);  // a copy: this parse never writes back into the caller's options
         DocumentAst doc = new Parser(source, options.sourceName()).parseDocument();
         options.sourceName = options.sourceName();
         Object root = Interpreter.evaluate(doc, options);
@@ -40,6 +41,7 @@ public final class Deon {
 
     /** Reads a file, which grants the filesystem to it and to what it imports. Naming a file is the grant. */
     public static Object parseFile(String pathname, ParseOptions options) {
+        options = new ParseOptions(options);  // a copy: naming a file grants the filesystem here, not to the caller's options
         byte[] data;
         try {
             data = Files.readAllBytes(Path.of(pathname));
@@ -73,6 +75,7 @@ public final class Deon {
 
     /** Fetches a Deon document from a URL and evaluates it. The network must be granted. */
     public static Object parseLink(String link, ParseOptions options) {
+        options = new ParseOptions(options);  // a copy: the fetched document's name and base settle here, not in the caller's options
         if (!options.allowNetwork) {
             throw new DeonException(Code.CAPABILITY_DENIED, "'" + link + "' was not fetched: network access is not allowed.", Span.head(link));
         }

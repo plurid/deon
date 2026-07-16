@@ -305,7 +305,9 @@ private func commandEvaluate(_ args: [String]) -> Int32 {
     }
     do {
         if optValue(args, "-o", "--output", "deon") == "json" {
-            let value = try hasFlag(args, "-t", "--typed") ? document.typed() : document.value()
+            guard let value = try (hasFlag(args, "-t", "--typed") ? document.typed() : document.value()) else {
+                return 1
+            }
             var buffer: [UInt8] = []
             emitJSON(value, 0, &buffer)
             buffer.append(0x0A)
@@ -392,7 +394,7 @@ private func commandEnvironment(_ args: [String]) -> Int32 {
         printDiagnostics(document)
         return 1
     }
-    guard case .map(let entries) = document.value() else {
+    guard let root = document.value(), case .map(let entries) = root else {
         err("deon: An environment source must contain a root map.\n")
         return 1
     }
@@ -560,7 +562,7 @@ private func commandExfile(_ args: [String]) -> Int32 {
         printDiagnostics(document)
         return 1
     }
-    guard case .map(let entries) = document.value() else {
+    guard let root = document.value(), case .map(let entries) = root else {
         err("deon: An exfile source must contain a root map.\n")
         return 1
     }

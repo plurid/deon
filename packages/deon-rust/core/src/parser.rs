@@ -3,13 +3,13 @@
 use std::rc::Rc;
 
 use crate::diagnostic::{err, DResult, Diagnostic, DiagnosticCode, Span};
-use crate::scanner::decode_minimal;
+use crate::scanner::{decode_minimal, finalize_name};
 use crate::syntax::{
     CallArgument, Declaration, Document, Leaflink, ListItem, MapItem, Resource, ResourceKind,
     ValueNode,
 };
 use crate::text::is_bare_name;
-use crate::token::{Token, TokenType};
+use crate::token::{Literal, Token, TokenType};
 
 /// Where an unquoted value ends. It runs to a separator or to the delimiter of whatever encloses it,
 /// so the enclosing group is what decides.
@@ -505,12 +505,17 @@ impl Parser {
             return self.fail(DiagnosticCode::ParseExpected, message);
         }
 
-        let token = self.advance();
+        let mut token = self.advance();
 
         let singlequoted = token.ty == TokenType::String && token.lexeme.starts_with('\'');
         let bare = token.ty != TokenType::String && is_bare_name(token.value());
 
         if singlequoted || bare {
+            // A name is never interpolated (§4.4), so the escaped-interpolation sentinel that a `\#{`
+            // decodes to — which only the interpolation pass, run over a value, turns back into `#{`
+            // — is resolved here, or it would surface inside a key. A bare name holds no backslash and
+            // so carries none; the finalize is a no-op there.
+            token.literal = Literal::String(finalize_name(token.value()));
             return Ok(token);
         }
 

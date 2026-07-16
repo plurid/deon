@@ -775,10 +775,16 @@ static deon_str receiving_key(node *value) {
 }
 /* #endregion */
 
+/* literal_of assembles a quoted name — a map key, a declaration or call-argument name, a structure
+ * field, a reference head, a bracket-access key — from its decoded parts. A name is never interpolated
+ * (section 4.4): a `#{ ... }` in a name keeps its literal characters, exactly as an escaped `\#{ ... }`
+ * would, rather than being resolved as a reference or dropped. Every part therefore carries its literal
+ * text — a plain part its decoded characters, an interpolation part its verbatim `#{ ... }` — and all of
+ * them are concatenated. (A value, by contrast, resolves its interpolation parts in eval_scalar.) */
 deon_str literal_of(parser *p, string_part *parts, size_t len) {
     sb b = {0};
     for (size_t i = 0; i < len; i++) {
-        if (!parts[i].is_interp) sb_put(&b, parts[i].literal.data, parts[i].literal.len);
+        sb_put(&b, parts[i].literal.data, parts[i].literal.len);
     }
     return sb_into_arena(&b, p->ctx->a);
 }
@@ -790,13 +796,18 @@ parser *sub_parser(deon_ctx *ctx, const char *utf8, size_t len) {
 /* One interpolation parsed on the current cursor: `#{ reference }`, returned as a part to resolve at
  * evaluation. Lives here because it reaches the reference parser. */
 string_part parse_interpolation_part(parser *p) {
+    size_t start = p->pos;
     advance(p); /* # */
     advance(p); /* { */
     reference ref = parse_reference(p);
     expect(p, '}', "An interpolation opened with '#{' must be closed with '}'.");
     string_part part;
     part.is_interp = true;
-    memset(&part.literal, 0, sizeof(part.literal));
+    /* The verbatim `#{ ... }` source. In a value it is ignored and `interp` is resolved instead; in a
+     * quoted name it is the literal text the name keeps, since a name is never interpolated (section
+     * 4.4). Copied into the arena because the string cursor's buffer does not outlive the parse. */
+    deon_str raw = slice(p, start, p->pos);
+    part.literal = arena_str(p->ctx->a, raw.data, raw.len);
     part.interp = ref;
     return part;
 }

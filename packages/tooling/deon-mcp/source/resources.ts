@@ -1,6 +1,6 @@
 // #region imports
     // #region libraries
-    import { readdirSync, readFileSync, statSync } from 'node:fs';
+    import { readdirSync, readFileSync, lstatSync } from 'node:fs';
     import path from 'node:path';
 
     import type {
@@ -20,6 +20,11 @@
         fileOptions,
         withinRoots,
     } from './options.js';
+
+    import {
+        confinement,
+        realpath,
+    } from './confine.js';
     // #endregion external
 // #endregion imports
 
@@ -66,8 +71,16 @@ const walk = (
         let stats;
 
         try {
-            stats = statSync(full);
+            // `lstatSync`, not `statSync`, so a symbolic link is seen as a link rather than as what
+            // it points at. A link is skipped entirely: it is how a file or a directory inside a root
+            // would otherwise pull in content from outside it, and a listing must not offer what a
+            // read would then have to refuse.
+            stats = lstatSync(full);
         } catch {
+            continue;
+        }
+
+        if (stats.isSymbolicLink()) {
             continue;
         }
 
@@ -90,6 +103,7 @@ export const registerResources = (
     options: ServerOptions,
 ) => {
     const deon = new Deon();
+    const confine = confinement(options);
 
     const files = options.roots.flatMap(root => walk(path.resolve(root)));
 
@@ -103,16 +117,22 @@ export const registerResources = (
                 mimeType: 'application/deon',
             },
             async (uri) => {
-                // Checked again here. A listing says what was there; a read is what happens now.
-                if (!withinRoots(file, options)) {
+                // Checked again here, and against the real path. A listing says what was there; a
+                // read is what happens now, and between the two a file could have become a link out
+                // of the root. Resolving the links closes that window, and the resolved path is the
+                // one that is read — not the name that was listed.
+                const real = realpath(file);
+
+                if (!real || !withinRoots(real, options)) {
                     throw new Error(`'${file}' is outside every root.`);
                 }
 
-                const source = readFileSync(file, 'utf8');
+                const source = readFileSync(real, 'utf8');
 
                 // The canonical form, so what a model reads is the document's meaning rather than
-                // its layout — and so that two servers serving the same document serve it alike.
-                const value = deon.parseSynchronous(source, fileOptions(file, options));
+                // its layout — and so that two servers serving the same document serve it alike. It
+                // is evaluated confined: a document under a root composes only from inside the roots.
+                const value = confine.parse(source, fileOptions(real, options));
 
                 return {
                     contents: [{

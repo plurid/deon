@@ -1,5 +1,7 @@
 package deon;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +30,33 @@ public final class ParseOptions {
 
     public List<String> datasignFiles = List.of();
     public Map<String, String> datasignMap = Map.of();
+
+    /** The defaults above. Explicit because declaring the copy constructor would otherwise remove it. */
+    public ParseOptions() {
+    }
+
+    /**
+     * A deep copy of another options. A parse settles its own source name, base, and grants on this copy
+     * and never writes them back into the instance the caller still holds — so an object reused for a
+     * later parse the caller meant to sandbox does not silently inherit a filesystem grant (specification
+     * 9). The collections are copied rather than shared: a later mutation of one is invisible to the other.
+     */
+    public ParseOptions(ParseOptions other) {
+        this.sourceName = other.sourceName;
+        this.filebase = other.filebase;
+        this.resources = new LinkedHashMap<>(other.resources);
+        this.absolutePaths = new LinkedHashMap<>(other.absolutePaths);
+        this.environment = new LinkedHashMap<>(other.environment);
+        this.authorization = new LinkedHashMap<>(other.authorization);
+        this.token = other.token;
+        this.allowFilesystem = other.allowFilesystem;
+        this.allowNetwork = other.allowNetwork;
+        this.cache = other.cache;
+        this.cacheDuration = other.cacheDuration;
+        this.cacheDirectory = other.cacheDirectory;
+        this.datasignFiles = new ArrayList<>(other.datasignFiles);
+        this.datasignMap = new LinkedHashMap<>(other.datasignMap);
+    }
 
     String sourceName() {
         return sourceName == null || sourceName.isEmpty() ? "<memory>" : sourceName;

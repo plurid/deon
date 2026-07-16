@@ -86,9 +86,13 @@ escape            = common-escape ;
 single-escape     = common-escape | "\\'" ;
 multiline-escape  = common-escape | "\\`" ;
 
+(* A name is never interpolated (section 4.4). A quoted name is lexed like a single-string with the
+   same escapes, but a "#{" in name position is literal text rather than an interpolation, so the key
+   written "'a#{n}'" is the literal name "a#{n}". A "\#{" therefore decodes through common-escape to a
+   literal "#{" here, never through escaped-interpolation. *)
 name              = bare-name | quoted-name ;
 bare-name         = name-character, { name-character } ;
-quoted-name       = single-string ;
+quoted-name       = "'", { single-character | single-escape }, "'" ;
 name-character    = letter | digit | "_" | "-" ;
 
 separator         = trivia, ( "," | newline ), trivia ;

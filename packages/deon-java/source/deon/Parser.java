@@ -727,11 +727,11 @@ final class Parser {
     // #endregion
 
     private static String literalOf(List<StringPart> parts) {
+        // A name is never interpolated (section 4.4): a `#{...}` in name position is literal text,
+        // kept verbatim from source rather than dropped or resolved, so `'a#{n}'` is the key `a#{n}`.
         StringBuilder b = new StringBuilder();
         for (StringPart part : parts) {
-            if (!part.isInterp) {
-                b.append(part.literal);
-            }
+            b.append(part.isInterp ? part.raw : part.literal);
         }
         return b.toString();
     }
@@ -800,11 +800,12 @@ final class Parser {
     }
 
     private StringPart parseInterpolationPart() {
+        int rawStart = pos;
         advance(); // #
         advance(); // {
         Reference ref = parseReference();
         expect('}', "An interpolation opened with '#{' must be closed with '}'.");
-        return new StringPart(ref);
+        return new StringPart(ref, slice(rawStart, pos));
     }
 
     private void consumeInterpolationRaw(StringBuilder raw) {

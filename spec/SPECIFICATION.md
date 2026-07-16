@@ -73,6 +73,8 @@ The line-break escapes are what make every string writable. An unquoted string e
 
 An unquoted map key or declaration name uses letters, digits, `_`, or `-`. Single quotes permit any non-newline name. A name is compared after unquoting and escape decoding.
 
+A name is never interpolated. A quoted name is lexed as a single-quoted string (section 4.3) — the same `\\`, `\'`, `\n`, `\r`, `\t`, and `\#{` escapes decode identically — with the single difference that a `#{…}` in name position is literal text rather than a resolved reference. The key written `'a#{n}'` is the literal name `a#{n}`, never a lookup of `n` and never the truncated `a`. This holds wherever a name appears — a map key, a declaration name, a call-argument name, a structure field, and the head or a bracket segment of a reference, so that `#'a#{n}'` and `#items['a#{n}']` name the literal key `a#{n}` — so a name's identity never depends on evaluation. Written back, a name that is not a bare-name is single-quoted and escaped exactly as a single-string value — `#{` included, rendered as `\#{` — so the name `a#{n}` is written `'a\#{n}'` and round-trips to itself; the escape is inert in name position but keeps one conservative spelling.
+
 ## 5. Maps and lists
 
 A map is enclosed in `{` and `}`. Each entry contains a key and an optional value. An omitted value is the empty string.
@@ -121,7 +123,9 @@ The signature contains unique map keys; a repeated field name is `DEON_STRUCTURE
 
 `import name from target` loads `target`, parses it as Deon or JSON, and binds its root to `name`. `inject name from target` binds the UTF-8 resource text without parsing it. Either statement may end with `with authenticator`, where the authenticator is a literal string, environment link, or leaflink resolving to a string.
 
-Relative filesystem targets resolve against the containing file. Relative URL targets resolve against the containing URL. When an import target has no extension, `.deon` is appended. `.json` selects JSON conversion; other import extensions are resource-format errors. Injection retains the target exactly.
+Relative filesystem targets resolve against the containing file. Relative URL targets resolve against the containing URL. Resolution normalizes `.` and `..` segments with a stack — a `.` segment drops and a `..` segment pops the segment before it — and a `..` with nothing to pop, one that would climb above the base, is **kept** as a leading `..` in the resolved target rather than discarded, so `a/../../b` resolves to `../b` and a containment or capability check observes the climb rather than a silently rewritten path.
+
+An import target's format is selected from the extension of its path alone. For a URL the `?` query and `#` fragment are removed before the extension is examined, so `https://host/data.json?v=2` selects JSON while `https://host/data?x=1` has no extension. When an import target has no extension, `.deon` is appended. `.json` selects JSON conversion; other import extensions are resource-format errors. Injection retains the target exactly.
 
 The `absolutePaths` option maps logical absolute targets to host paths. Exact keys win before wildcard keys ending in `/*`; among wildcards, the longest prefix wins and the unmatched suffix is appended to the mapped directory. The mapping is a property of the target rather than of whoever resolves it: a resource supplied to the evaluator directly MUST map exactly as one read from a host, or a document would mean one thing when its resources are handed over and another when they are read from a disk.
 

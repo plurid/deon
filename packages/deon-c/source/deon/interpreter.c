@@ -414,8 +414,11 @@ static bool is_url(const char *t) {
     return strncmp(t, "http://", 7) == 0 || strncmp(t, "https://", 8) == 0;
 }
 
-/* extension_of: the trailing ".ext" of the last path segment, or "" if none. */
-static const char *extension_of(const char *t) {
+/* extension_of: the trailing ".ext" of the last path segment, or "" if none. A resource's format is read
+ * from its path alone (section 9): a URL's `?query` and `#fragment` are not part of the path, so
+ * `https://host/data.json?v=2` is JSON. The result is copied because the ".ext" it points at is followed
+ * by the query/fragment in the source and must be returned without it. */
+static const char *extension_of(arena *a, const char *t) {
     const char *path = t;
     if (is_url(t)) {
         const char *slashes = strstr(t, "://");
@@ -424,10 +427,13 @@ static const char *extension_of(const char *t) {
     }
     const char *last_slash = strrchr(path, '/');
     const char *seg = last_slash ? last_slash + 1 : path;
-    /* strip query/fragment for urls */
-    const char *dot = strrchr(seg, '.');
+    size_t seg_len = strcspn(seg, "?#"); /* the path segment, before any query or fragment */
+    const char *dot = NULL;
+    for (size_t i = 0; i < seg_len; i++) {
+        if (seg[i] == '.') dot = seg + i;
+    }
     if (!dot || dot == seg) return "";
-    return dot; /* includes the dot */
+    return arena_memdup(a, dot, (size_t)(seg + seg_len - dot)); /* ".ext", query/fragment excluded */
 }
 
 /* normalize_path collapses "." and ".." segments in an absolute or relative path. */
@@ -448,7 +454,17 @@ static char *normalize_path(arena *a, const char *path) {
         if (len == 0) continue;
         if (len == 1 && path[start] == '.') continue;
         if (len == 2 && path[start] == '.' && path[start + 1] == '.') {
-            if (nseg > 0) nseg--;
+            /* A ".." pops the last real segment. With nothing to pop — the stack is empty, or its top is
+             * itself a preserved leading ".." — an absolute path clamps (the "..", above its root, is
+             * discarded) while a relative path keeps the ".." as a leading segment, so a base may be
+             * climbed above (section 9): "a/../../b" -> "../b". Mirrors the JS/Go/Rust/Python impls. */
+            bool top_is_dotdot = nseg > 0 && seglen[nseg - 1] == 2 &&
+                                 segs[nseg - 1][0] == '.' && segs[nseg - 1][1] == '.';
+            if (nseg > 0 && !top_is_dotdot) {
+                nseg--;
+            } else if (!absolute && nseg < 256) {
+                segs[nseg] = path + start; seglen[nseg] = len; nseg++;
+            }
             continue;
         }
         if (nseg < 256) { segs[nseg] = path + start; seglen[nseg] = len; nseg++; }
@@ -574,7 +590,7 @@ static const char *resolve_target(interpreter *in, const char *target) {
 }
 
 static const char *import_target(interpreter *in, const char *target) {
-    if (extension_of(target)[0] == '\0') {
+    if (extension_of(in->ctx->a, target)[0] == '\0') {
         size_t tl = strlen(target);
         char *out = arena_alloc(in->ctx->a, tl + 6);
         memcpy(out, target, tl);
@@ -615,7 +631,7 @@ static const char *token_for(interpreter *in, const char *target) {
 static fetched load_resource(interpreter *in, const char *target, const char *kind, const char *token, deon_span span) {
     fetched f;
     memset(&f, 0, sizeof(f));
-    f.filetype = strcmp(kind, "import") == 0 ? extension_of(target) : "";
+    f.filetype = strcmp(kind, "import") == 0 ? extension_of(in->ctx->a, target) : "";
     f.resource_id = target;
     f.filebase = directory_of(in->ctx->a, target);
 

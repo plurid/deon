@@ -7,6 +7,7 @@ suite that fails when the internet does, and tells you nothing about the languag
 
 from __future__ import annotations
 
+import copy
 import http.server
 import shutil
 import tempfile
@@ -190,6 +191,17 @@ class Network(Served):
 
         self.assertEqual(value, {"name": "imported"})
         self.assertEqual(Responder.seen["accept"], "application/deon")
+
+    def test_parse_link_does_not_mutate_the_callers_options(self):
+        """A link names *this* document; the rename is threaded through a copy. A caller who reuses the
+        options for the next parse finds their source name and base exactly as they left them."""
+        options = self.allowed()
+        before = copy.deepcopy(options)
+
+        value = parse_link(f"{self.host}/child.deon", options)
+
+        self.assertEqual(value, {"name": "imported"})
+        self.assertEqual(options, before)
     # #endregion parse_link
 
 

@@ -15,7 +15,6 @@
     // #region external
     import Deon, {
         ESCAPED_INTERPOLATION,
-        internals,
     } from '@plurid/deon';
 
     import type {
@@ -34,6 +33,10 @@
     import {
         fileOptions,
     } from './options.js';
+
+    import {
+        confinement,
+    } from './confine.js';
     // #endregion external
 // #endregion imports
 
@@ -93,8 +96,10 @@ export const readLibrary = (
     const deon = new Deon();
 
     // The root is the manifest. It is evaluated, so a description may itself be a leaflink or an
-    // interpolation — it is an ordinary Deon value like any other.
-    const manifest = deon.parseSynchronous<Record<string, DeonValue>>(
+    // interpolation — it is an ordinary Deon value like any other. It is evaluated *confined*: a
+    // library imports and injects to compose itself, and every one of those reads — the library's
+    // own and every one they reach — must stay inside the roots.
+    const manifest = confinement(options).parse<Record<string, DeonValue>>(
         source,
         fileOptions(file, options),
     );
@@ -185,8 +190,10 @@ export const render = (
     };
 
     // A library named by the operator may read the filesystem, so that it can be composed out of
-    // imported pieces. It reaches the network only if the operator said it may.
-    const interpreter = new internals.Interpreter(Deon, undefined, { pure: !options.roots.length });
+    // imported pieces — but only inside the roots, which the confined interpreter enforces for the
+    // entity's own imports and for everything they reach. It touches the network only if the operator
+    // said it may.
+    const interpreter = confinement(options).interpreter();
 
     const value = interpreter.interpretSynchronous(
         { ...document, root },
