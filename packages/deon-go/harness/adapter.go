@@ -29,6 +29,7 @@ type request struct {
 	DatasignFiles    []string          `json:"datasignFiles"`
 	DatasignMap      map[string]string `json:"datasignMap"`
 	StringifyOptions map[string]string `json:"stringifyOptions"`
+	Budgets          map[string]string `json:"budgets"`
 }
 
 func optionsOf(r request) deon.ParseOptions {
@@ -46,7 +47,20 @@ func optionsOf(r request) deon.ParseOptions {
 		AllowNetwork:    r.AllowNetwork == "true",
 		DatasignFiles:   r.DatasignFiles,
 		DatasignMap:     r.DatasignMap,
+		Expansion:       expansionOf(r.Budgets),
 	}
+}
+
+// expansionOf reads the host's expansion budget (specification 11) from a request's budgets. It is a
+// decimal code-point count; absent, empty, or unparseable yields 0, which the evaluator reads as the
+// default rather than as an unbounded evaluation.
+func expansionOf(budgets map[string]string) uint64 {
+	if v, ok := budgets["expansion"]; ok {
+		if n, err := strconv.ParseUint(v, 10, 64); err == nil {
+			return n
+		}
+	}
+	return 0
 }
 
 func stringifyOptionsOf(given map[string]string) deon.StringifyOptions {

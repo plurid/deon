@@ -2,7 +2,7 @@ package deon
 
 import "fmt"
 
-// Code is one of the fourteen diagnostic codes, and there are no others (spec/diagnostics.md). The
+// Code is one of the fifteen diagnostic codes, and there are no others (spec/diagnostics.md). The
 // catalogue is normative and closed; each string is the wire name that appears in a fixture, a tool's
 // output, and a host's log, so it must not drift.
 type Code string
@@ -22,6 +22,7 @@ const (
 	ResourceIO           Code = "DEON_RESOURCE_IO"
 	ResourceFormat       Code = "DEON_RESOURCE_FORMAT"
 	LintDuplicateKey     Code = "DEON_LINT_DUPLICATE_KEY"
+	LimitExceeded        Code = "DEON_LIMIT_EXCEEDED"
 )
 
 // Every code is an error except the one that is advice.

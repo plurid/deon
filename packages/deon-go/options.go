@@ -57,7 +57,18 @@ type ParseOptions struct {
 	// and reading a contract without one to apply would be reading a file for nothing.
 	DatasignFiles []string
 	DatasignMap   map[string]string
+
+	// Expansion is the budget on code points produced by substitution — interpolation and string
+	// spread — before evaluation is refused with DEON_LIMIT_EXCEEDED (specification 11). It guards
+	// against a tiny document that doubles a value at each step until it assembles gigabytes. Zero
+	// selects DefaultExpansion, because expansion is always bounded: setting it to zero asks for the
+	// default rather than for an unbounded evaluation.
+	Expansion uint64
 }
+
+// DefaultExpansion is the expansion budget a host gets when it names none: 2^26 code points, far past
+// any expansion a document has cause to perform and far below what exhausts a host (specification 11).
+const DefaultExpansion uint64 = 1 << 26
 
 func (o *ParseOptions) sourceName() string {
 	if o.SourceName == "" {

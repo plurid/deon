@@ -26,6 +26,10 @@ const optionsOf = (request) => ({
     // no adapter reaches a disk.
     datasignFiles: request.datasignFiles ?? [],
     datasignMap: request.datasignMap ?? {},
+
+    // The expansion budget of specification 11. A string count arrives under `budgets`; zero or
+    // absent leaves the host default in force.
+    expansion: Number(request.budgets?.expansion ?? 0),
 });
 
 

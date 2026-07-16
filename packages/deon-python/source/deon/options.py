@@ -12,6 +12,12 @@ from dataclasses import dataclass, field
 
 DEFAULT_SOURCE_NAME = "<memory>"
 
+#: The default expansion budget (specification 11): the number of Unicode code points that
+#: substitution may produce before evaluation is stopped. 2^26 is far above anything a document a
+#: person wrote assembles, and far below what a billion-laughs blow-up would — a tiny document doubling
+#: an interpolation twenty times reaches gigabytes, and bounding the count is what stops it.
+DEFAULT_EXPANSION = 2 ** 26
+
 
 @dataclass
 class ParseOptions:
@@ -42,6 +48,13 @@ class ParseOptions:
 
     allow_filesystem: bool = False
     allow_network: bool = False
+
+    #: The most Unicode code points substitution — an interpolation `#{…}`, or a string spread — may
+    #: produce before evaluation is stopped with `DEON_LIMIT_EXCEEDED` (specification 11). A tiny
+    #: document can otherwise assemble gigabytes by interpolation doubling, which is a denial of
+    #: service the host has no other way to refuse. Absent or 0 means `DEFAULT_EXPANSION`; a host that
+    #: wants a tighter bound names a smaller number.
+    expansion: int = 0
 
     #: A bearer token per exact lowercase hostname. Exact: no port, no path, no wildcard. A
     #: credential is not something to hand out on a prefix match.

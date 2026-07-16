@@ -4,6 +4,8 @@
 
 This document is the normative specification of the DeObject Notation (`deon`) language, version 1.0. The grammar in `deon.ebnf`, the diagnostic catalogue in `diagnostics.md`, and the fixtures under `conformance/` are normative parts of this specification.
 
+When two normative parts appear to conflict, the order of precedence is: the prose of this document and its data model first, then the conformance fixtures, then the grammar in `deon.ebnf`, then the diagnostic catalogue. The prose defines the language; a fixture pins a concrete case the prose already governs; the grammar is a deliberately approximate guide whose context-sensitive lexical boundaries section 4.3 explicitly overrides; and the catalogue names codes and severities without fixing every position. A conflict between them is a defect in the subordinate part, to be corrected there rather than relied upon.
+
 The key words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are to be interpreted as requirements on a conforming implementation.
 
 Deon source is UTF-8 text. A document has the media type `application/deon` and normally uses the `.deon` filename extension.
@@ -191,6 +193,10 @@ The limit is a requirement rather than a permission. A document is data, and dat
 
 A value handed to a stringifier, to canonical form, or to the typer by a host — rather than by the parser — is subject to the same limit. An implementation MUST check the depth of such a value before writing or typing it and, when it exceeds the limit, report `DEON_PARSE_EXPECTED` rather than exhausting the stack or returning a truncated or empty result. The check itself MUST NOT recurse, or the value it is meant to guard against would overflow it first.
 
+Depth bounds how deeply a value nests; it does not bound how *large* a value grows. A document of a few lines can name a leaflink that interpolates two copies of another, which interpolates two copies of a third, so that a value doubles at each step and a thirty-line document assembles gigabytes — the same shape as an XML *billion laughs*. An implementation MUST bound this expansion. It maintains an **expansion counter**, the number of Unicode code points it has produced by *substituting* one value into another, initially zero: each interpolation adds the code-point length of the string it substitutes, and each string spread adds the code-point length it copies. When the counter exceeds the configured limit, evaluation stops with `DEON_LIMIT_EXCEEDED`, reported at the start of the document. The counter measures substituted work and not the source, so a literal string, however long, is the size its author wrote and is never expansion.
+
+The expansion limit is host-configurable and defaults to **67108864** (`2^26`) code points — far past any expansion a document has cause to perform, and far below what exhausts a host. A host that parses hostile input MAY set it lower; a host assembling a known-large document MAY set it higher; setting it to zero selects the default rather than an unbounded evaluation, because expansion is always bounded.
+
 ### 11.2 Where a diagnostic points
 
 A cycle is reported at the **reference that closes it**, not at the declaration that opens it: the declaration is well-formed on its own, and it is the reference back into it that made the loop.
@@ -230,7 +236,7 @@ Canonical output:
 - sorts every map by Unicode code-point order;
 - preserves list order;
 - uses four spaces and LF;
-- uses the shortest unambiguous string form;
+- writes every string in the conservative form of §12 — the safer of two forms that both read back unchanged, not merely the shorter one;
 - contains no comments or generated leaflinks;
 - ends with exactly one newline.
 

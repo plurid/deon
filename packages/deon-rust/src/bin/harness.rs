@@ -34,6 +34,18 @@ fn number(request: &Map, key: &str, fallback: usize) -> usize {
     }
 }
 
+/// Reads a count out of the nested `budgets` object as a `u64` — a code-point ceiling can run past
+/// `usize` on a 32-bit host, and the wire carries it as a string like everything else.
+fn budget(request: &Map, key: &str, fallback: u64) -> u64 {
+    match request.get("budgets") {
+        Some(Value::Map(budgets)) => match budgets.get(key) {
+            Some(Value::String(value)) => value.parse().unwrap_or(fallback),
+            _ => fallback,
+        },
+        _ => fallback,
+    }
+}
+
 fn table<'a>(request: &'a Map, key: &str) -> Vec<(&'a str, &'a str)> {
     match request.get(key) {
         Some(Value::Map(entries)) => entries
@@ -52,7 +64,10 @@ fn options_of(request: &Map) -> ParseOptions {
         .source_name(text(request, "sourceName"))
         .filebase(text(request, "filebase"))
         .allow_filesystem(flag(request, "allowFilesystem", false))
-        .allow_network(flag(request, "allowNetwork", false));
+        .allow_network(flag(request, "allowNetwork", false))
+        // The expansion ceiling arrives under `budgets`, as a string like every other wire value; an
+        // absent or unparsable one leaves the default in place (specification 11).
+        .expansion(budget(request, "expansion", 0));
 
     if text(request, "sourceName").is_empty() {
         options = options.source_name("<memory>");

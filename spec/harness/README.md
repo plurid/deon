@@ -26,11 +26,14 @@ An adapter reads newline-delimited JSON on standard input and writes one newline
   "absolutePaths": { "/logical/*": "/host" },
   "allowFilesystem": "false",
   "allowNetwork": "false",
+  "budgets": { "expansion": "1000" },
   "stringifyOptions": { "readable": "false", "leaflinks": "true" }
 }
 ```
 
 Only `id`, `op`, and `source` are required.
+
+`budgets` sets host-configurable resource limits (§11). Each value is a string count; an absent budget takes the specification's default. `expansion` bounds the code points an evaluation may produce by substitution — the guard against a *billion-laughs* blow-up — and a document that exceeds it is refused with `DEON_LIMIT_EXCEEDED` at the start of the source (`start` `0`, line 1, column 1).
 
 | `op` | the result |
 | --- | --- |

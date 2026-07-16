@@ -29,6 +29,12 @@ pub struct ParseOptions {
     pub allow_filesystem: bool,
     pub allow_network: bool,
 
+    /// The ceiling on how many Unicode code points substitution may produce — every interpolation
+    /// and every string spread, summed across the whole evaluation. It bounds the billion-laughs
+    /// blow-up in which a tiny document assembles gigabytes by interpolation doubling
+    /// (specification 11). Zero means [`DEFAULT_EXPANSION`].
+    pub expansion: u64,
+
     /// Whether [`crate::parse_link`] may read and write a cache. Nothing else caches.
     pub cache: bool,
 
@@ -69,6 +75,7 @@ impl Default for ParseOptions {
             token: String::new(),
             allow_filesystem: false,
             allow_network: false,
+            expansion: DEFAULT_EXPANSION,
             cache: false,
             cache_duration: DEFAULT_CACHE_DURATION,
             cache_directory: String::new(),
@@ -83,6 +90,11 @@ impl Default for ParseOptions {
 
 /// One hour, in milliseconds.
 pub const DEFAULT_CACHE_DURATION: u64 = 1000 * 60 * 60;
+
+/// The default expansion ceiling, 2^26 code points (64 MiB of them). Large enough that no honest
+/// document written by hand comes near it, small enough that a blow-up is stopped long before it
+/// exhausts memory (specification 11).
+pub const DEFAULT_EXPANSION: u64 = 1 << 26;
 
 impl ParseOptions {
     pub fn new() -> Self {
@@ -106,6 +118,12 @@ impl ParseOptions {
 
     pub fn allow_network(mut self, allow: bool) -> Self {
         self.allow_network = allow;
+        self
+    }
+
+    /// The expansion ceiling, in code points. Zero restores [`DEFAULT_EXPANSION`].
+    pub fn expansion(mut self, limit: u64) -> Self {
+        self.expansion = limit;
         self
     }
 

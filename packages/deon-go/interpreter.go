@@ -3,6 +3,7 @@ package deon
 import (
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // interpreter evaluates a parsed document into a Deon value (specification 11). Declarations are
@@ -16,16 +17,36 @@ type interpreter struct {
 	calling      map[string]bool // entity names mid-call, for recursive-call cycles
 	locals       []map[string]string
 	opened       map[string]bool // resource identifiers being loaded, for import cycles
+
+	expansion      uint64 // code points produced by substitution so far (§11)
+	expansionLimit uint64 // the budget beyond which substitution is DEON_LIMIT_EXCEEDED
 }
 
 func newInterpreter(options *ParseOptions) *interpreter {
+	limit := options.Expansion
+	if limit == 0 {
+		limit = DefaultExpansion
+	}
 	return &interpreter{
-		options:      options,
-		declarations: map[string]*declaration{},
-		cache:        map[string]Value{},
-		resolving:    map[string]bool{},
-		calling:      map[string]bool{},
-		opened:       map[string]bool{},
+		options:        options,
+		declarations:   map[string]*declaration{},
+		cache:          map[string]Value{},
+		resolving:      map[string]bool{},
+		calling:        map[string]bool{},
+		opened:         map[string]bool{},
+		expansionLimit: limit,
+	}
+}
+
+// charge accounts n code points produced by substitution — an interpolation resolved into a string, a
+// string spread copied as code points (§7) — against the expansion budget, and stops the moment the
+// running total exceeds it (§11). This is the billion-laughs guard: a document that doubles a value at
+// each step is refused before it assembles the gigabytes, reported at the start of the document rather
+// than at any one interpolation. A plain literal is the size its author wrote and is never charged.
+func (in *interpreter) charge(n int) {
+	in.expansion += uint64(n)
+	if in.expansion > in.expansionLimit {
+		fail(LimitExceeded, "The document's expansion budget was exceeded.", headSpan(in.options.sourceName()))
 	}
 }
 
@@ -89,6 +110,7 @@ func (in *interpreter) evalScalar(n *scalarNode) Value {
 		if !ok {
 			fail(TypeMismatch, "An interpolation must resolve to a string.", n.span)
 		}
+		in.charge(utf8.RuneCountInString(text))
 		b.WriteString(text)
 	}
 	return b.String()
@@ -143,6 +165,7 @@ func (in *interpreter) spreadIntoMap(dest *Map, ref reference) {
 		}
 	case string:
 		// A string spreads into a map using decimal character indices (specification 7).
+		in.charge(utf8.RuneCountInString(source))
 		for i, r := range []rune(source) {
 			dest.Set(strconv.Itoa(i), string(r))
 		}
@@ -158,6 +181,7 @@ func (in *interpreter) spreadIntoList(dest []Value, ref reference) []Value {
 		return append(dest, source...)
 	case string:
 		// A string spreads into a list as Unicode code points (specification 7).
+		in.charge(utf8.RuneCountInString(source))
 		for _, r := range source {
 			dest = append(dest, string(r))
 		}

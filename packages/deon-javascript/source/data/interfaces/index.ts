@@ -30,6 +30,14 @@ export interface DeonParseOptions {
     environment: Record<string, string | undefined>;
     resources: Record<string, string>;
     resourceStack: string[];
+
+    /**
+     * The maximum number of code points substitution may produce — across every interpolation and
+     * every string spread — before evaluation stops with `DEON_LIMIT_EXCEEDED` (specification 11).
+     * It bounds the doubling blow-up by which a few lines of interpolation assemble gigabytes. Zero
+     * or absent is the host default.
+     */
+    expansion: number;
 }
 
 export type PartialDeonParseOptions = Partial<DeonParseOptions>;

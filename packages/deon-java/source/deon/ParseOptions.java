@@ -31,6 +31,15 @@ public final class ParseOptions {
     public List<String> datasignFiles = List.of();
     public Map<String, String> datasignMap = Map.of();
 
+    /**
+     * The expansion budget: the greatest number of Unicode code points substitution may produce — an
+     * interpolation resolved into a string, a string spread copied as code points (section 7) — before
+     * evaluation stops with {@code DEON_LIMIT_EXCEEDED}. Zero selects the default (2^26): expansion is
+     * always bounded, so asking for none asks for the default rather than for an unbounded evaluation
+     * (specification 11).
+     */
+    public long expansion = 0;
+
     /** The defaults above. Explicit because declaring the copy constructor would otherwise remove it. */
     public ParseOptions() {
     }
@@ -56,6 +65,7 @@ public final class ParseOptions {
         this.cacheDirectory = other.cacheDirectory;
         this.datasignFiles = new ArrayList<>(other.datasignFiles);
         this.datasignMap = new LinkedHashMap<>(other.datasignMap);
+        this.expansion = other.expansion;
     }
 
     String sourceName() {

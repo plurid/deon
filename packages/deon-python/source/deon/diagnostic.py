@@ -14,7 +14,7 @@ from typing import Optional
 
 
 class DiagnosticCode:
-    """The fourteen codes, and there are no others.
+    """The fifteen codes, and there are no others.
 
     The catalogue in `spec/diagnostics.md` is normative and closed. The spelling of each is the wire
     name: it appears in a conformance fixture, in a tool's output, and in whatever a host logs, so it
@@ -34,6 +34,7 @@ class DiagnosticCode:
     CAPABILITY_DENIED = "DEON_CAPABILITY_DENIED"
     RESOURCE_IO = "DEON_RESOURCE_IO"
     RESOURCE_FORMAT = "DEON_RESOURCE_FORMAT"
+    LIMIT_EXCEEDED = "DEON_LIMIT_EXCEEDED"
     LINT_DUPLICATE_KEY = "DEON_LINT_DUPLICATE_KEY"
 
 

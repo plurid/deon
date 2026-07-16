@@ -19,6 +19,7 @@ The code, the severity, and the position are normative: two implementations give
 | `DEON_CAPABILITY_DENIED` | Filesystem or network operation is not permitted |
 | `DEON_RESOURCE_IO` | Resource cannot be read or returned a non-success status |
 | `DEON_RESOURCE_FORMAT` | Imported resource encoding or content is invalid |
+| `DEON_LIMIT_EXCEEDED` | A configurable resource budget — such as expansion — was exceeded |
 | `DEON_LINT_DUPLICATE_KEY` | Explicit map key is written more than once |
 
 All codes except `DEON_LINT_DUPLICATE_KEY` have error severity. A parser throws or returns one `DeonError` containing every diagnostic it could collect without performing unsafe or ambiguous evaluation. A linter returns diagnostics without throwing. CLI lint exits successfully for warnings unless `--warnings-as-errors` is set.

@@ -137,5 +137,8 @@
     {"id": "unicode-escape-max-scalar-value", "source": "{ a \\u{10ffff} }"},
     {"id": "unicode-escape-at-value-start", "source": "{ a \\u{1b}tail }"},
     {"id": "unquoted-backslash-two-spaces-keeps-one", "source": "{ a \\  }"},
-    {"id": "unquoted-backslash-tab-is-content", "source": "{ a \\\t }"}
+    {"id": "unquoted-backslash-tab-is-content", "source": "{ a \\\t }"},
+    {"id": "expansion-budget-exceeded", "source": "l0 lol\nl1 #{l0}#{l0}\nl2 #{l1}#{l1}\nl3 #{l2}#{l2}\nl4 #{l3}#{l3}\nl5 #{l4}#{l4}\nl6 #{l5}#{l5}\nl7 #{l6}#{l6}\nl8 #{l7}#{l7}\nl9 #{l8}#{l8}\nl10 #{l9}#{l9}\nl11 #{l10}#{l10}\nl12 #{l11}#{l11}\nl13 #{l12}#{l12}\nl14 #{l13}#{l13}\nl15 #{l14}#{l14}\nl16 #{l15}#{l15}\n{ boom #{l16} }", "budgets": {"expansion": "1000"}},
+    {"id": "expansion-budget-allows-under-limit", "source": "l0 lol\nl1 #{l0}#{l0}\nl2 #{l1}#{l1}\nl3 #{l2}#{l2}\nl4 #{l3}#{l3}\n{ boom #{l4} }", "budgets": {"expansion": "1000"}},
+    {"id": "expansion-budget-high-limit-allows", "source": "l0 lol\nl1 #{l0}#{l0}\nl2 #{l1}#{l1}\nl3 #{l2}#{l2}\nl4 #{l3}#{l3}\nl5 #{l4}#{l4}\nl6 #{l5}#{l5}\nl7 #{l6}#{l6}\nl8 #{l7}#{l7}\nl9 #{l8}#{l8}\nl10 #{l9}#{l9}\nl11 #{l10}#{l10}\nl12 #{l11}#{l11}\nl13 #{l12}#{l12}\nl14 #{l13}#{l13}\nl15 #{l14}#{l14}\nl16 #{l15}#{l15}\n{ boom #{l16} }", "budgets": {"expansion": "10000000"}}
 ]

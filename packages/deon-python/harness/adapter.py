@@ -28,6 +28,11 @@ def options_of(request: dict) -> ParseOptions:
     options.allow_filesystem = flag(request, "allowFilesystem")
     options.allow_network = flag(request, "allowNetwork")
 
+    # A configurable resource budget arrives as a string count under `budgets` (specification 11).
+    # Absent or 0 leaves the evaluator on its default expansion limit.
+    budgets = request.get("budgets") or {}
+    options.expansion = int(budgets.get("expansion") or 0)
+
     # The contracts of specification 14.1. They arrive through `files` like every other resource, so
     # no adapter reaches a disk.
     options.datasign_files = list(request.get("datasignFiles") or [])

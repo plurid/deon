@@ -41,6 +41,10 @@
     } from '../Scanner';
 
     import Token from '../Token';
+
+    import {
+        TokenType,
+    } from '../../data/enumerations';
     // #endregion external
 // #endregion imports
 
@@ -69,6 +73,7 @@ type RuntimeOptions = Required<Pick<PartialDeonParseOptions,
     | 'allowFilesystem'
     | 'allowNetwork'
     | 'environment'
+    | 'expansion'
     | 'resources'
     | 'resourceStack'
 >> & PartialDeonParseOptions;
@@ -247,6 +252,14 @@ class Evaluator {
     private readonly resolving: string[] = [];
     private readonly calling: string[] = [];
 
+    /**
+     * The running cost of substitution, in code points (specification 11). Interpolation and string
+     * spread are the only ways a value grows past what the document literally wrote, so counting both
+     * here — and nothing else — is what bounds the doubling blow-up by which a few lines assemble
+     * gigabytes.
+     */
+    private expansion = 0;
+
     constructor(
         private readonly document: DocumentNode,
         options: RuntimeOptions,
@@ -356,7 +369,12 @@ class Evaluator {
 
             // A string spreads into a list as its code points.
             if (typeof spread === 'string') {
-                result.push(...Array.from(spread));
+                const points = Array.from(spread);
+
+                // Copying those code points is expansion, counted against the budget (specification 11).
+                this.charge(points.length);
+
+                result.push(...points);
             } else if (Array.isArray(spread)) {
                 result.push(...spread.map(clone));
             } else {
@@ -578,6 +596,30 @@ class Evaluator {
 
 
     /**
+     * Charges a substitution against the expansion budget and stops the moment it is overrun
+     * (specification 11). The check comes after every addition, so the very code point that crosses
+     * the limit ends evaluation — the runaway value is never finished, which is the whole point of a
+     * budget rather than a size check on the result. The stop is anchored at the document start, a
+     * synthetic span at UTF-8 byte 0, line 1, column 1: the blow-up has no single culprit token, so
+     * it is reported against the document as a whole.
+     */
+    private charge(
+        points: number,
+    ) {
+        this.expansion += points;
+
+        if (this.expansion > this.options.expansion) {
+            deonError(
+                DiagnosticCode.LIMIT_EXCEEDED,
+                `Expansion budget exceeded: substitution produced more than `
+                    + `${this.options.expansion} code points.`,
+                new Token(TokenType.EOF, '', null, 1, 1, 0, 0, this.options.sourceName ?? '<memory>'),
+            );
+        }
+    }
+
+
+    /**
      * Every `#{reference}` is replaced. The sentinel left behind by an escaped opener is turned
      * back into text last, so that what it stands for is never itself resolved.
      */
@@ -598,6 +640,11 @@ class Evaluator {
                     token,
                 );
             }
+
+            // The substituted code points are expansion — text the document did not write literally —
+            // and the budget counts exactly these. Charging inside the replacement stops a runaway
+            // before the surrounding output string is assembled.
+            this.charge(Array.from(value).length);
 
             return value;
         });
@@ -906,6 +953,11 @@ class Interpreter {
             environment: input.environment ?? deonParseOptions.environment,
             resources: input.resources ?? deonParseOptions.resources,
             resourceStack: input.resourceStack ?? deonParseOptions.resourceStack,
+            // Absent or zero means the host default, so the doubling blow-up is bounded even when no
+            // budget is named (specification 11).
+            expansion: input.expansion && input.expansion > 0
+                ? input.expansion
+                : deonParseOptions.expansion,
         };
     }
 

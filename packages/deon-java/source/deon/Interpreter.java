@@ -34,11 +34,21 @@ final class Interpreter {
     private String sourceName;
     private String filebase;
 
+    /** The expansion budget a host that names none receives: 2^26 code points (specification 11). */
+    static final long DEFAULT_EXPANSION = 1L << 26;
+
+    // The billion-laughs guard: code points produced by substitution so far, and the ceiling beyond
+    // which evaluation stops with DEON_LIMIT_EXCEEDED. The counter is this evaluation's own — an import
+    // is a fresh document with its own budget, exactly as it is a fresh set of declarations.
+    private final long expansionLimit;
+    private long expansion = 0;
+
     Interpreter(ParseOptions options, Set<String> opened, String sourceName, String filebase) {
         this.options = options;
         this.opened = opened;
         this.sourceName = sourceName;
         this.filebase = filebase;
+        this.expansionLimit = options.expansion > 0 ? options.expansion : DEFAULT_EXPANSION;
     }
 
     void register(List<Declaration> declarationList) {
@@ -57,6 +67,22 @@ final class Interpreter {
 
     Object run(Node root) {
         return eval(root);
+    }
+
+    /**
+     * Account {@code codePoints} produced by substitution — an interpolation resolved into a string, a
+     * string spread copied as code points (section 7) — against the expansion budget, and stop the moment
+     * the running total exceeds it (specification 11). This is the billion-laughs guard: a document that
+     * doubles a value at each step is refused before it assembles the gigabytes, reported at the start of
+     * the document rather than at any one interpolation. A plain literal is the size its author wrote and
+     * is never charged.
+     */
+    private void charge(long codePoints) {
+        expansion += codePoints;
+        if (expansion > expansionLimit) {
+            throw new DeonException(
+                Code.LIMIT_EXCEEDED, "The document's expansion budget was exceeded.", Span.head(sourceName));
+        }
     }
 
     // #region evaluation
@@ -96,6 +122,7 @@ final class Interpreter {
             if (!(value instanceof String s)) {
                 throw new DeonException(Code.TYPE_MISMATCH, "An interpolation must resolve to a string.", n.span);
             }
+            charge(s.codePointCount(0, s.length()));
             b.append(s);
         }
         return b.toString();
@@ -109,6 +136,7 @@ final class Interpreter {
             }
         } else if (value instanceof String s) {
             // A string spreads into a map using decimal character indices (section 7).
+            charge(s.codePointCount(0, s.length()));
             int index = 0;
             for (int i = 0; i < s.length(); ) {
                 int cp = s.codePointAt(i);
@@ -126,6 +154,7 @@ final class Interpreter {
         if (value instanceof List<?> list) {
             dest.addAll(list);
         } else if (value instanceof String s) {
+            charge(s.codePointCount(0, s.length()));
             for (int i = 0; i < s.length(); ) {
                 int cp = s.codePointAt(i);
                 dest.add(new String(Character.toChars(cp)));

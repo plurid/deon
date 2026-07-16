@@ -12,7 +12,7 @@ from typing import Optional
 
 from .diagnostic import DiagnosticCode, Span, error
 from .jsonread import read_json
-from .options import ParseOptions
+from .options import DEFAULT_EXPANSION, ParseOptions
 from .parser import MAX_DEPTH, parse_syntax
 from .scanner import escaped_interpolation_end, unicode_scalar
 from .resources import (
@@ -51,6 +51,35 @@ class Interpreter:
     def __init__(self, options: ParseOptions, loader) -> None:
         self.options = options
         self.loader = loader
+
+        #: Code points produced by substitution so far, across this document and everything it imports
+        #: — one counter for the whole evaluation, so a blow-up split across imports is still caught.
+        self.expansion = 0
+
+        #: The ceiling it may reach. Absent or 0 is the default (specification 11); a host names a
+        #: smaller number to refuse a document sooner.
+        self.expansion_limit = options.expansion if options.expansion > 0 else DEFAULT_EXPANSION
+
+    def charge(self, produced: int) -> None:
+        """Count the code points a substitution just produced, and stop before the gigabytes.
+
+        A tiny document can assemble gigabytes by interpolation doubling (`l1 #{l0}#{l0}`, and so on),
+        which is a denial of service; the counter bounds it. The check is *after* each addition and the
+        moment the count is exceeded evaluation ends, so the assembly never runs to completion. The
+        fault is the document as a whole rather than any character inside it, so it is anchored at the
+        document start — byte 0, line 1, column 1 (specification 11).
+        """
+        self.expansion += produced
+
+        if self.expansion > self.expansion_limit:
+            raise error(
+                DiagnosticCode.LIMIT_EXCEEDED,
+                (
+                    "Substitution produced more than the expansion budget of "
+                    f"{self.expansion_limit} code points."
+                ),
+                Span.head(self.options.source_name),
+            )
 
     # #region entry
     def run(self, document: Document) -> Value:
@@ -242,7 +271,10 @@ class Evaluator:
             return
 
         if isinstance(value, str):
-            # A string spreads into a map by decimal character index (specification 7).
+            # A string spreads into a map by decimal character index (specification 7); every code
+            # point copied counts against the budget, exactly as an interpolation's would.
+            self.interpreter.charge(len(value))
+
             for index, character in enumerate(value):
                 into.insert(str(index), character)
 
@@ -262,7 +294,9 @@ class Evaluator:
             return
 
         if isinstance(value, str):
-            # A string spreads into a list as Unicode code points (specification 7).
+            # A string spreads into a list as Unicode code points (specification 7); the count copied
+            # is charged against the budget before it is copied.
+            self.interpreter.charge(len(value))
             into.extend(list(value))
             return
 
@@ -458,8 +492,12 @@ class Evaluator:
             raise failure
 
         # A cycle is reported where it closes, which is inside the resource that closed it, so it is
-        # left where it is. Everything else is answered at the import.
-        return error(failure.code, failure.message, failure.span if failure.code == DiagnosticCode.CYCLE else span)
+        # left where it is. An exceeded budget is a fault of the evaluation as a whole and stays
+        # anchored at the document start (specification 11), not moved onto the import. Everything else
+        # is answered at the import.
+        kept = failure.code in (DiagnosticCode.CYCLE, DiagnosticCode.LIMIT_EXCEEDED)
+
+        return error(failure.code, failure.message, failure.span if kept else span)
     # #endregion resources
 
     # #region strings and calls
@@ -475,6 +513,10 @@ class Evaluator:
                 f"An interpolation must resolve to a string, and '{reference}' does not.",
                 token.span(),
             )
+
+        # Each `#{…}` substitutes the code points of the resolved string; that is what a blow-up
+        # doubles, so it is what the budget counts (specification 11).
+        self.interpreter.charge(len(value))
 
         return value
 

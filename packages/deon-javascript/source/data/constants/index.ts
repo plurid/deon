@@ -34,6 +34,13 @@ const defaultCacheDuration = 1_000 * 60 * 60;
 const NETWORK_TIMEOUT = 30_000;
 
 
+// The default expansion budget: the number of code points substitution may produce before evaluation
+// is stopped as a runaway (specification 11). 2^26 is large enough that an ordinary document never
+// approaches it — the existing tests do not come near — yet small enough that a doubling blow-up is
+// caught in well under a second rather than after gigabytes have been assembled.
+const DEON_DEFAULT_EXPANSION = 2 ** 26;
+
+
 const deonParseOptions: DeonParseOptions = {
     sourceName: '<memory>',
     filebase: '',
@@ -50,6 +57,7 @@ const deonParseOptions: DeonParseOptions = {
     environment: {},
     resources: {},
     resourceStack: [],
+    expansion: DEON_DEFAULT_EXPANSION,
 };
 
 
@@ -93,6 +101,8 @@ export {
     defaultCacheDuration,
 
     NETWORK_TIMEOUT,
+
+    DEON_DEFAULT_EXPANSION,
 
     deonParseOptions,
     deonStrigifyOptions,

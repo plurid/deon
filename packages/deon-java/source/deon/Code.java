@@ -1,7 +1,7 @@
 package deon;
 
 /**
- * The fourteen diagnostic codes, and there are no others (spec/diagnostics.md). The catalogue is
+ * The fifteen diagnostic codes, and there are no others (spec/diagnostics.md). The catalogue is
  * closed. Each carries its wire name — the string that appears in a fixture, a tool's output, and a
  * host's log — so the six implementations spell a fault the same way.
  */
@@ -19,6 +19,7 @@ public enum Code {
     CAPABILITY_DENIED("DEON_CAPABILITY_DENIED"),
     RESOURCE_IO("DEON_RESOURCE_IO"),
     RESOURCE_FORMAT("DEON_RESOURCE_FORMAT"),
+    LIMIT_EXCEEDED("DEON_LIMIT_EXCEEDED"),
     LINT_DUPLICATE_KEY("DEON_LINT_DUPLICATE_KEY");
 
     private final String wire;

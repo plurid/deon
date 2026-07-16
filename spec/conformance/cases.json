@@ -174,7 +174,7 @@
             "id": "unquoted-backslash-space-is-content",
             "required": true,
             "source": "{ a \\ }",
-            "canonical": "{\n    a '\\ '\n}\n"
+            "canonical": "{\n    a '\\\\ '\n}\n"
         },
         {
             "id": "canonical-round-trip-boundary-whitespace",

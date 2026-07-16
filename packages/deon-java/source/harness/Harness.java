@@ -168,6 +168,7 @@ public final class Harness {
         o.allowNetwork = str(request, "allowNetwork", "false").equals("true");
         o.datasignFiles = stringList(request, "datasignFiles");
         o.datasignMap = stringMap(request, "datasignMap");
+        o.expansion = budget(request, "expansion");
         return o;
     }
 
@@ -208,6 +209,23 @@ public final class Harness {
     private static String str(DeonMap m, String key, String fallback) {
         Object v = m.get(key);
         return v instanceof String s ? s : fallback;
+    }
+
+    /** A numeric budget under {@code budgets} (a string count), or 0 when absent or not a number. */
+    private static long budget(DeonMap request, String name) {
+        Object raw = request.get("budgets");
+        if (!(raw instanceof DeonMap budgets)) {
+            return 0;
+        }
+        Object v = budgets.get(name);
+        if (v instanceof String s) {
+            try {
+                return Long.parseLong(s);
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private static Map<String, String> stringMap(DeonMap m, String key) {

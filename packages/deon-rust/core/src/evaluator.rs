@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use crate::diagnostic::{err, DResult, DeonError, Diagnostic, DiagnosticCode, Span};
-use crate::options::ParseOptions;
+use crate::options::{ParseOptions, DEFAULT_EXPANSION};
 use crate::scanner::{parse_reference, ESCAPED_INTERPOLATION};
 use crate::syntax::{
     Access, CallArgument, Declaration, Document, Leaflink, ListItem, MapItem, Reference, ValueNode,
@@ -29,6 +29,11 @@ pub struct Evaluator<'a> {
     cache: HashMap<String, Value>,
     resolving: Vec<String>,
     calling: Vec<String>,
+    /// The running total of Unicode code points produced by substitution — every interpolation and
+    /// every string spread, summed across the whole evaluation and its recursion. Shared because it
+    /// lives on `self`, so the doubling that would assemble gigabytes is caught while it climbs
+    /// rather than after it lands (specification 11).
+    expanded: u64,
 }
 
 impl<'a> Evaluator<'a> {
@@ -70,6 +75,7 @@ impl<'a> Evaluator<'a> {
             cache: HashMap::new(),
             resolving: Vec::new(),
             calling: Vec::new(),
+            expanded: 0,
         })
     }
 
@@ -135,10 +141,15 @@ impl<'a> Evaluator<'a> {
                 ListItem::Value(node) => result.push(self.value(node, locals)?),
                 ListItem::Spread { reference, span } => {
                     match self.reference(reference, span, locals)? {
-                        // A string spreads into a list as its code points.
-                        Value::String(spread) => result.extend(
-                            spread.chars().map(|character| Value::string(character.to_string())),
-                        ),
+                        // A string spreads into a list as its code points, each one copied and so
+                        // each one counted against the expansion budget (specification 11).
+                        Value::String(spread) => {
+                            self.expand(spread.chars().count())?;
+
+                            result.extend(
+                                spread.chars().map(|character| Value::string(character.to_string())),
+                            );
+                        }
                         Value::List(spread) => result.extend(spread),
                         Value::Map(_) => {
                             return err(
@@ -364,6 +375,31 @@ impl<'a> Evaluator<'a> {
         Ok(value)
     }
 
+    /// Records that substitution produced `produced` code points, and stops the evaluation the
+    /// moment the running total *exceeds* the host's expansion budget — the guard against a
+    /// billion-laughs blow-up, where interpolation doubling turns a tiny document into gigabytes
+    /// (specification 11). The error is anchored at the document start, because the fault is the
+    /// document as a whole rather than any one interpolation within it.
+    fn expand(&mut self, produced: usize) -> DResult<()> {
+        self.expanded = self.expanded.saturating_add(produced as u64);
+
+        // Absent or zero means the default; the host cannot dial the budget down to nothing.
+        let limit = match self.options.expansion {
+            0 => DEFAULT_EXPANSION,
+            set => set,
+        };
+
+        if self.expanded > limit {
+            return Err(DeonError::new(
+                DiagnosticCode::LimitExceeded,
+                format!("Expansion budget of {limit} code points exceeded."),
+                Span::head(self.options.source_name.clone()),
+            ));
+        }
+
+        Ok(())
+    }
+
     /// Every `#{reference}` is replaced. The sentinel left behind by an escaped opener is turned
     /// back into text last, so that what it stands for is never itself resolved.
     fn interpolate(&mut self, input: &str, span: &Span, locals: &Locals) -> DResult<Value> {
@@ -388,6 +424,8 @@ impl<'a> Evaluator<'a> {
                     span,
                 );
             };
+
+            self.expand(value.chars().count())?;
 
             output.push_str(&value);
             read = end;
