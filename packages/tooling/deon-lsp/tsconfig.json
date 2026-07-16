@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+
+        // `Bundler` rather than `NodeNext`, because `@plurid/deon` ships one `.d.ts` for both of its
+        // builds. Under `NodeNext` that file is read as CommonJS, and the default import of a
+        // CommonJS module is its namespace rather than its class, so `new Deon()` would not typecheck
+        // against a package that is perfectly well-formed at runtime. This mirrors `deon-mcp`.
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+
+        "outDir": "distribution",
+        "rootDir": "source",
+        "strict": true,
+        "declaration": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": ["source/**/*.ts"]
+}

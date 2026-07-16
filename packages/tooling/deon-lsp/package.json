@@ -1,0 +1,36 @@
+{
+    "name": "@plurid/deon-lsp",
+    "version": "0.0.0-1",
+    "description": "A zero-dependency Deon language server: live diagnostics, document symbols, hover, go-to-definition, and completion over the Language Server Protocol",
+    "license": "DEL",
+    "homepage": "https://github.com/plurid/deon",
+    "repository": "https://github.com/plurid/deon",
+    "type": "module",
+    "main": "distribution/index.js",
+    "types": "distribution/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./distribution/index.d.ts",
+            "import": "./distribution/index.js"
+        }
+    },
+    "bin": {
+        "deon-lsp": "distribution/cli.js"
+    },
+    "files": [
+        "distribution"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "npm run build && node --test tests/*.test.js",
+        "start": "node distribution/cli.js"
+    },
+    "dependencies": {
+        "@plurid/deon": "file:../../deon-javascript"
+    },
+    "devDependencies": {
+        "@types/node": "^22",
+        "typescript": "^5.6.0"
+    }
+}
