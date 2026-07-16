@@ -175,7 +175,7 @@ export const render = (
             name: 'prompt',
             value: {
                 type: 'call',
-                reference: [name],
+                reference: { head: name, access: [] },
                 arguments: callArguments,
                 token,
             },
