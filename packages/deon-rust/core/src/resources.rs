@@ -9,7 +9,11 @@ use crate::url::Url;
 
 /// What a loader hands back.
 pub struct Fetched {
-    pub data: String,
+    /// The bytes as they were read. A loader answers *whether* a resource could be reached, not
+    /// whether what it reached is text: bytes that are not valid UTF-8 were read successfully, so
+    /// their encoding is a format fault the interpreter raises when it decodes them, not an I/O one
+    /// the loader reports by handing back nothing (specification 1, 9).
+    pub data: Vec<u8>,
 
     /// `.deon`, `.json`, or the empty string for an injection, which keeps its target exactly.
     pub filetype: String,
@@ -79,7 +83,12 @@ impl ResourceLoader for Filesystem {
         }
 
         let file = resolve_mapped_absolute_path(target, &options.absolute_paths);
-        let data = std::fs::read_to_string(&file).ok()?;
+
+        // The bytes, as they are. A file that is not there or may not be read is `None`, which the
+        // interpreter turns into an I/O failure; a file that is there but is not UTF-8 is read
+        // successfully here and judged a format fault when the interpreter decodes it (specification
+        // 1, 9). Reading to a `String` would collapse the two into one indistinguishable `None`.
+        let data = std::fs::read(&file).ok()?;
 
         Some(Fetched {
             data,

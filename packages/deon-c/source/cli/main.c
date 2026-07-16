@@ -115,6 +115,18 @@ static char *read_raw(const char *path, size_t *out_len) {
     return out;
 }
 
+/* utf8_valid is defined in the library's utf8.c; the CLI reads bytes itself, so it makes the same
+   check the library's resource loader does — a document whose encoding is not UTF-8 is a
+   resource-format fault at 1:1, distinct from a file that could not be read at all. */
+bool utf8_valid(const char *s, size_t len);
+
+static int reject_non_utf8(const char *resolved, const char *source, size_t len) {
+    if (utf8_valid(source, len)) return 0;
+    fprintf(stderr, "%s:1:1 error %s The document is not valid UTF-8.\n",
+            resolved, deon_code_name(DEON_RESOURCE_FORMAT));
+    return 1;
+}
+
 static int write_file(const char *path, const char *data, size_t len) {
     FILE *f = fopen(path, "wb");
     if (!f) return -1;
@@ -287,6 +299,7 @@ static int cmd_evaluate(char **args, int n) {
         free(resolved);
         return 1;
     }
+    if (reject_non_utf8(resolved, source, len)) { free(source); free(resolved); return 1; }
 
     env_map env = {0};
     deon_pair *pairs; size_t pairs_len;
@@ -573,6 +586,7 @@ static int cmd_lint(char **args, int n) {
             free(resolved);
             return 1;
         }
+        if (reject_non_utf8(resolved, source, len)) { free(source); free(resolved); return 1; }
 
         const deon_diagnostic *lints;
         size_t lint_len;

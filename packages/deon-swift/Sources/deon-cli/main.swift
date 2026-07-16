@@ -125,6 +125,17 @@ private func readRaw(_ path: String) -> [UInt8]? {
     return bytes
 }
 
+/// The bytes were read; a document whose encoding is not UTF-8 is a resource-format fault at 1:1,
+/// distinct from a file that could not be read at all — the same check the C resource loader makes.
+/// Returns true (and prints the diagnostic) when the bytes are not valid UTF-8.
+private func rejectNonUTF8(_ resolved: String, _ bytes: [UInt8]) -> Bool {
+    if String(validating: bytes, as: UTF8.self) != nil {
+        return false
+    }
+    err("\(resolved):1:1 error \(String(cString: deon_code_name(DEON_RESOURCE_FORMAT))) The document is not valid UTF-8.\n")
+    return true
+}
+
 @discardableResult
 private func writeFile(_ path: String, _ bytes: [UInt8]) -> Bool {
     guard let f = fopen(path, "wb") else {
@@ -297,6 +308,7 @@ private func commandEvaluate(_ args: [String]) -> Int32 {
         err("\(resolved):1:1 error \(String(cString: deon_code_name(DEON_RESOURCE_IO))) Unable to read '\(resolved)'.\n")
         return 1
     }
+    if rejectNonUTF8(resolved, source) { return 1 }
 
     let document = Deon.parseWithBytes(source, evaluationOptions(args, args[0], processEnvironment()))
     if !document.ok {
@@ -608,6 +620,7 @@ private func commandLint(_ args: [String]) -> Int32 {
             err("\(resolved):1:1 error \(String(cString: deon_code_name(DEON_RESOURCE_IO))) Unable to read '\(resolved)'.\n")
             return 1
         }
+        if rejectNonUTF8(resolved, source) { return 1 }
 
         for diagnostic in Deon.lintBytes(source, resolved) {
             warned = true

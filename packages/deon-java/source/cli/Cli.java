@@ -1,6 +1,7 @@
 package cli;
 
 import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -154,6 +155,9 @@ public final class Cli {
         String source;
         try {
             source = Files.readString(Path.of(resolved));
+        } catch (CharacterCodingException e) {
+            System.err.printf("%s:1:1 error DEON_RESOURCE_FORMAT '%s' is not valid UTF-8.%n", resolved, resolved);
+            return 1;
         } catch (IOException e) {
             System.err.printf("%s:1:1 error DEON_RESOURCE_IO Unable to read '%s'.%n", resolved, resolved);
             return 1;
@@ -396,6 +400,9 @@ public final class Cli {
             String source;
             try {
                 source = Files.readString(Path.of(resolved));
+            } catch (CharacterCodingException e) {
+                System.err.printf("%s:1:1 error DEON_RESOURCE_FORMAT '%s' is not valid UTF-8.%n", resolved, resolved);
+                return 1;
             } catch (IOException e) {
                 System.err.printf("%s:1:1 error DEON_RESOURCE_IO Unable to read '%s'.%n", resolved, resolved);
                 return 1;

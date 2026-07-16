@@ -8,7 +8,7 @@ When two normative parts appear to conflict, the order of precedence is: the pro
 
 The key words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are to be interpreted as requirements on a conforming implementation.
 
-Deon source is UTF-8 text. A document has the media type `application/deon` and normally uses the `.deon` filename extension.
+Deon source is UTF-8 text. A document has the media type `application/deon` and normally uses the `.deon` filename extension. Wherever an implementation accepts bytes rather than text — the initial document read from a file, an imported or injected resource, a network response, a datasign contract — input that is not valid UTF-8 is a `DEON_RESOURCE_FORMAT` error, distinct from the `DEON_RESOURCE_IO` of bytes that could not be read at all; the bytes were read, and their encoding is the fault. It is reported at the start of the initial document (1:1), or, for a resource, at the statement that imported it (section 11.2).
 
 ## 2. Data model
 
@@ -136,7 +136,7 @@ The `absolutePaths` option maps logical absolute targets to host paths. Exact ke
 
 The `authorization` option is keyed by a lowercase exact hostname. An explicit `with` value takes precedence. A non-empty token is sent as `Authorization: Bearer <token>`; an empty token sends no header. Tokens MUST NOT appear in diagnostics or cache identifiers in plain text.
 
-Non-success HTTP status, invalid UTF-8, invalid imported syntax, denied capabilities, and I/O errors fail the complete evaluation. Canonical resource identifiers participate in cycle detection. Authenticated cache entries MUST be separated by a digest of the credential.
+Non-success HTTP status, invalid UTF-8, invalid imported syntax, denied capabilities, and I/O errors each fail the complete evaluation. A resource whose bytes are not valid UTF-8 is `DEON_RESOURCE_FORMAT`, the same code as an unsupported import extension or malformed JSON — the resource was read, and its content is the problem — and distinct from the `DEON_RESOURCE_IO` of a target that could not be read or returned a non-success status. Canonical resource identifiers participate in cycle detection. Authenticated cache entries MUST be separated by a digest of the credential.
 
 Calling a raw-text parser grants neither filesystem nor network access. `parseFile` grants filesystem access for its initial file and nested filesystem imports. Network access always requires an explicit option. A pure evaluator never grants filesystem access.
 

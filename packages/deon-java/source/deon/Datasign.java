@@ -59,11 +59,16 @@ final class Datasign {
             throw new DeonException(Code.CAPABILITY_DENIED,
                     "Reading the datasign file '" + file + "' requires filesystem access.", Span.head(SOURCE));
         }
+        byte[] bytes;
         try {
-            return new String(Files.readAllBytes(Path.of(target)), StandardCharsets.UTF_8);
+            bytes = Files.readAllBytes(Path.of(target));
         } catch (IOException e) {
             throw new DeonException(Code.RESOURCE_IO, "Unable to read the datasign file '" + file + "'.", Span.head(SOURCE));
         }
+        if (!Interpreter.isValidUtf8(bytes)) {
+            throw new DeonException(Code.RESOURCE_FORMAT, "The datasign file '" + file + "' is not valid UTF-8.", Span.head(SOURCE));
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     private static final Pattern ENTITY = Pattern.compile("^\\s*data\\s+(\\w+)\\s*\\{");

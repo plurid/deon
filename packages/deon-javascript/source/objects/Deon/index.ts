@@ -32,6 +32,7 @@
 
     import {
         DiagnosticCode,
+        decodeResource,
         resourceError,
     } from '../Diagnostic';
 
@@ -216,22 +217,30 @@ class Deon {
     private async readSource(
         filepath: string,
     ): Promise<string> {
+        let bytes: Uint8Array;
+
         try {
-            return await fs.readFile(filepath, 'utf8');
+            bytes = await fs.readFile(filepath);
         } catch (error: unknown) {
             this.unreadable(filepath, error);
         }
+
+        return decodeResource(bytes, filepath);
     }
 
 
     private readSourceSynchronous(
         filepath: string,
     ): string {
+        let bytes: Uint8Array;
+
         try {
-            return fsSync.readFileSync(filepath, 'utf8');
+            bytes = fsSync.readFileSync(filepath);
         } catch (error: unknown) {
             this.unreadable(filepath, error);
         }
+
+        return decodeResource(bytes, filepath);
     }
 
 
@@ -479,8 +488,10 @@ class Deon {
             return virtual;
         }
 
+        let bytes: Uint8Array;
+
         try {
-            return await fs.readFile(target, 'utf8');
+            bytes = await fs.readFile(target);
         } catch {
             return datasignError(
                 DiagnosticCode.RESOURCE_IO,
@@ -488,6 +499,8 @@ class Deon {
                 file,
             );
         }
+
+        return decodeResource(bytes, file);
     }
 
 
@@ -501,8 +514,10 @@ class Deon {
             return virtual;
         }
 
+        let bytes: Uint8Array;
+
         try {
-            return fsSync.readFileSync(target, 'utf8');
+            bytes = fsSync.readFileSync(target);
         } catch {
             return datasignError(
                 DiagnosticCode.RESOURCE_IO,
@@ -510,6 +525,8 @@ class Deon {
                 file,
             );
         }
+
+        return decodeResource(bytes, file);
     }
 
 

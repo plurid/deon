@@ -420,13 +420,29 @@ impl<'a> Interpreter<'a> {
             return self.unavailable(resource, options, &target);
         };
 
+        // The bytes were reached; whether they are text is a separate question, and the wrong answer
+        // is a format fault rather than the I/O one that failing to reach them would be. It is judged
+        // here, before the JSON and the extension checks below and alongside them, because all three
+        // are the same kind of fault — what was fetched, not whether it could be — and all point at
+        // the statement that reached it (specification 1, 9).
+        let data = match String::from_utf8(fetched.data) {
+            Ok(data) => data,
+            Err(_) => {
+                return err(
+                    DiagnosticCode::ResourceFormat,
+                    format!("The resource '{}' is not valid UTF-8.", resource.target),
+                    &resource.span,
+                );
+            }
+        };
+
         // An injection keeps its target exactly, without parsing it.
         if resource.kind == ResourceKind::Inject {
-            return Ok(Value::String(fetched.data));
+            return Ok(Value::String(data));
         }
 
         if fetched.filetype == ".json" {
-            return match parse_json(&fetched.data) {
+            return match parse_json(&data) {
                 Ok(value) => Ok(value),
                 Err(_) => err(
                     DiagnosticCode::ResourceFormat,
@@ -444,7 +460,7 @@ impl<'a> Interpreter<'a> {
             );
         }
 
-        self.import(resource, options, fetched)
+        self.import(resource, options, data, fetched.filebase, fetched.resource_id)
     }
 
     /// A Deon resource is a document in its own right, so it is read the same way, with the stack it
@@ -453,9 +469,11 @@ impl<'a> Interpreter<'a> {
         &self,
         resource: &Resource,
         options: &ParseOptions,
-        fetched: Fetched,
+        data: String,
+        filebase: String,
+        resource_id: String,
     ) -> DResult<Value> {
-        let id = fetched.resource_id;
+        let id = resource_id;
 
         if options.resource_stack.contains(&id) {
             let mut path = options.resource_stack.clone();
@@ -470,14 +488,14 @@ impl<'a> Interpreter<'a> {
 
         let mut nested = options.clone();
         nested.source_name = id.clone();
-        nested.filebase = fetched.filebase;
+        nested.filebase = filebase;
         nested.resource_stack.push(id.clone());
 
         // A fault inside the imported document is reported at the statement that imported it (§11.2):
         // the document a caller is holding is the importing one, and the line they can go and look at
         // is the import. A cycle keeps its own span — it is reported at the reference that closes it,
         // not at every statement it was reached through.
-        Scanner::new(&fetched.data, &id)
+        Scanner::new(&data, &id)
             .scan()
             .and_then(|tokens| Parser::new(tokens, &id).parse())
             .and_then(|document| self.interpret(&document, &nested))
@@ -508,7 +526,9 @@ impl<'a> Interpreter<'a> {
             .or_else(|| options.resources.get(&resource.target))?;
 
         Some(Fetched {
-            data: data.clone(),
+            // A resource handed over in memory is already text; it becomes bytes here only so every
+            // loaded resource reaches the decoder the same way, and it can never fail that decode.
+            data: data.clone().into_bytes(),
             filetype: extension(&mapped, resource.kind),
             filebase: crate::resources::directory_of(&mapped).to_string(),
             resource_id: mapped,

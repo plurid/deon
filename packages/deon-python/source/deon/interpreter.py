@@ -20,6 +20,7 @@ from .resources import (
     IMPORT,
     JSON_EXTENSION,
     Fetched,
+    ResourceMalformed,
     ResourceUnreadable,
     extension_of,
     is_url,
@@ -105,6 +106,15 @@ class Interpreter:
 
         try:
             fetched = self.loader.load(mapped, declaration.kind, options, token)
+        except ResourceMalformed as failure:
+            # It was read, and its bytes are not valid UTF-8. The encoding is the fault and not the
+            # I/O (specification 1, 9), so it is a format error — reported here, at the statement that
+            # imported it, exactly as an invalid-JSON resource is.
+            raise error(
+                DiagnosticCode.RESOURCE_FORMAT,
+                f"The resource '{declaration.target}' is not valid UTF-8: {failure}",
+                span,
+            ) from None
         except ResourceUnreadable as failure:
             # It was allowed, and it failed. That is a different thing from never having been allowed,
             # and a caller reading the diagnostic has to be able to tell them apart.

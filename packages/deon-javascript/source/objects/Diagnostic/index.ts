@@ -162,4 +162,37 @@ export const resourceError: (
     message,
     new Token(TokenType.EOF, '', null, 1, 1, 0, 0, source),
 );
+
+
+/**
+ * Bytes read from a resource, decoded as UTF-8 and refused if they are not.
+ *
+ * A read that succeeded returned bytes, and bytes are not yet a document: their encoding is the last
+ * thing that can be wrong before the scanner is ever handed them. A lenient reader would paper over
+ * an invalid byte with U+FFFD and pass on a mangled document; a fatal `TextDecoder` refuses it, and
+ * the refusal is a `DEON_RESOURCE_FORMAT` and not a `DEON_RESOURCE_IO` — the bytes *were* read, so
+ * this is a fault of format and not of access (specification 1, 9). There is no token to point at,
+ * so it is anchored at the start of the resource, exactly as `resourceError` anchors anything a
+ * document has not yet been made from.
+ */
+export const decodeResource: (
+    bytes: Uint8Array,
+    source: string,
+) => string = (
+    bytes,
+    source,
+) => {
+    try {
+        // `fatal` refuses invalid bytes rather than papering over them with U+FFFD; `ignoreBOM` keeps
+        // a leading byte-order mark as U+FEFF, exactly as the lenient reader this replaces did, so a
+        // valid document decodes byte-for-byte as before and only an invalid one now fails.
+        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch {
+        return resourceError(
+            DiagnosticCode.RESOURCE_FORMAT,
+            `The resource '${source}' is not valid UTF-8.`,
+            source,
+        );
+    }
+};
 // #endregion module

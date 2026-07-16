@@ -1265,12 +1265,21 @@ class Interpreter {
         const requestedTarget = this.resourceTarget(declaration, interpreterOptions);
         const token = authenticator ?? this.authorization(requestedTarget, options);
 
-        const result = virtual ?? await this.fetcher.asynchronous(
-            requestedTarget,
-            { ...interpreterOptions, parseOptions: options },
-            token,
-            declaration.type,
-        );
+        let result: FetchResult | undefined;
+
+        try {
+            result = virtual ?? await this.fetcher.asynchronous(
+                requestedTarget,
+                { ...interpreterOptions, parseOptions: options },
+                token,
+                declaration.type,
+            );
+        } catch (failure) {
+            // A fault the fetcher raises about a resource it did reach — an encoding it will not
+            // accept — is reported at the statement that reached for it (§11.2), exactly as a fault
+            // raised while parsing that resource is.
+            throw this.reanchorImport(failure, declaration.token);
+        }
 
         if (!result) {
             this.unavailableResource(declaration, options, requestedTarget);
@@ -1325,12 +1334,21 @@ class Interpreter {
         const requestedTarget = this.resourceTarget(declaration, interpreterOptions);
         const token = authenticator ?? this.authorization(requestedTarget, options);
 
-        const result = virtual ?? this.fetcher.synchronous(
-            requestedTarget,
-            { ...interpreterOptions, parseOptions: options },
-            token,
-            declaration.type,
-        );
+        let result: FetchResult | undefined;
+
+        try {
+            result = virtual ?? this.fetcher.synchronous(
+                requestedTarget,
+                { ...interpreterOptions, parseOptions: options },
+                token,
+                declaration.type,
+            );
+        } catch (failure) {
+            // A fault the fetcher raises about a resource it did reach — an encoding it will not
+            // accept — is reported at the statement that reached for it (§11.2), exactly as a fault
+            // raised while parsing that resource is.
+            throw this.reanchorImport(failure, declaration.token);
+        }
 
         if (!result) {
             this.unavailableResource(declaration, options, requestedTarget);

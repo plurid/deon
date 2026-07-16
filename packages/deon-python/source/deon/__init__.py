@@ -105,7 +105,15 @@ def read_datasign_source(file: str, options: ParseOptions) -> str:
     try:
         with open(target, "r", encoding="utf-8") as handle:
             return handle.read()
-    except (OSError, UnicodeDecodeError):
+    except UnicodeDecodeError:
+        # The bytes *were* read; their encoding is the fault (specification 1, 9), which is a format
+        # error and not an I/O one. `DEON_RESOURCE_IO` is reserved for bytes that could not be read.
+        raise DeonError(
+            DiagnosticCode.RESOURCE_FORMAT,
+            f"The datasign file '{file}' is not valid UTF-8.",
+            Span.head(file),
+        ) from None
+    except OSError:
         raise DeonError(
             DiagnosticCode.RESOURCE_IO,
             f"Unable to read the datasign file '{file}'.",
@@ -139,7 +147,15 @@ def read_file(path: str) -> str:
     try:
         with open(path, "r", encoding="utf-8") as handle:
             return handle.read()
-    except (OSError, UnicodeDecodeError) as failure:
+    except UnicodeDecodeError as failure:
+        # The bytes *were* read; their encoding is the fault (specification 1, 9), reported at 1:1 of
+        # this document. `DEON_RESOURCE_IO` is reserved for bytes that could not be read at all.
+        raise DeonError(
+            DiagnosticCode.RESOURCE_FORMAT,
+            f"'{path}' is not valid UTF-8: {failure}.",
+            Span.head(path),
+        ) from None
+    except OSError as failure:
         raise DeonError(
             DiagnosticCode.RESOURCE_IO,
             f"Unable to read '{path}': {failure}.",

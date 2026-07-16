@@ -11,6 +11,10 @@
     } from '../../../../data/interfaces';
 
     import {
+        decodeResource,
+    } from '../../../../objects/Diagnostic';
+
+    import {
         resolveFetchFile,
     } from '../../logic';
     // #endregion external
@@ -34,9 +38,9 @@ const fetchFromFile = (
         type,
     );
 
-    const data = fs.readFileSync(
+    const data = decodeResource(
+        fs.readFileSync(filepath),
         filepath,
-        'utf-8',
     );
 
     return {

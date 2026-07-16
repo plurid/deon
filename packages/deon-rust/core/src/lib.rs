@@ -161,23 +161,52 @@ fn read_datasign_source(file: &str, options: &ParseOptions) -> DResult<String> {
         );
     }
 
-    match std::fs::read_to_string(&target) {
+    let bytes = match std::fs::read(&target) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return diagnostic::resource_err(
+                DiagnosticCode::ResourceIo,
+                format!("Unable to read the datasign file '{file}'."),
+                file,
+            );
+        }
+    };
+
+    // The bytes were read; a contract that is not UTF-8 is a format fault, not an I/O one, exactly as
+    // for a document or an imported resource (specification 1, 9).
+    match String::from_utf8(bytes) {
         Ok(source) => Ok(source),
         Err(_) => diagnostic::resource_err(
-            DiagnosticCode::ResourceIo,
-            format!("Unable to read the datasign file '{file}'."),
+            DiagnosticCode::ResourceFormat,
+            format!("The datasign file '{file}' is not valid UTF-8."),
             file,
         ),
     }
 }
 
 /// The text of a file, as a diagnostic rather than an `io::Error` if it cannot be read.
+///
+/// The two ways this fails are not the same fault. A file that is not there or may not be opened is
+/// an I/O failure; a file that is there, and reads, but is not UTF-8 is a *format* failure — the
+/// bytes were read, so it is their encoding that is wrong, not the reading of them. Both point at the
+/// head of the document they were read for (specification 1, 9).
 pub fn read_file(file: &str) -> DResult<String> {
-    match std::fs::read_to_string(file) {
+    let bytes = match std::fs::read(file) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            return diagnostic::resource_err(
+                DiagnosticCode::ResourceIo,
+                format!("Unable to read '{file}': {error}."),
+                file,
+            );
+        }
+    };
+
+    match String::from_utf8(bytes) {
         Ok(source) => Ok(source),
-        Err(error) => diagnostic::resource_err(
-            DiagnosticCode::ResourceIo,
-            format!("Unable to read '{file}': {error}."),
+        Err(_) => diagnostic::resource_err(
+            DiagnosticCode::ResourceFormat,
+            format!("The resource '{file}' is not valid UTF-8."),
             file,
         ),
     }

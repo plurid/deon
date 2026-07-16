@@ -48,6 +48,9 @@ public final class Deon {
         } catch (IOException e) {
             throw new DeonException(Code.RESOURCE_IO, "Unable to read '" + pathname + "'.", Span.head(pathname));
         }
+        if (!Interpreter.isValidUtf8(data)) {
+            throw new DeonException(Code.RESOURCE_FORMAT, "'" + pathname + "' is not valid UTF-8.", Span.head(pathname));
+        }
         options.sourceName = pathname;
         options.filebase = directoryOf(pathname);
         options.allowFilesystem = true;
@@ -63,7 +66,7 @@ public final class Deon {
             throw new DeonException(Code.RESOURCE_IO, "Unable to read '" + pathname + "'.", Span.head(pathname));
         }
         if (!Interpreter.isValidUtf8(data)) {
-            throw new DeonException(Code.RESOURCE_IO, "Unable to read '" + pathname + "': the file is not valid UTF-8.", Span.head(pathname));
+            throw new DeonException(Code.RESOURCE_FORMAT, "'" + pathname + "' is not valid UTF-8.", Span.head(pathname));
         }
         return new String(data, StandardCharsets.UTF_8);
     }

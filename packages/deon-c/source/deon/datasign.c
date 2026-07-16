@@ -248,6 +248,13 @@ static char *read_contract(deon_ctx *ctx, const char *file, const deon_options *
         snprintf(msg, sizeof(msg), "Unable to read the datasign file '%s'.", file);
         deon_fail(ctx, DEON_RESOURCE_IO, msg, span_head(DATASIGN_SOURCE));
     }
+    /* The bytes were read; their encoding is the fault, a resource-format error and not an I/O one. */
+    if (!utf8_valid(data, len)) {
+        free(data);
+        char msg[512];
+        snprintf(msg, sizeof(msg), "The datasign file '%s' is not valid UTF-8.", file);
+        deon_fail(ctx, DEON_RESOURCE_FORMAT, msg, span_head(DATASIGN_SOURCE));
+    }
     return data; /* malloc'd, NUL-terminated by deon_read_file */
 }
 /* #endregion */

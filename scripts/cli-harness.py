@@ -97,6 +97,16 @@ DOCUMENTS = {
     "archive.deon": "{\n    'out/one.txt' {\n        data 'first'\n    }\n}\n",
     "absolute.deon": "{\n    '/etc/deon-should-never-exist' {\n        data 'no'\n    }\n}\n",
     "escaping.deon": "{\n    '../escaped.txt' {\n        data 'no'\n    }\n}\n",
+    "imports-invalid.deon": "import bad from ./invalid.deon\n{\n    #bad\n}\n",
+}
+
+
+#: Documents written as raw bytes rather than text, because their point is bytes a text file cannot
+#: hold. `invalid.deon` carries a lone `0xFF`, which is not valid UTF-8 at any position — the byte
+#: entry point every implementation must reject the same way (`DEON_RESOURCE_FORMAT`), whether it is
+#: the initial document or a resource an import reads.
+BYTE_DOCUMENTS = {
+    "invalid.deon": b"{ a \xff }\n",
 }
 
 CASES = [
@@ -114,6 +124,12 @@ CASES = [
     # A document that will not parse, and one that is not there.
     ("parse error", ["broken.deon"]),
     ("missing file", ["nowhere.deon"]),
+
+    # Bytes that are not valid UTF-8, at the two byte entry points: the initial document, and a
+    # resource an import reads. Both are DEON_RESOURCE_FORMAT at 1:1 — the bytes were read, and their
+    # encoding is the fault, which is a different thing from a file that could not be read at all.
+    ("a document that is not valid UTF-8", ["invalid.deon"]),
+    ("an import of a resource that is not valid UTF-8", ["imports-invalid.deon"]),
 
     ("convert to standard output", ["convert", "data.json"]),
     ("convert to a file", ["convert", "data.json", "out.deon"]),
@@ -150,6 +166,9 @@ def documents() -> pathlib.Path:
 
     for name, content in DOCUMENTS.items():
         (directory / name).write_text(content, "utf-8")
+
+    for name, raw in BYTE_DOCUMENTS.items():
+        (directory / name).write_bytes(raw)
 
     return directory
 
@@ -202,10 +221,12 @@ def written(directory: pathlib.Path) -> dict[str, str]:
     found = {}
 
     for path in sorted(directory.rglob("*")):
-        if path.is_dir() or path.name in DOCUMENTS:
+        if path.is_dir() or path.name in DOCUMENTS or path.name in BYTE_DOCUMENTS:
             continue
 
-        found[str(path.relative_to(directory))] = path.read_text("utf-8")
+        # A tool writes UTF-8; a file that will not decode is reported as such rather than crashing
+        # the harness, so a genuine mojibake bug would surface here instead of hiding behind a trace.
+        found[str(path.relative_to(directory))] = path.read_text("utf-8", errors="replace")
 
     return found
 

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"unicode/utf8"
 )
 
 // The response cache. Two requirements of specification 9, and they are the reason this is not a map
@@ -85,6 +86,14 @@ func cacheRead(name, token string, options *ParseOptions) (Value, bool) {
 	}
 	source, err := os.ReadFile(path)
 	if err != nil {
+		return nil, false
+	}
+	if !utf8.Valid(source) {
+		// A cache entry is bytes we wrote back, so invalid UTF-8 means the file was corrupted
+		// underneath us — a format fault, not something to hand to Parse and silently mangle.
+		// The cache's convention is silence, so the bad entry is discarded as a miss (and removed,
+		// like an expired one) rather than raised, which would make a stale file load-bearing.
+		_ = os.Remove(path)
 		return nil, false
 	}
 	entry, err := Parse(string(source))

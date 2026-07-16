@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // Typing a document against a declared contract (specification 14.1). The conservative typer of §14
@@ -66,6 +67,11 @@ func readContract(file string, options *ParseOptions) string {
 	bytes, err := os.ReadFile(target)
 	if err != nil {
 		fail(ResourceIO, "Unable to read the datasign file '"+file+"'.", headSpan(file))
+	}
+	// The bytes were read, so a failure to be UTF-8 is the encoding's fault, not the disk's: a
+	// contract is a byte entry point like any other, and invalid bytes are DEON_RESOURCE_FORMAT.
+	if !utf8.Valid(bytes) {
+		fail(ResourceFormat, "The datasign file '"+file+"' is not valid UTF-8.", headSpan(file))
 	}
 	return string(bytes)
 }

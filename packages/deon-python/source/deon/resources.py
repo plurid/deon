@@ -188,7 +188,10 @@ class Filesystem:
         try:
             with open(target, "r", encoding="utf-8") as handle:
                 data = handle.read()
-        except (OSError, UnicodeDecodeError) as failure:
+        except UnicodeDecodeError as failure:
+            # The bytes were read; their encoding is the fault, not the I/O (specification 1, 9).
+            raise ResourceMalformed(str(failure)) from None
+        except OSError as failure:
             raise ResourceUnreadable(str(failure)) from None
 
         return Fetched(
@@ -204,6 +207,16 @@ class ResourceUnreadable(Exception):
 
     Carried out of a loader so the interpreter can tell it apart from "not mine", which is what
     keeps `DEON_RESOURCE_IO` and `DEON_CAPABILITY_DENIED` from being confused for one another.
+    """
+
+
+class ResourceMalformed(Exception):
+    """A resource that was read, whose bytes are not valid UTF-8.
+
+    The bytes arrived; their *encoding* is the fault (specification 1, 9). Carried out of a loader,
+    like `ResourceUnreadable`, but its sibling — so the interpreter reports `DEON_RESOURCE_FORMAT` at
+    the importing statement, rather than the `DEON_RESOURCE_IO` earned by bytes it could not read at
+    all.
     """
 
 

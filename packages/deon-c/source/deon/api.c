@@ -99,6 +99,20 @@ deon_document *deon_parse_file(const char *path, const deon_options *options) {
         return doc;
     }
 
+    /* The bytes were read; their encoding is the fault, which is a resource-format error and not
+       an I/O one — the same distinction the import path draws (interpreter.c). */
+    if (!utf8_valid(data, len)) {
+        free(data);
+        arena *a = arena_new();
+        deon_document *doc = doc_new(a);
+        deon_ctx ctx = ctx_new(a);
+        ctx.code = DEON_RESOURCE_FORMAT;
+        ctx.message = arena_str_cstr(a, "The document is not valid UTF-8.");
+        ctx.span = span_head(arena_str_cstr(a, path).data);
+        fill_error(doc, &ctx);
+        return doc;
+    }
+
     /* dirname of the path becomes the filebase; naming the file grants the filesystem */
     char *dir = malloc(strlen(path) + 2);
     strcpy(dir, path);

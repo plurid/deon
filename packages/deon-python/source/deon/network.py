@@ -28,6 +28,7 @@ from .resources import (
     DEON_MEDIA_TYPE,
     IMPORT,
     Fetched,
+    ResourceMalformed,
     ResourceUnreadable,
     directory_of,
     extension_of,
@@ -127,12 +128,20 @@ def get(url: str, headers: dict[str, str]) -> Optional[str]:
             if not 200 <= response.status < 300:
                 return None
 
-            return response.read().decode("utf-8")
+            body = response.read()
     except urllib.error.HTTPError:
         # A status outside 200–299 arrives here rather than above, and means the same thing.
         return None
-    except (urllib.error.URLError, OSError, UnicodeDecodeError, ValueError):
+    except (urllib.error.URLError, OSError, ValueError):
         return None
+
+    # The bytes were read; whether they are text is a separate question. Invalid UTF-8 is a format
+    # fault and not a read failure (specification 1, 9), so it is *raised* rather than returned as the
+    # "missing" `None` — and the caller reports `DEON_RESOURCE_FORMAT`, not `DEON_RESOURCE_IO`.
+    try:
+        return body.decode("utf-8")
+    except UnicodeDecodeError as failure:
+        raise ResourceMalformed(str(failure)) from None
 
 
 class Http:
@@ -206,7 +215,16 @@ def parse_link(link: str, options: Optional[ParseOptions] = None):
     if options.token:
         headers["Authorization"] = f"Bearer {options.token}"
 
-    data = get(link, headers)
+    try:
+        data = get(link, headers)
+    except ResourceMalformed as failure:
+        # The response was read, and its bytes are not valid UTF-8. That is the encoding's fault, not
+        # the network's (specification 1, 9), reported at 1:1 of the document the link names.
+        raise error(
+            DiagnosticCode.RESOURCE_FORMAT,
+            f"'{link}' is not valid UTF-8: {failure}.",
+            Span.head(link),
+        ) from None
 
     if data is None:
         raise error(

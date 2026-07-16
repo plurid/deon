@@ -18,7 +18,7 @@ The code, the severity, and the position are normative: two implementations give
 | `DEON_TYPE_MISMATCH` | Operation received an incompatible Deon value |
 | `DEON_CAPABILITY_DENIED` | Filesystem or network operation is not permitted |
 | `DEON_RESOURCE_IO` | Resource cannot be read or returned a non-success status |
-| `DEON_RESOURCE_FORMAT` | Imported resource encoding or content is invalid |
+| `DEON_RESOURCE_FORMAT` | A resource's encoding or content is invalid — bytes that are not UTF-8, an unsupported import extension, or malformed JSON |
 | `DEON_LIMIT_EXCEEDED` | A configurable resource budget — such as expansion — was exceeded |
 | `DEON_LINT_DUPLICATE_KEY` | Explicit map key is written more than once |
 

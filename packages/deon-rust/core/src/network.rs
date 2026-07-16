@@ -37,7 +37,7 @@ fn agent() -> ureq::Agent {
 /// A failure — any status outside 200–299, a refused connection, a timeout — is `None` rather than an
 /// error, because the interpreter is what decides what a missing resource *means*: a refusal if the
 /// capability was never granted, a failure if it was. Deciding that here would lose the distinction.
-fn get(url: &str, headers: &[(&str, &str)]) -> Option<String> {
+fn get(url: &str, headers: &[(&str, &str)]) -> Option<Vec<u8>> {
     let mut request = agent().get(url);
 
     for (name, value) in headers {
@@ -50,7 +50,10 @@ fn get(url: &str, headers: &[(&str, &str)]) -> Option<String> {
         return None;
     }
 
-    response.body_mut().read_to_string().ok()
+    // The bytes, as they arrived. Whether they are UTF-8 is the interpreter's to judge when it
+    // decodes them: a body that is not is a format fault, not the transfer failure that `None` here
+    // would be taken for (specification 1, 9).
+    response.body_mut().read_to_vec().ok()
 }
 
 /// The network, and only when it has been granted.
@@ -150,12 +153,25 @@ pub fn parse_link(link: &str, options: &ParseOptions) -> DResult<Value> {
         );
     }
 
-    let body = match response.body_mut().read_to_string() {
+    let body = match response.body_mut().read_to_vec() {
         Ok(body) => body,
         Err(error) => {
             return resource_err(
                 DiagnosticCode::ResourceIo,
                 format!("Unable to read '{link}': {error}."),
+                link,
+            );
+        }
+    };
+
+    // The body was reached; if it is not UTF-8, the encoding is the fault and not the transfer, so
+    // it is a format failure reported at the head of the link and not an I/O one (specification 1, 9).
+    let body = match String::from_utf8(body) {
+        Ok(body) => body,
+        Err(_) => {
+            return resource_err(
+                DiagnosticCode::ResourceFormat,
+                format!("The resource '{link}' is not valid UTF-8."),
                 link,
             );
         }

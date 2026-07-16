@@ -53,13 +53,15 @@ func ParseFile(pathname string, options ParseOptions) (Value, error) {
 // ReadFile reads a document as text, and turns a failure into a diagnostic rather than a host error.
 // The file was named, so it was permitted; failing to read it is DEON_RESOURCE_IO, carrying a code
 // and a position an editor can show, not an operating-system exception a caller would have to catch.
+// Bytes that read but are not valid UTF-8 are a different fault: the read succeeded and the encoding
+// is wrong, so that is DEON_RESOURCE_FORMAT, reported at the head of the document the same way.
 func ReadFile(pathname string) (string, error) {
 	data, err := os.ReadFile(pathname)
 	if err != nil {
 		return "", newError(ResourceIO, "Unable to read '"+pathname+"'.", headSpan(pathname))
 	}
 	if !utf8.ValidString(string(data)) {
-		return "", newError(ResourceIO, "Unable to read '"+pathname+"': the file is not valid UTF-8.", headSpan(pathname))
+		return "", newError(ResourceFormat, "The file '"+pathname+"' is not valid UTF-8.", headSpan(pathname))
 	}
 	return string(data), nil
 }

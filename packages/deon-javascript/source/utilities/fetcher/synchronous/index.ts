@@ -8,6 +8,10 @@
     import {
         isURL,
     } from '../../general';
+
+    import {
+        DeonError,
+    } from '../../../objects/Diagnostic';
     // #endregion external
 
 
@@ -47,7 +51,14 @@ const fetcher = (
         }
 
         return fetchFromFile(file, options, type);
-    } catch {
+    } catch (error) {
+        // A resource that could not be reached is answered with `undefined`, which the interpreter
+        // reads as unavailable. A resource that *was* reached but is malformed — invalid UTF-8, say —
+        // is a real diagnostic about it, and must not be flattened into "unavailable" (specification 9).
+        if (error instanceof DeonError) {
+            throw error;
+        }
+
         return;
     }
 }
