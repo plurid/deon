@@ -716,7 +716,11 @@ class Scanner {
             if (character === delimiter) {
                 this.advance();
 
-                const content = delimiter === '`' ? raw.trim() : raw;
+                // A backtick trims the ASCII whitespace of its layout (specification 4.1) and nothing
+                // else, so a Unicode space such as U+00A0 at a boundary is kept as content.
+                const content = delimiter === '`'
+                    ? raw.replace(/^[ \t\n\r]+/, '').replace(/[ \t\n\r]+$/, '')
+                    : raw;
                 this.add(
                     TokenType.STRING,
                     this.source.slice(start, this.current),

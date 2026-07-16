@@ -38,6 +38,8 @@ Comments and formatting are not semantic data. An implementation MAY expose a lo
 
 ### 4.1 Whitespace and separators
 
+Whitespace is exactly four characters: the space `U+0020`, the horizontal tab `U+0009`, the line feed `U+000A`, and the carriage return `U+000D`. No other character is whitespace. The Unicode space separators in particular — the no-break space `U+00A0`, the ideographic space `U+3000`, and every other character in category `Zs`, together with the line and paragraph separators and the byte-order mark — are ordinary string content: they never separate a token, they are never trimmed at a string boundary, and a value that is one of them is written back bare like any other character (§12). An implementation that trims or tests whitespace with its host language's Unicode-aware routine, rather than this four-character set, will disagree with this one on such a value, and is wrong.
+
 Spaces and horizontal tabs separate tokens. A newline or comma separates map entries, list items, structure cells, and call arguments when not nested inside another group. Blank lines are ignored.
 
 A comma falls *between* two items. A comma with no item before it — whether it leads the group or stands alone in it — is `DEON_PARSE_EXPECTED`. A single trailing comma before the closing `}` or `]`, and before the newline that ends a structure row, is permitted and contributes no item; maps, lists, and structures agree on this. A newline never carries the restriction, because a blank line is ignored rather than read as an empty item.

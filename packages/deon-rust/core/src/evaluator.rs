@@ -118,7 +118,15 @@ impl<'a> Evaluator<'a> {
 
     fn value(&mut self, node: &'a ValueNode, locals: &Locals) -> DResult<Value> {
         match node {
-            ValueNode::Scalar { value, span } => self.interpolate(value, span, locals),
+            // A literal scalar is an already-final value (an injected or imported resource); its text
+            // is itself and is not decoded again (§9), so an injected `#{x}` stays literal.
+            ValueNode::Scalar { value, span, literal } => {
+                if *literal {
+                    Ok(Value::String(value.clone()))
+                } else {
+                    self.interpolate(value, span, locals)
+                }
+            }
             ValueNode::Link { reference, span } => self.reference(reference, span, locals),
             ValueNode::Call {
                 reference,

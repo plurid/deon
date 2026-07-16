@@ -189,7 +189,10 @@ const scalar = (
         return '\'\'';
     }
 
-    const bounded = value !== value.trim();
+    // Whitespace is the ASCII space, tab, line feed, and carriage return, and nothing else
+    // (specification 4.1): a value bounded by one of those cannot stand bare or in a backtick, but
+    // one bounded by a Unicode space such as U+00A0 is ordinary content and stands like any other.
+    const bounded = /^[ \t\n\r]/.test(value) || /[ \t\n\r]$/.test(value);
 
     if (/\n/.test(value) && !bounded && !/\r/.test(value) && !CONTROL.test(value)) {
         return multiline(value);

@@ -672,9 +672,14 @@ impl Scanner {
             if character == delimiter {
                 self.advance();
 
-                // Rust trims a slightly wider set of whitespace than the reference does, which no
-                // document written in ASCII can tell apart.
-                let content = if delimiter == '`' { raw.trim() } else { &raw };
+                // A backtick trims the ASCII whitespace of its layout (§4.1) — a space, tab, line
+                // feed, or carriage return — and nothing else: a Unicode space such as U+00A0 at a
+                // boundary is content and is kept, so the value reads back exactly as it was written.
+                let content = if delimiter == '`' {
+                    raw.trim_matches(|c: char| matches!(c, ' ' | '\t' | '\n' | '\r'))
+                } else {
+                    &raw
+                };
 
                 self.add(
                     TokenType::String,

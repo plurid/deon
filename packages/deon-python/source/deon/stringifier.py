@@ -132,8 +132,8 @@ def write_string(text: str) -> str:
         "\n" in text
         and "\r" not in text
         and not any(is_control(character) for character in text)
-        and text[:1].strip() != ""
-        and text[-1:].strip() != ""
+        and text[:1].strip(" \t\n\r") != ""
+        and text[-1:].strip(" \t\n\r") != ""
     ):
         return "`" + escaped(text, "`") + "`"
 

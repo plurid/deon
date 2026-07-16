@@ -50,6 +50,14 @@ export interface Reference {
 export interface ScalarNode {
     type: 'scalar';
     value: string;
+    /**
+     * A scalar parsed from source carries its `#{…}` interpolations and escapes unresolved, to be
+     * decoded when it is evaluated. A scalar reconstructed from an already-final value — an injected
+     * resource, which specification 9 binds without parsing, or an imported one, whose strings were
+     * resolved as it was read — is `literal`: its text is the value itself, and evaluating it must
+     * not decode it a second time, or an injected `#{x}` would resolve where it should stay literal.
+     */
+    literal?: boolean;
     token: Token;
 }
 

@@ -83,7 +83,11 @@ fn scalar(value: &str) -> String {
         return "''".to_string();
     }
 
-    let bounded = value != value.trim();
+    // Whitespace is the ASCII space, tab, line feed, and carriage return, and nothing else (§4.1): a
+    // value bounded by one of those cannot stand bare or in a backtick, but one bounded by a Unicode
+    // space such as U+00A0 is ordinary content and stands like any other character.
+    let ascii_whitespace = |c: char| matches!(c, ' ' | '\t' | '\n' | '\r');
+    let bounded = value.starts_with(ascii_whitespace) || value.ends_with(ascii_whitespace);
 
     // A control character has no backtick spelling: a backtick string carries it raw, which is a
     // lexical error on the way back, so a value that holds one is singlequoted and the control is

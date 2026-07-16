@@ -83,3 +83,18 @@ python3 scripts/harness.py
 ```
 
 It builds the adapters, drives every conformance case and every differential probe through all seven implementations, and reports any input on which they do not agree.
+
+## Fuzzing
+
+A fixed corpus tests what its author thought of. `scripts/fuzz.py` tests what nobody thought of: it generates structurally-varied documents from the grammar and requires all seven implementations to answer each one identically.
+
+```bash
+python3 scripts/fuzz.py                 # 500 generated documents, seed 0
+python3 scripts/fuzz.py --count 5000    # a longer hunt
+python3 scripts/fuzz.py --case 199      # regenerate and inspect one case exactly
+python3 scripts/fuzz.py --only rust,go  # a fast two-implementation pass
+```
+
+Every case is generated from `Random(f"{seed}:{index}")`, so `--seed S --case I` reproduces case I of run S exactly, on any machine. A divergence is shrunk — by delta-debugging that pins the per-implementation error-code signature so it cannot drift to a different bug — to the smallest source that still triggers it, and the report gives the exact command to reproduce it. Findings are ranked by gravity: a disagreement on a resolved **value** is worse than one on an error **code**, which is worse than one on only the **position** of an agreed code. An adapter that crashes on a case is not allowed to abort the run; the crash is bisected down to the single case that caused it and reported as its own kind of divergence.
+
+The fuzzer reaches into the language where the fixtures do not, and the reference reading is whichever behavior the majority of independent implementations share; a genuine divergence it surfaces is converged the same contract-first way as any other — spec and fixtures first, then the implementations.

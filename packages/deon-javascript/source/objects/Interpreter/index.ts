@@ -187,6 +187,9 @@ const nodeFromValue = (
         return {
             type: 'scalar',
             value,
+            // Already a final value (an injected or imported resource): its text is itself, and
+            // evaluating it must not decode any `#{…}` it happens to contain a second time (§9).
+            literal: true,
             token,
         };
     }
@@ -330,7 +333,11 @@ class Evaluator {
         locals: Locals,
     ): DeonValue {
         if (node.type === 'scalar') {
-            return this.interpolate(node.value, node.token, locals);
+            // A literal scalar is an already-final value (an injected or imported resource); its text
+            // is itself and is not decoded again (§9), so an injected `#{x}` stays the four characters.
+            return node.literal
+                ? node.value
+                : this.interpolate(node.value, node.token, locals);
         }
 
         if (node.type === 'link') {

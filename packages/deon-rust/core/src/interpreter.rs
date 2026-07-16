@@ -23,10 +23,9 @@ use crate::value::{Map, Value};
 /// tell it came from somewhere else.
 fn node_from_value(value: Value, span: &Span) -> ValueNode {
     match value {
-        Value::String(value) => ValueNode::Scalar {
-            value,
-            span: span.clone(),
-        },
+        // Already a final value (an injected or imported resource): kept exactly, not decoded a
+        // second time, so an injected `#{x}` stays the four literal characters (§9).
+        Value::String(value) => ValueNode::literal_scalar(value, span.clone()),
         Value::List(items) => ValueNode::List {
             items: items
                 .into_iter()

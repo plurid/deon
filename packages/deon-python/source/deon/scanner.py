@@ -632,7 +632,9 @@ class Scanner:
 
             content.append(self.advance())
 
-        self.emit(TokenType.STRING, start, raw="".join(content).strip())
+        # A backtick trims the ASCII whitespace of its layout (specification 4.1) and nothing else,
+        # so a Unicode space such as U+00A0 at a boundary is kept as content.
+        self.emit(TokenType.STRING, start, raw="".join(content).strip(" \t\n\r"))
 
     # #region references
     def reference(self, start: tuple[int, int, int, int]) -> Reference:

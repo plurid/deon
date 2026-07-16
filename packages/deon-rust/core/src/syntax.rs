@@ -72,6 +72,12 @@ impl Reference {
 pub enum ValueNode {
     Scalar {
         value: String,
+        /// A scalar parsed from source is decoded — its `#{…}` interpolations and escapes read —
+        /// when it is evaluated. A scalar rebuilt from an already-final value (an injected resource,
+        /// which §9 binds without parsing, or an imported one, whose strings were resolved as it was
+        /// read) is `literal`: its text is the value itself, and evaluating it must not decode it a
+        /// second time, or an injected `#{x}` would resolve where it should stay literal.
+        literal: bool,
         span: Span,
     },
     Link {
@@ -100,9 +106,21 @@ pub enum ValueNode {
 }
 
 impl ValueNode {
+    /// A scalar parsed from source: decoded when it is evaluated.
     pub fn scalar(value: impl Into<String>, span: Span) -> Self {
         ValueNode::Scalar {
             value: value.into(),
+            literal: false,
+            span,
+        }
+    }
+
+    /// A scalar rebuilt from an already-final value (an injected or imported resource): kept exactly
+    /// when it is evaluated, never decoded a second time (§9).
+    pub fn literal_scalar(value: impl Into<String>, span: Span) -> Self {
+        ValueNode::Scalar {
+            value: value.into(),
+            literal: true,
             span,
         }
     }

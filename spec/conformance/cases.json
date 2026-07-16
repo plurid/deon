@@ -1005,6 +1005,62 @@
             "datasign": { "files": ["a.datasign"], "map": {"account": "Account"} },
             "error": "DEON_CAPABILITY_DENIED",
             "position": { "line": 1, "column": 1 }
+        },
+        {
+            "id": "whitespace-unicode-space-is-content",
+            "required": true,
+            "source": "{ a \u00a0 }",
+            "expected": {
+                "a": "\u00a0"
+            }
+        },
+        {
+            "id": "whitespace-bom-is-content",
+            "required": true,
+            "source": "{ a \ufeff }",
+            "expected": {
+                "a": "\ufeff"
+            }
+        },
+        {
+            "id": "whitespace-unicode-space-not-trimmed-in-backtick",
+            "required": true,
+            "source": "{ a `\u00a0hi\u00a0` }",
+            "expected": {
+                "a": "\u00a0hi\u00a0"
+            }
+        },
+        {
+            "id": "whitespace-unicode-space-keeps-backtick-boundary",
+            "required": true,
+            "source": "{ a `\u00a0l1\nl2` }",
+            "expected": {
+                "a": "\u00a0l1\nl2"
+            }
+        },
+        {
+            "id": "inject-keeps-interpolation-literal",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "inject note from ./note.deon\n{ out #note }",
+                "/project/note.deon": "hello #{x} world"
+            },
+            "expected": {
+                "out": "hello #{x} world"
+            }
+        },
+        {
+            "id": "inject-keeps-self-name-literal",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "inject note from ./note.deon\n{ out #note }",
+                "/project/note.deon": "see #{note} here"
+            },
+            "expected": {
+                "out": "see #{note} here"
+            }
         }
     ]
 }
