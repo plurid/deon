@@ -146,12 +146,20 @@ impl Parser {
     fn leaflink(&mut self) -> DResult<Declaration> {
         let name = self.name("Expected a leaflink declaration name.")?;
 
-        // A declaration with nothing after it holds the empty string.
-        let value = if self.peek().ty.is_boundary() || self.check(TokenType::Eof) {
-            ValueNode::scalar("", name.span.clone())
-        } else {
-            self.value(Stops::Declaration)?
-        };
+        // A top-level declaration is `name, required-space, value` (specification 4, deon.ebnf): a
+        // space or tab separates the name from its value, and a value follows. The trivia before the
+        // next token is what stands between the two — a value abutting the name, or a comment or
+        // newline where the space was due, is `DEON_PARSE_EXPECTED`, and so is a name with no value.
+        // Only a map entry may hold a bare name; a declaration may not.
+        let separated = self.peek().leading.starts_with(|c: char| matches!(c, ' ' | '\t'));
+        if !separated {
+            return self.fail(DiagnosticCode::ParseExpected, "A space was expected here.");
+        }
+        if self.peek().ty.is_boundary() || self.check(TokenType::Eof) {
+            return self.fail(DiagnosticCode::ParseExpected, "A value was expected here.");
+        }
+
+        let value = self.value(Stops::Declaration)?;
 
         Ok(Declaration::Leaflink(Leaflink {
             name: name.value().to_string(),

@@ -37,7 +37,7 @@ func (p *parser) singleString() []stringPart {
 			literal.WriteString(p.decodeEscape('\''))
 		case p.startsWith("#{"):
 			flush()
-			parts = append(parts, p.interpolation())
+			parts = append(parts, p.interpolationAnchored(p.spanAt(open)))
 		default:
 			literal.WriteRune(p.advance())
 		}
@@ -298,6 +298,15 @@ func (p *parser) interpolation() stringPart {
 	ref := p.reference()
 	p.expect('}', "An interpolation opened with '#{' must be closed with '}'.")
 	return stringPart{interp: &ref}
+}
+
+// interpolationAnchored parses a `#{reference}` on the live cursor but re-anchors any reference fault
+// to carrier — the first character of the string that carries it (§11.2) — so a single-quoted string
+// reports an empty or malformed interpolation at its opening quote, not at a position inside the
+// braces, exactly as the backtick and unquoted forms do through decodeInner.
+func (p *parser) interpolationAnchored(carrier Span) stringPart {
+	defer reanchorInterpolationFault(carrier)
+	return p.interpolation()
 }
 
 // uEscKind is how a `\u{…}` escape turned out when scanned.

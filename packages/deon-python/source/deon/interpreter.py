@@ -84,6 +84,11 @@ class Interpreter:
 
     # #region entry
     def run(self, document: Document) -> Value:
+        # An interpolation's syntax is a parse-time diagnostic even for a leaflink nothing references
+        # (specification 10, 11.2), so it is validated before the root is evaluated — matching every
+        # other implementation, which catches it at scan time.
+        validate_syntax(document)
+
         return Evaluator(self, document, self.options).evaluate()
     # #endregion entry
 
@@ -725,6 +730,52 @@ def decode(raw: str, token: Token, resolve) -> str:
         index += 1
 
     return "".join(out)
+
+
+def validate_syntax(document: Document) -> None:
+    """Validate every interpolation's syntax where its string was parsed, not where it is resolved.
+
+    An empty or malformed `#{...}` is `DEON_PARSE_EXPECTED` in every string form and whether or not
+    the carrying value is ever evaluated (specification 10, 11.2) — so a leaflink that nothing
+    references is validated all the same, which is what every other implementation does by catching
+    it at scan time. Only *resolution* stays deferred: each scalar is decoded here for its syntax
+    alone, resolving nothing, so a well-formed reference that would merely fail to resolve inside an
+    unreferenced leaflink is not itself raised. Scalars are validated in source order, so the first
+    fault is the one a left-to-right reader would report.
+    """
+    scalars: list[Scalar] = []
+
+    def gather(node: ValueNode) -> None:
+        if isinstance(node, Scalar):
+            scalars.append(node)
+        elif isinstance(node, MapNode):
+            for entry in node.entries:
+                # An `Entry` carries a value; a `LinkEntry` a link or call; a `SpreadEntry` only a
+                # reference the parser already validated, so it has no scalar of its own to check.
+                if isinstance(entry, (Entry, LinkEntry)):
+                    gather(entry.value)
+        elif isinstance(node, ListNode):
+            for item in node.items:
+                if not isinstance(item, SpreadEntry):
+                    gather(item)
+        elif isinstance(node, Structure):
+            for row in node.rows:
+                for cell in row:
+                    gather(cell)
+        elif isinstance(node, Call):
+            for argument in node.arguments:
+                gather(argument.value)
+
+    for declaration in document.declarations:
+        if isinstance(declaration, Leaflink):
+            gather(declaration.value)
+        elif isinstance(declaration, Resource) and declaration.authenticator is not None:
+            gather(declaration.authenticator)
+
+    gather(document.root)
+
+    for scalar in sorted(scalars, key=lambda node: node.token.start):
+        decode(scalar.raw, scalar.token, lambda reference: "")
 
 
 def parse_reference(text: str, token: Token) -> Reference:

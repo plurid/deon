@@ -36,7 +36,9 @@ const parseError = async (data: string) => {
 
 describe(suites.errors, () => {
     it('no root line', async () => {
-        const dataValues = `a`;
+        // A valid leaflink with no root map or list: the fault is the missing root, not the
+        // declaration. A bare `a` with no value is instead `DEON_PARSE_EXPECTED` (§4, deon.ebnf).
+        const dataValues = `a 1`;
 
         const start = Date.now();
         const error = await parseError(dataValues);
@@ -58,7 +60,7 @@ describe(suites.errors, () => {
 
     it('no root', async () => {
         const dataValues = `
-a
+a 1
         `;
 
         const start = Date.now();

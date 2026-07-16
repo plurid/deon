@@ -863,6 +863,41 @@
             "position": { "line": 1, "column": 7 }
         },
         {
+            "id": "interpolation-empty-in-an-unreferenced-leaflink-is-an-error",
+            "required": true,
+            "source": "r x#{}\n[]",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "interpolation-empty-in-a-single-quoted-value",
+            "required": true,
+            "source": "{ r '#{}' }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "interpolation-empty-in-an-unreferenced-single-quoted-value",
+            "required": true,
+            "source": "r '#{}'\n[]",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "interpolation-empty-in-a-backtick-value",
+            "required": true,
+            "source": "{ r `#{}` }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "interpolation-empty-in-an-unreferenced-backtick-value",
+            "required": true,
+            "source": "r `#{}`\n[]",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
             "id": "structure-allows-a-trailing-comma",
             "required": true,
             "source": "{ p <a, b> [1, 2,] }",
@@ -1070,6 +1105,26 @@
             "position": {
                 "line": 1,
                 "column": 13
+            }
+        },
+        {
+            "id": "top-declaration-requires-value",
+            "required": true,
+            "source": "a\n{ b c }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 2
+            }
+        },
+        {
+            "id": "top-declaration-requires-space",
+            "required": true,
+            "source": "a{ b c }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 2
             }
         }
     ]

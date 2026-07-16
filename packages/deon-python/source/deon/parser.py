@@ -186,12 +186,18 @@ class Parser:
         name_token = self.peek()
         name = self.name("Expected a declaration name.")
 
-        # A declaration with nothing after it holds the empty string.
+        # A top-level declaration is `name, required-space, value` (specification 4, deon.ebnf): a
+        # space or tab separates the name from its value, and a value follows. The character right
+        # after the name must be that space — a value abutting it, a comment, a separator, or the end
+        # of the document there is `DEON_PARSE_EXPECTED`, and so is a name that stands with no value.
+        # Only a map entry, parsed in `map`, may hold a bare name; a declaration may not.
+        after = self.source[name_token.end : name_token.end + 1]
+        if after not in (" ", "\t"):
+            raise self.fail(DiagnosticCode.PARSE_EXPECTED, "A space was expected here.")
         if self.peek().type in DECLARATION_STOPS:
-            value: ValueNode = Scalar(raw="", token=name_token)
-        else:
-            value = self.value(DECLARATION_STOPS)
+            raise self.fail(DiagnosticCode.PARSE_EXPECTED, "A value was expected here.")
 
+        value = self.value(DECLARATION_STOPS)
         return Leaflink(name=name, value=value, token=name_token)
     # #endregion declarations
 

@@ -758,6 +758,31 @@ class Scanner {
                 continue;
             }
 
+            // A real interpolation `#{…}` is validated for its reference now, at scan time, exactly as
+            // one written in an unquoted word is (specification 10): an empty `#{}` is
+            // `DEON_PARSE_EXPECTED` even when the carrying value is never evaluated, anchored at the
+            // value's first character (specification 11.2). An escaped `\#{` was already taken by the
+            // backslash branch above, so a `#{` reaching here always opens a real one. The reference
+            // is bounded by the first `}` — as the evaluator's interpolation is — but only within this
+            // string; a `#{` the string closes without a `}` is unterminated, which the evaluator
+            // still reports when the value is used.
+            if (character === '#' && this.peek(1) === '{') {
+                let scan = this.current + 2;
+
+                while (
+                    scan < this.source.length
+                    && this.source[scan] !== '}'
+                    && this.source[scan] !== delimiter
+                    && !(delimiter === '\'' && this.source[scan] === '\n')
+                ) {
+                    scan += 1;
+                }
+
+                if (scan < this.source.length && this.source[scan] === '}') {
+                    this.checkInterpolation(this.source.slice(this.current + 2, scan), start, line, column);
+                }
+            }
+
             raw += this.advance();
         }
 

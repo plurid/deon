@@ -201,11 +201,19 @@ class Parser {
     private leaflink(): DeclarationNode {
         const name = this.name('Expected a leaflink declaration name.');
 
-        // A declaration with nothing after it holds the empty string.
-        const value = this.isBoundary(this.peek()) || this.check(TokenType.EOF)
-            ? scalarNode('', name)
-            : this.value(DECLARATION_STOPS);
+        // A top-level declaration is `name, required-space, value` (specification 4, deon.ebnf): a
+        // space or tab separates the name from its value, and a value follows. The trivia before the
+        // next token is what stands between the two — a value abutting the name, or a comment or
+        // newline where the space was due, is `DEON_PARSE_EXPECTED`, and so is a name with no value.
+        // Only a map entry, parsed in `map`, may hold a bare name; a declaration may not.
+        if (!/^[ \t]/.test(this.peek().leading)) {
+            this.fail(DiagnosticCode.PARSE_EXPECTED, 'A space was expected here.');
+        }
+        if (this.isBoundary(this.peek()) || this.check(TokenType.EOF)) {
+            this.fail(DiagnosticCode.PARSE_EXPECTED, 'A value was expected here.');
+        }
 
+        const value = this.value(DECLARATION_STOPS);
         return {
             type: 'leaflink',
             name: this.nameValue(name),
