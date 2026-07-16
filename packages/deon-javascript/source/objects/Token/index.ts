@@ -35,6 +35,15 @@ class Token {
     public unterminatedQuote: boolean;
     public endLine: number;
     public endColumn: number;
+    /**
+     * The same span as `start`/`end`, but measured in UTF-8 bytes into the CRLF-folded source rather
+     * than in UTF-16 code units. A diagnostic reports these (`spec/diagnostics.md`); `start`/`end`
+     * stay in code units because they index this JavaScript string to slice a lexeme out of it. They
+     * default to `start`/`end` for a synthesised token that names an offset of zero, where the two
+     * measures coincide.
+     */
+    public byteStart: number;
+    public byteEnd: number;
 
     constructor(
         type: TokenType,
@@ -47,6 +56,8 @@ class Token {
         source = '<memory>',
         leading = '',
         unterminatedQuote = false,
+        byteStart = start,
+        byteEnd = end,
     ) {
         this.type = type;
         this.lexeme = lexeme;
@@ -58,6 +69,8 @@ class Token {
         this.source = source;
         this.leading = leading;
         this.unterminatedQuote = unterminatedQuote;
+        this.byteStart = byteStart;
+        this.byteEnd = byteEnd;
 
         // A token may span lines, and a column counts characters rather than code units, so that an
         // editor underlines what a reader would call one character.

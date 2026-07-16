@@ -105,6 +105,7 @@ private func okResponse(_ id: String, _ result: String) -> String {
 
 private func errorResponse(_ id: String, _ error: DeonError) -> String {
     "{\"id\":\(jsonQuote(id)),\"ok\":\"false\",\"code\":\(jsonQuote(error.code))"
+        + ",\"severity\":\(jsonQuote(error.severity)),\"start\":\"\(error.start)\""
         + ",\"line\":\"\(error.line)\",\"column\":\"\(error.column)\"}"
 }
 

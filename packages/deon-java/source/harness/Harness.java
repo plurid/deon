@@ -56,6 +56,10 @@ public final class Harness {
             jsonString(b, id);
             b.append(",\"ok\":\"false\",\"code\":");
             jsonString(b, e.code.wire());
+            b.append(",\"severity\":");
+            jsonString(b, d.severity);
+            b.append(",\"start\":");
+            jsonString(b, Integer.toString(d.span.start));
             b.append(",\"line\":");
             jsonString(b, Integer.toString(d.span.line));
             b.append(",\"column\":");

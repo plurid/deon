@@ -164,13 +164,19 @@ static void answer_ok(buf *out, const char *id, const char *result, size_t resul
 
 static void answer_error(buf *out, const char *id, const deon_error *e) {
     deon_span span = e->diagnostics_len ? e->diagnostics[0].span : (deon_span){0};
-    char line[16], col[16];
+    const char *severity = (e->diagnostics_len && e->diagnostics[0].severity) ? "warning" : "error";
+    char line[16], col[16], start[32];
     snprintf(line, sizeof(line), "%d", span.line);
     snprintf(col, sizeof(col), "%d", span.column);
+    snprintf(start, sizeof(start), "%zu", span.start);
     bputs(out, "{\"id\":");
     json_string(out, id, strlen(id));
     bputs(out, ",\"ok\":\"false\",\"code\":");
     json_string(out, deon_code_name(e->code), strlen(deon_code_name(e->code)));
+    bputs(out, ",\"severity\":");
+    json_string(out, severity, strlen(severity));
+    bputs(out, ",\"start\":");
+    json_string(out, start, strlen(start));
     bputs(out, ",\"line\":");
     json_string(out, line, strlen(line));
     bputs(out, ",\"column\":");

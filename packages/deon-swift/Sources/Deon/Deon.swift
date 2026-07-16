@@ -14,6 +14,10 @@ public let deonVersion = String(cString: DEON_VERSION)
 public struct DeonError: Error {
     public let code: String
     public let message: String
+    /// UTF-8 byte offsets into the CRLF-normalized source; `line`/`column` are code-point positions.
+    /// The two are different numbers (spec/diagnostics.md), and the harness compares the byte offset.
+    public let start: Int
+    public let end: Int
     public let line: Int
     public let column: Int
     public let source: String
@@ -32,6 +36,10 @@ public struct Entity {
 public struct Diagnostic {
     public let code: String
     public let message: String
+    /// UTF-8 byte offsets into the CRLF-normalized source; `line`/`column` are code-point positions.
+    /// The two are different numbers (spec/diagnostics.md), and the harness compares the byte offset.
+    public let start: Int
+    public let end: Int
     public let line: Int
     public let column: Int
     public let source: String
@@ -210,6 +218,8 @@ public final class Document {
         return DeonError(
             code: String(cString: deon_code_name(e.code)),
             message: swiftString(e.message),
+            start: Int(diagnostic.span.start),
+            end: Int(diagnostic.span.end),
             line: Int(diagnostic.span.line),
             column: Int(diagnostic.span.column),
             source: diagnostic.span.source != nil ? String(cString: diagnostic.span.source!) : "<memory>",
@@ -289,7 +299,7 @@ public final class Document {
 func writeError(_ code: deon_code) -> DeonError {
     DeonError(code: String(cString: deon_code_name(code)),
               message: "The value nests deeper than the limit.",
-              line: 0, column: 0, source: "<memory>", severity: "error")
+              start: 0, end: 0, line: 0, column: 0, source: "<memory>", severity: "error")
 }
 
 /// Reads a document, granted nothing. A document that imports is denied — a diagnostic, not a surprise.
@@ -402,6 +412,8 @@ func readDiagnostics(_ pointer: UnsafePointer<deon_diagnostic>?, _ count: Int) -
         result.append(Diagnostic(
             code: String(cString: deon_code_name(diagnostic.code)),
             message: swiftString(diagnostic.message),
+            start: Int(diagnostic.span.start),
+            end: Int(diagnostic.span.end),
             line: Int(diagnostic.span.line),
             column: Int(diagnostic.span.column),
             source: diagnostic.span.source != nil ? String(cString: diagnostic.span.source!) : "<memory>",

@@ -286,11 +286,13 @@ func answerFor(r request) map[string]string {
 		if deonErr, ok := err.(*deon.Error); ok {
 			span := deonErr.Diagnostics[0].Span
 			return map[string]string{
-				"id":     r.ID,
-				"ok":     "false",
-				"code":   string(deonErr.Code),
-				"line":   strconv.Itoa(span.Line),
-				"column": strconv.Itoa(span.Column),
+				"id":       r.ID,
+				"ok":       "false",
+				"code":     string(deonErr.Code),
+				"severity": deonErr.Diagnostics[0].Severity,
+				"start":    strconv.Itoa(span.Start),
+				"line":     strconv.Itoa(span.Line),
+				"column":   strconv.Itoa(span.Column),
 			}
 		}
 		// The host leaking through is a disagreement, and it says so.

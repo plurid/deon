@@ -108,6 +108,8 @@ def main() -> None:
                 "id": request["id"],
                 "ok": "false",
                 "code": failure.code,
+                "severity": failure.diagnostics[0].severity,
+                "start": str(span.start),
                 "line": str(span.line),
                 "column": str(span.column),
             }

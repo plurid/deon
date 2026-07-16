@@ -73,7 +73,9 @@ const REFERENCE_STOPS = ' \t\r\n,{}()<>';
  * specification requires (`spec/diagnostics.md`: one-based Unicode code-point line/column). An
  * astral character — anything above the Basic Multilingual Plane — is written in JavaScript as a
  * surrogate pair, two code units, and must still count as a single column. These recognise the two
- * halves of such a pair so that the trailing half advances the byte offset without the column.
+ * halves of such a pair: the trailing half advances the UTF-16 cursor without opening a new column,
+ * and — in `utf8ByteOffsets` below — carries none of the astral character's four bytes, which its
+ * leading half already accounts for.
  */
 const isHighSurrogate = (
     character: string | undefined,
@@ -96,6 +98,65 @@ const isLowSurrogate = (
 
     const code = character.charCodeAt(0);
     return code >= 0xDC00 && code <= 0xDFFF;
+}
+
+
+/**
+ * The number of UTF-8 bytes the UTF-16 code unit at `index` contributes to the encoded source. A
+ * character in the Basic Multilingual Plane is one code unit and one, two, or three bytes; an astral
+ * character is written as a surrogate pair whose leading half carries all four of its bytes and
+ * whose trailing half carries none. Counting the pair this way keeps a byte offset aligned to a code
+ * point, so a token's UTF-16 `start`/`end` — which still index the JavaScript string to slice a
+ * lexeme out of it — never have to move.
+ */
+const utf8ByteLength = (
+    source: string,
+    index: number,
+) => {
+    const code = source.charCodeAt(index);
+
+    if (code <= 0x7F) {
+        return 1;
+    }
+
+    if (code <= 0x7FF) {
+        return 2;
+    }
+
+    if (isHighSurrogate(source[index])) {
+        return isLowSurrogate(source[index + 1]) ? 4 : 3;
+    }
+
+    if (isLowSurrogate(source[index])) {
+        return 0;
+    }
+
+    return 3;
+}
+
+
+/**
+ * A table from every UTF-16 code-unit index in `source` to its UTF-8 byte offset, with a final entry
+ * for the position one past the end. A diagnostic reports a byte offset into the CRLF-folded source
+ * (`spec/diagnostics.md`), but a JavaScript string is indexed in UTF-16 code units; so the scanner
+ * keeps its cursor in code units — for slicing — and maps a token's start and end through this table
+ * only for the position it reports. Built once, in a single pass, so a token costs one lookup rather
+ * than a re-encoding of everything written before it.
+ */
+const utf8ByteOffsets = (
+    source: string,
+) => {
+    const offsets: number[] = new Array(source.length + 1);
+    let bytes = 0;
+
+    for (let index = 0; index < source.length; index += 1) {
+        offsets[index] = bytes;
+        bytes += utf8ByteLength(source, index);
+    }
+
+    offsets[source.length] = bytes;
+
+    return offsets;
 }
 
 
@@ -312,6 +373,7 @@ export const parseReference = (
 class Scanner {
     private readonly source: string;
     private readonly sourceName: string;
+    private readonly byteOffsets: number[];
     private readonly tokens: Token[] = [];
     private current = 0;
     private line = 1;
@@ -329,6 +391,9 @@ class Scanner {
         sourceName = '<memory>',
     ) {
         this.source = source.replace(/\r\n/g, '\n');
+        // The byte offsets index this folded source, so a `\r\n` folded to `\n` counts as the one
+        // byte it became — a diagnostic's offset is into the folded text, never the original.
+        this.byteOffsets = utf8ByteOffsets(this.source);
         this.sourceName = sourceName;
     }
 
@@ -348,6 +413,10 @@ class Scanner {
                 this.current,
                 this.current,
                 this.sourceName,
+                '',
+                false,
+                this.byteOffsets[this.current],
+                this.byteOffsets[this.current],
             ),
         );
 
@@ -530,6 +599,10 @@ class Scanner {
                 this.current,
                 this.current,
                 this.sourceName,
+                '',
+                false,
+                this.byteOffsets[this.current],
+                this.byteOffsets[this.current],
             ),
         );
     }
@@ -645,6 +718,7 @@ class Scanner {
         // column by adding it to this one — which is how a malformed access is pointed at.
         const rawLine = this.line;
         const rawColumn = this.column;
+        const rawStart = this.current;
 
         let raw = '';
         let brackets = 0;
@@ -724,7 +798,11 @@ class Scanner {
         } catch (fault) {
             if (fault instanceof ReferenceFault) {
                 // A dot or bracket the access grammar did not allow. The offence is a character inside
-                // the reference, not the whole link, so it is pointed at where it stands (spec 6).
+                // the reference, not the whole link, so it is pointed at where it stands (spec 6): the
+                // column counts code points into the reference, and the offset maps the same character
+                // through to its byte, rather than reporting the byte of the link's `#`.
+                const faultStart = rawStart + [...raw].slice(0, fault.offset).join('').length;
+
                 deonError(
                     DiagnosticCode.PARSE_EXPECTED,
                     fault.message,
@@ -737,6 +815,10 @@ class Scanner {
                         start,
                         this.current,
                         this.sourceName,
+                        '',
+                        false,
+                        this.byteOffsets[faultStart],
+                        this.byteOffsets[this.current],
                     ),
                 );
             }
@@ -930,6 +1012,8 @@ class Scanner {
                 this.sourceName,
                 this.leading,
                 unterminatedQuote,
+                this.byteOffsets[start],
+                this.byteOffsets[this.current],
             ),
         );
 
@@ -961,6 +1045,10 @@ class Scanner {
                 start,
                 this.current,
                 this.sourceName,
+                '',
+                false,
+                this.byteOffsets[start],
+                this.byteOffsets[this.current],
             ),
         );
     }

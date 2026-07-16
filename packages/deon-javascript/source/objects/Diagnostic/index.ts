@@ -72,12 +72,12 @@ export class DeonDiagnostic {
 
         this.range = {
             start: {
-                offset: token.start,
+                offset: token.byteStart,
                 line: token.line,
                 column: token.column,
             },
             end: {
-                offset: token.end,
+                offset: token.byteEnd,
                 line: token.endLine,
                 column: token.endColumn,
             },

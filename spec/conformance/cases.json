@@ -190,6 +190,16 @@
             }
         },
         {
+            "id": "diagnostic-offset-across-a-multibyte-character",
+            "required": true,
+            "source": "{ a 🎂 #z }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 7
+            }
+        },
+        {
             "id": "lex-unterminated-string",
             "required": true,
             "source": "{ key 'unterminated }",

@@ -110,6 +110,8 @@ for await (const line of lines) {
                 id: request.id,
                 ok: 'false',
                 code: failure.code,
+                severity: diagnostic.severity,
+                start: String(diagnostic.range.start.offset),
                 line: String(diagnostic.range.start.line),
                 column: String(diagnostic.range.start.column),
             }

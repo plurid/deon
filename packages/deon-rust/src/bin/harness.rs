@@ -226,13 +226,17 @@ fn answer(id: &str, result: deon::DResult<String>) -> String {
             let span = &failure.diagnostics[0].span;
 
             format!(
-                "{{{}:{},{}:{},{}:{},{}:{},{}:{}}}",
+                "{{{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{}}}",
                 quote("id"),
                 quote(id),
                 quote("ok"),
                 quote("false"),
                 quote("code"),
                 quote(&failure.code.to_string()),
+                quote("severity"),
+                quote("error"),
+                quote("start"),
+                quote(&span.start.to_string()),
                 quote("line"),
                 quote(&span.line.to_string()),
                 quote("column"),
