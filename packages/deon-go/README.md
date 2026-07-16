@@ -113,7 +113,7 @@ Everything after the source of an `environment` is the command, verbatim: `deon 
 
 The defaults are **not** the library's, and the difference is deliberate: `--filesystem` is *true* and `--network` is *false*. A file named on a command line was named by a person, so it may read the disk; nothing said it may reach the network. A document handed to a library, by contrast, came from somewhere unknown, and is granted neither.
 
-The four command-line tools are the same program written four times, and `scripts/cli-harness.py` runs all of them against the same arguments and requires the same exit status, the same output, the same files written, and the same diagnostic code at the same position.
+The seven command-line tools are the same program written seven times, and `scripts/cli-harness.py` runs all of them against the same arguments and requires the same exit status, the same output, the same files written, and the same diagnostic code at the same position.
 
 
 

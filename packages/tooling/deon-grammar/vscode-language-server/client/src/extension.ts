@@ -1,60 +1,51 @@
-import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+// The VS Code side of the extension. It contributes the grammar and the snippets declaratively (see
+// the extension manifest); the only thing it does in code is start the language server and connect to
+// it. That server is `@plurid/deon-lsp` — a standalone, zero-dependency Deon language server that
+// speaks the protocol over stdio — resolved from this extension's own dependencies, so the two ship
+// and version together. The earlier bundled `server/` is retired.
 
+import { ExtensionContext } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
-	TransportKind
+	TransportKind,
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext) {
-	// The server is implemented in node
-	let serverModule = context.asAbsolutePath(
-		path.join('server', 'out', 'server.js')
-	);
-	// The debug options for the server
-	// --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-	let debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
+export function activate(_context: ExtensionContext) {
+	// `@plurid/deon-lsp`'s runnable entry, resolved from node_modules. `require.resolve` only finds
+	// the path; VS Code launches it as its own Node process and talks to it over that process's
+	// standard input and output.
+	const server = require.resolve('@plurid/deon-lsp/cli');
 
-	// If the extension is launched in debug mode then the debug server options are used
-	// Otherwise the run options are used
-	let serverOptions: ServerOptions = {
-		run: { module: serverModule, transport: TransportKind.ipc },
+	const serverOptions: ServerOptions = {
+		run: {
+			module: server,
+			transport: TransportKind.stdio,
+		},
 		debug: {
-			module: serverModule,
-			transport: TransportKind.ipc,
-			options: debugOptions
-		}
+			module: server,
+			transport: TransportKind.stdio,
+			options: { execArgv: ['--nolazy', '--inspect=6009'] },
+		},
 	};
 
-	// Options to control the language client
-	let clientOptions: LanguageClientOptions = {
-		// Register the server for plain text documents
+	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'deon' }],
-		synchronize: {
-			// Notify the server about file changes to '.clientrc files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
-		}
 	};
 
-	// Create the language client and start the client.
 	client = new LanguageClient(
-		'languageServerDeon',
-		'Language Server Deon',
+		'deonLanguageServer',
+		'Deon Language Server',
 		serverOptions,
-		clientOptions
+		clientOptions,
 	);
 
-	// Start the client. This will also launch the server
 	client.start();
 }
 
 export function deactivate(): Thenable<void> | undefined {
-	if (!client) {
-		return undefined;
-	}
-	return client.stop();
+	return client ? client.stop() : undefined;
 }

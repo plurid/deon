@@ -397,24 +397,24 @@ or download the appropriate [binary](https://plurid.link/binaries-deon)
 ### CLI
 
 ```
-Usage: deon [options] [command] <file>
-
-read a ".deon" file and output the parsed result
+Usage: deon <file> [options]
+       deon convert <source.json> [destination.deon]
+       deon environment <source.deon> <command...>
+       deon confile <files...> [--destination confile.deon]
+       deon exfile <source.deon> [--unsafe-paths]
+       deon lint <files...> [--warnings-as-errors]
 
 Options:
-    -v, --version                                   output the version number
-    -o, --output <value>                            output type: deon, json (default: "deon")
-    -t, --typed <value>                             typed output (default: "false")
-    -f, --filesystem <value>                        allow filesystem (default: "true")
-    -n, --network <value>                           allow network (default: "false")
-    -h, --help                                      display help for command
-
-Commands:
-    convert <source> [destination]                  convert a ".json" file to ".deon"
-    environment [options] <source> <command...>     loads environment variables from a ".deon" file and spawns a new command
-    confile [options] <files...>                    combine files into a single ".deon" file
-    exfile <source>                                 extract files from a ".deon" confile
-    lint <files...> [--warnings-as-errors]          report the diagnostics of a ".deon" file
+  -o, --output <deon|json>
+  -t, --typed
+  -f, --filesystem <true|false>
+  -n, --network <true|false>
+  -d, --destination <path>
+  -w, --writeover
+      --unsafe-paths
+      --warnings-as-errors
+  -v, --version
+  -h, --help
 ```
 
 Network access is off unless it is asked for. A `.deon` file is data, and reading it should not by itself reach out over the network, so `import`s and `inject`s from an `URL` require `--network true`.
@@ -800,7 +800,7 @@ A `leaflink` can be dot-accessed:
     ]
 }
 
-#entity1 {
+entity1 {
     name The Entity
 }
 ```
@@ -816,7 +816,7 @@ or dot-accessed with shortened link
     ]
 }
 
-#entity1 {
+entity1 {
     name The Entity
 }
 ```
@@ -837,7 +837,7 @@ A `leaflink` can be name-accessed:
     ]
 }
 
-#entity1 {
+entity1 {
     name The Entity
 }
 ```
@@ -853,7 +853,7 @@ or from a `list`:
     ]
 }
 
-#names [
+names [
     one
     two
     three
@@ -876,7 +876,7 @@ A `leaflink` can be spreaded by tripledots `...`:
     ]
 }
 
-#entity1 {
+entity1 {
     name The Entity
     timestamp 1598425060
 }
@@ -1051,7 +1051,7 @@ In order to request `URL` files from protected routes, an `authorization` `map` 
 
 ``` deon
 authorization {
-    example.com token
+    'example.com' token
 }
 ```
 
@@ -1064,9 +1064,9 @@ import Deon from '@plurid/deon';
 
 
 const loadData = async () => {
-    const authorization = [
+    const authorization = {
         'example.com': 'token', // provide token securely using environment variables
-    ];
+    };
 
     const deon = new Deon();
     const data = await deon.parseFile(
@@ -1398,7 +1398,7 @@ data Entity {
 ``` deon
 // ./entity.deon
 {
-    entities: [
+    entities [
         {
             name Entity One
             age 1

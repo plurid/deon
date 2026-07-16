@@ -1,4 +1,6 @@
-// A launch configuration that compiles the extension and then opens it inside a new window
+// A launch configuration that compiles the extension and then opens it inside a new window.
+// "Attach to Server" attaches to @plurid/deon-lsp, which the client launches with --inspect=6009 in
+// debug mode (see client/src/extension.ts).
 {
 	"version": "0.2.0",
 	"configurations": [
@@ -20,19 +22,7 @@
 			"name": "Attach to Server",
 			"port": 6009,
 			"restart": true,
-			"outFiles": ["${workspaceRoot}/server/out/**/*.js"]
-		},
-		{
-			"name": "Language Server E2E Test",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
-				"${workspaceRoot}/client/testFixture"
-			],
-			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+			"outFiles": ["${workspaceRoot}/../../deon-lsp/distribution/**/*.js"]
 		}
 	],
 	"compounds": [

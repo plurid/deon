@@ -44,7 +44,7 @@ Only `id`, `op`, and `source` are required.
 | `lint` | `[{ code, line, column }]`, as JSON text |
 | `entities` | `[{ name, parameters, kind }]`, as JSON text |
 
-`canonical` and `stringify` are compared **character for character**, which is their whole point. The rest are compared as *parsed structures*, because three implementations are not required to have chosen the same JSON whitespace — but a boolean is never flattened into the string `"true"`, since telling those apart is exactly what the typing operations exist to do.
+`canonical` and `stringify` are compared **character for character**, which is their whole point. The rest are compared as *parsed structures*, because seven implementations are not required to have chosen the same JSON whitespace — but a boolean is never flattened into the string `"true"`, since telling those apart is exactly what the typing operations exist to do.
 
 `datasign` carries two extra fields: `datasignFiles`, the contracts to read, and `datasignMap`, the root keys each type applies to. The contracts themselves arrive through `files`, like every other resource, so no adapter reaches a disk.
 
@@ -82,4 +82,4 @@ An adapter must never let a host exception escape. A `RecursionError`, an `OSErr
 python3 scripts/harness.py
 ```
 
-It builds the adapters, drives every conformance case and every differential probe through all three implementations, and reports any input on which they do not agree.
+It builds the adapters, drives every conformance case and every differential probe through all seven implementations, and reports any input on which they do not agree.

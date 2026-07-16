@@ -12,7 +12,8 @@
         ".": {
             "types": "./distribution/index.d.ts",
             "import": "./distribution/index.js"
-        }
+        },
+        "./cli": "./distribution/cli.js"
     },
     "bin": {
         "deon-lsp": "distribution/cli.js"
