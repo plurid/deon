@@ -740,7 +740,12 @@ static deon_str parse_bare_name(parser *p) {
     size_t start = p->pos;
     while (is_name_char(peek(p))) advance(p);
     if (p->pos == start) {
-        deon_fail(p->ctx, DEON_PARSE_EXPECTED, "A reference name was expected here.", point(p));
+        /* §11.2: an empty or whitespace-led reference inside an interpolation `#{ ... }` is anchored at
+         * the string that carries it, not at this position inside it — the reference was recovered by
+         * decoding and has no source position of its own. Outside a string decode the anchor is unset and
+         * the fault stays at the cursor, so links, calls, and spreads are unaffected. */
+        deon_span at = p->ctx->interp_anchor_set ? p->ctx->interp_anchor : point(p);
+        deon_fail(p->ctx, DEON_PARSE_EXPECTED, "A reference name was expected here.", at);
     }
     return arena_str(p->ctx->a, slice(p, start, p->pos).data, p->byte_off[p->pos] - p->byte_off[start]);
 }

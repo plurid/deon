@@ -260,35 +260,21 @@ def flatten(node: object) -> object:
     return node
 
 
-# A fault inside an interpolation falls on the reference the scanner decoded out of `#{...}`, which
-# has no source position of its own (specification 10): its line and column are fabricated relative to
-# the `#{` opener, and the byte offset that fabrication maps to is not yet agreed across the seven —
-# each anchors the decoded reference differently. The offset is transported (every adapter emits it)
-# but not compared for these cases until the source registry of Phase C, wave 2, gives an interpolation
-# fault a real, shared anchor. Code, severity, line, and column are compared as for any other failure.
-INTERPOLATION_ANCHOR_TODO = {
-    "interpolation-rejects-inner-whitespace",
-    "interpolation-rejects-an-empty-reference",
-    "escaped-interpolation-empty-is-an-error",
-}
-
-
 def comparable(request: dict, answer: dict) -> object:
     """What the implementations must agree on, with nothing else in it.
 
     A failure is compared by its code, its severity, and its position — the UTF-8 byte offset `start`
     and the line/column — and *not* by its message: a message is written for a person, and seven
     implementations are not required to have written the same sentence. The code, the severity, the
-    byte offset, and the line/column are the contract (specification 15).
+    byte offset, and the line/column are the contract (specification 15). An interpolation fault
+    anchors at the string that carries it (specification 11.2), so it too has a shared byte offset.
     """
     if answer.get("ok") != "true":
-        base = request["id"].split("#", 1)[0]
-        start = "<unanchored>" if base in INTERPOLATION_ANCHOR_TODO else str(answer.get("start"))
         return (
             "error",
             answer.get("code"),
             str(answer.get("severity")),
-            start,
+            str(answer.get("start")),
             str(answer.get("line")),
             str(answer.get("column")),
         )

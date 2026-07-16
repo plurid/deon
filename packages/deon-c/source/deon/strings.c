@@ -54,11 +54,21 @@ static bool escaped_interp_complete(parser *p, int ref_off) {
 /* decode reads an extracted run of source into parts, honoring escapes and interpolation. The active
  * quote delimiter — '\'' , '`', or 0 for an unquoted string — is what \' produces inside a single
  * string and preserves verbatim outside one. Every unnamed backslash sequence is kept literally. */
-static string_part *decode(deon_ctx *ctx, const char *utf8, size_t len, uint32_t active, size_t *out_len) {
+static string_part *decode(deon_ctx *ctx, const char *utf8, size_t len, uint32_t active, deon_span carrier, size_t *out_len) {
     parser *p = sub_parser(ctx, utf8, len);
     parts_builder b = {0};
     b.a = ctx->a;
     sb lit = {0};
+
+    /* §11.2: a malformed reference in an interpolation `#{ ... }` decoded here has no source position of
+     * its own, so its fault is anchored at the carrying string's start. Saved and restored so nested
+     * decodes (a quoted name inside a reference) each carry their own string, and an unrelated reference
+     * fault outside any decode still reports at the cursor. A fault longjmps out before the restore, which
+     * is harmless: the diagnostic is already captured and the parse is aborting. */
+    deon_span saved_anchor = ctx->interp_anchor;
+    bool saved_anchor_set = ctx->interp_anchor_set;
+    ctx->interp_anchor = carrier;
+    ctx->interp_anchor_set = true;
 
     while (!p_at_end(p)) {
         uint32_t r = p_peek(p);
@@ -98,6 +108,8 @@ static string_part *decode(deon_ctx *ctx, const char *utf8, size_t len, uint32_t
         memset(&empty.interp, 0, sizeof(empty.interp));
         push_part(&b, empty);
     }
+    ctx->interp_anchor = saved_anchor;
+    ctx->interp_anchor_set = saved_anchor_set;
     *out_len = b.len;
     return b.parts;
 }
@@ -138,7 +150,7 @@ string_part *parse_single_string(parser *p, size_t *out_len) {
         if (p_starts_with(p, "#{")) { consume_interpolation_raw(p, &raw); continue; }
         sb_put_rune(&raw, p_advance(p));
     }
-    string_part *parts = decode(p->ctx, raw.data ? raw.data : "", raw.len, '\'', out_len);
+    string_part *parts = decode(p->ctx, raw.data ? raw.data : "", raw.len, '\'', open, out_len);
     sb_free(&raw);
     return parts;
 }
@@ -181,7 +193,7 @@ string_part *parse_backtick_string(parser *p, size_t *out_len) {
     while (start < end && is_trimmable((unsigned char)raw.data[start])) start++;
     while (end > start && is_trimmable((unsigned char)raw.data[end - 1])) end--;
 
-    string_part *parts = decode(p->ctx, raw.data ? raw.data + start : "", end - start, '`', out_len);
+    string_part *parts = decode(p->ctx, raw.data ? raw.data + start : "", end - start, '`', open, out_len);
     sb_free(&raw);
     return parts;
 }
@@ -277,7 +289,7 @@ node *parse_unquoted(parser *p) {
         deon_fail(p->ctx, DEON_PARSE_EXPECTED, "A value was expected here.", span_at(p, start));
     }
     size_t parts_len;
-    string_part *parts = decode(p->ctx, raw.data, raw.len, 0, &parts_len);
+    string_part *parts = decode(p->ctx, raw.data, raw.len, 0, p_span_between(p, start, start), &parts_len);
     sb_free(&raw);
 
     node *n = arena_alloc(p->ctx->a, sizeof(node));

@@ -547,7 +547,7 @@ class Scanner {
         const content = this.source.slice(contentStart, this.current);
         this.advance(); // }
 
-        this.checkInterpolation(content);
+        this.checkInterpolation(content, start, line, column);
 
         const lexeme = this.source.slice(start, this.current);
         this.add(TokenType.INTERPOLATE, lexeme, lexeme, start, line, column);
@@ -557,12 +557,16 @@ class Scanner {
     /**
      * An interpolation names a reference written immediately between `#{` and `}`, with no
      * surrounding whitespace and never empty (specification 10). The reference within is recovered by
-     * decoding and has no source position of its own, so a fault is pointed at relative to the
-     * interpolation's own `#` — column 1 the `#`, column 2 the `{`, column 3 the reference's first
-     * character — which is the position the strict implementations agree on (§11.2).
+     * decoding and has no source position of its own, so §11.2 anchors a fault at the string that
+     * carries the interpolation — not at a position inside it. The enclosing scan passes the carrying
+     * value's real `start` (its first retained UTF-16 index), `line`, and `column`, which is where the
+     * fault is pointed.
      */
     private checkInterpolation(
         content: string,
+        start: number,
+        line: number,
+        column: number,
     ) {
         let end: number;
 
@@ -570,22 +574,32 @@ class Scanner {
             end = parseReference(content).end;
         } catch (fault) {
             if (fault instanceof ReferenceFault) {
-                this.failInterpolation(fault.offset);
+                this.failInterpolation(start, line, column);
             }
 
             throw fault;
         }
 
         // Anything between the reference and the `}` — a trailing space, another word — is not part of
-        // the reference and is refused where it begins.
+        // the reference, and is refused at the carrying string too, never at a position inside the
+        // `#{…}`.
         if (end !== content.length) {
-            this.failInterpolation(end);
+            this.failInterpolation(start, line, column);
         }
     }
 
 
+    /**
+     * Raises the malformed-interpolation fault (§11.2), anchored at the carrying string's real start:
+     * `line` and `column` are the value's first retained character, and `byteStart` is that same
+     * character's UTF-8 offset into the folded source. The reference decoded from within the `#{…}`
+     * has no source position of its own, so the diagnostic sits on the string that carries it rather
+     * than on a fabricated position inside the interpolation.
+     */
     private failInterpolation(
-        offset: number,
+        start: number,
+        line: number,
+        column: number,
     ): never {
         return deonError(
             DiagnosticCode.PARSE_EXPECTED,
@@ -594,15 +608,15 @@ class Scanner {
                 TokenType.INTERPOLATE,
                 '',
                 null,
-                1,
-                offset + 3,
-                this.current,
-                this.current,
+                line,
+                column,
+                start,
+                start,
                 this.sourceName,
                 '',
                 false,
-                this.byteOffsets[this.current],
-                this.byteOffsets[this.current],
+                this.byteOffsets[start],
+                this.byteOffsets[start],
             ),
         );
     }
@@ -956,7 +970,7 @@ class Scanner {
         const content = this.source.slice(contentStart, this.current);
         this.advance(); // }
 
-        this.checkInterpolation(content);
+        this.checkInterpolation(content, start, line, column);
     }
 
 

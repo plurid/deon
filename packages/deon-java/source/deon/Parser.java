@@ -739,7 +739,7 @@ final class Parser {
     // #region strings (section 4.3)
     // Each form collects the raw source it spans, then decodes that source once: escapes are read,
     // `#{reference}` is turned into a part, and the active quote delimiter is preserved verbatim.
-    private List<StringPart> decode(String utf8, int active) {
+    private List<StringPart> decode(String utf8, int active, Span carrier) {
         Parser p = new Parser(utf8, "");
         List<StringPart> parts = new ArrayList<>();
         StringBuilder lit = new StringBuilder();
@@ -779,7 +779,7 @@ final class Parser {
                 }
             } else if (p.startsWith("#{")) {
                 flushLiteral(parts, lit);
-                parts.add(p.parseInterpolationPart());
+                parts.add(p.parseInterpolationPart(carrier));
             } else {
                 lit.appendCodePoint(p.advance());
             }
@@ -799,11 +799,23 @@ final class Parser {
         lit.setLength(0);
     }
 
-    private StringPart parseInterpolationPart() {
+    private StringPart parseInterpolationPart(Span carrier) {
         int rawStart = pos;
         advance(); // #
         advance(); // {
-        Reference ref = parseReference();
+        Reference ref;
+        try {
+            ref = parseReference();
+        } catch (DeonException e) {
+            // Section 11.2: an interpolation's fault is reported at the string that carries it, not at
+            // a position inside it — the reference was recovered by decoding and has no source position
+            // of its own. Re-anchor a malformed reference (empty '#{}' or inner whitespace '#{ x }') at
+            // the carrying string's start, as the eval-time diagnostic does (Interpreter#evalScalar).
+            if (e.code == Code.PARSE_EXPECTED) {
+                throw fail(e.code, e.primary().message, carrier);
+            }
+            throw e;
+        }
         expect('}', "An interpolation opened with '#{' must be closed with '}'.");
         return new StringPart(ref, slice(rawStart, pos));
     }
@@ -853,7 +865,7 @@ final class Parser {
             }
             raw.appendCodePoint(advance());
         }
-        return decode(raw.toString(), '\'');
+        return decode(raw.toString(), '\'', open);
     }
 
     private static boolean isTrimmable(int r) {
@@ -898,7 +910,7 @@ final class Parser {
         for (int i = startIdx; i < endIdx; i++) {
             raw.appendCodePoint(runeList.get(i));
         }
-        return decode(raw.toString(), '`');
+        return decode(raw.toString(), '`', open);
     }
 
     // #region unquoted
@@ -991,7 +1003,16 @@ final class Parser {
                 Parser probe = new Parser(slice(hashPos, lineEnd), "");
                 probe.advance(); // #
                 probe.advance(); // {
-                probe.parseReference(); // an empty reference throws DEON_PARSE_EXPECTED, as a real #{} does
+                try {
+                    probe.parseReference(); // an empty reference throws DEON_PARSE_EXPECTED, as a real #{} does
+                } catch (DeonException e) {
+                    // Section 11.2: an interpolation's fault (here a malformed escaped '\#{}') is reported
+                    // at the string that carries it, not inside it — re-anchor at the carrying value's start.
+                    if (e.code == Code.PARSE_EXPECTED) {
+                        throw fail(e.code, e.primary().message, spanAt(start));
+                    }
+                    throw e;
+                }
                 if (probe.peek() == '}') {
                     // Copy \#{reference} verbatim, its '}' taken too, so the single decode pass below
                     // renders the literal characters #{reference}.
@@ -1023,7 +1044,7 @@ final class Parser {
             throw fail(Code.PARSE_EXPECTED, "A value was expected here.", spanAt(start));
         }
         ScalarNode n = new ScalarNode();
-        n.parts = decode(raw.toString(), 0);
+        n.parts = decode(raw.toString(), 0, spanAt(start));
         n.span = spanBetween(start, pos);
         return n;
     }

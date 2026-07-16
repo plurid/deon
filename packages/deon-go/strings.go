@@ -113,7 +113,7 @@ func (p *parser) backtickString() []stringPart {
 		end--
 	}
 
-	return decodeInner(raw[start:end], '`')
+	return decodeInner(raw[start:end], '`', p.spanBetween(open, p.pos))
 }
 
 func isTrimmable(r rune) bool { return r == ' ' || r == '\t' || r == '\n' }
@@ -180,7 +180,7 @@ func (p *parser) unquoted() node {
 	if len(raw) == 0 {
 		fail(ParseExpected, "A value was expected here.", p.spanAt(start))
 	}
-	return &scalarNode{parts: decodeInner(raw, 0), span: p.spanBetween(start, p.pos)}
+	return &scalarNode{parts: decodeInner(raw, 0, p.spanBetween(start, p.pos)), span: p.spanBetween(start, p.pos)}
 }
 
 // unquotedContinues reports whether, after inter-word whitespace, the unquoted value goes on — it does
@@ -327,8 +327,11 @@ func (p *parser) decodeEscape(active rune) string {
 
 // decodeInner decodes an already-extracted run of backtick source (the runes between the trimmed
 // boundaries) into parts, honoring escapes and interpolation. Backtick strings are decoded after
-// trimming, so this walks a rune slice rather than the live cursor.
-func decodeInner(raw []rune, active rune) []stringPart {
+// trimming, so this walks a rune slice rather than the live cursor. carrier is the source span of the
+// string that carries these parts; a malformed interpolation's diagnostic is anchored there rather
+// than at a position inside the reference (§11.2), which was recovered by decoding and has no source
+// position of its own.
+func decodeInner(raw []rune, active rune, carrier Span) []stringPart {
 	var parts []stringPart
 	var literal strings.Builder
 	flush := func() {
@@ -370,7 +373,7 @@ func decodeInner(raw []rune, active rune) []stringPart {
 				// literally rather than resolved (§4.3, §10). With no clean close on the line the `\#{` is
 				// the plain escape for a literal `#{`.
 				if n := escapedInterpolationLength(raw[i:]); n > 0 {
-					parseInnerReference(raw[i : i+n]) // validate; raises on a bad reference at the mirror position
+					parseInnerReference(raw[i:i+n], carrier) // validate; raises on a bad reference at the carrying string
 					literal.WriteString(string(raw[i : i+n]))
 					i += n
 				} else {
@@ -393,7 +396,7 @@ func decodeInner(raw []rune, active rune) []stringPart {
 			}
 		case r == '#' && peek(1) == '{':
 			flush()
-			ref, consumed := parseInnerReference(raw[i:])
+			ref, consumed := parseInnerReference(raw[i:], carrier)
 			parts = append(parts, stringPart{interp: &ref})
 			i += consumed
 		default:
@@ -422,13 +425,33 @@ func escapedInterpolationLength(raw []rune) int {
 	return 0
 }
 
-// parseInnerReference parses one `#{reference}` out of a run of backtick source and reports how many
-// runes it consumed. Backtick strings are decoded from an extracted rune slice rather than the live
-// cursor, so the reference parser is run over a fresh cursor on that slice.
-func parseInnerReference(raw []rune) (reference, int) {
+// parseInnerReference parses one `#{reference}` out of a run of string source and reports how many
+// runes it consumed. A carrying string is decoded from an extracted rune slice rather than the live
+// cursor, so the reference parser is run over a fresh cursor on that slice. That fresh cursor's
+// offsets are its own, not the document's, so a fault it raises is re-anchored onto carrier — the span
+// of the string that carries the interpolation (§11.2).
+func parseInnerReference(raw []rune, carrier Span) (reference, int) {
 	sub := newParser(string(raw), "")
+	defer reanchorInterpolationFault(carrier)
 	part := sub.interpolation()
 	return *part.interp, sub.pos
+}
+
+// reanchorInterpolationFault re-raises a reference fault at the carrying string's span. Per §11.2 an
+// interpolation's diagnostic is at the string that carries it, not at a position inside the reference:
+// the reference was recovered by decoding and has no source position of its own, so the sub-parser's
+// own (document-external) offset is not a real position and must not be reported. Deferred around the
+// sub-parser that reads a reference, this moves any raised fault onto the carrier the caller supplies
+// and leaves a genuine host panic — anything not an *Error — to propagate unchanged.
+func reanchorInterpolationFault(carrier Span) {
+	if raised := recover(); raised != nil {
+		if deonErr, ok := raised.(*Error); ok {
+			for i := range deonErr.Diagnostics {
+				deonErr.Diagnostics[i].Span = carrier
+			}
+		}
+		panic(raised)
+	}
 }
 
 // ensureParts guarantees a scalar always has at least one part, so the empty string is a real value

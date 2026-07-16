@@ -31,6 +31,7 @@
 
     import {
         deonError,
+        DeonError,
         DiagnosticCode,
     } from '../Diagnostic';
 
@@ -1230,9 +1231,13 @@ class Interpreter {
             resourceStack: [...options.resourceStack, target],
         };
 
-        return normalizeHostValue(
-            await new this.Deon().parse(result.data, parseOptions),
-        );
+        try {
+            return normalizeHostValue(
+                await new this.Deon().parse(result.data, parseOptions),
+            );
+        } catch (failure) {
+            throw this.reanchorImport(failure, declaration.token);
+        }
     }
 
 
@@ -1285,9 +1290,31 @@ class Interpreter {
             resourceStack: [...options.resourceStack, target],
         };
 
-        return normalizeHostValue(
-            new this.Deon().parseSynchronous(result.data, parseOptions),
-        );
+        try {
+            return normalizeHostValue(
+                new this.Deon().parseSynchronous(result.data, parseOptions),
+            );
+        } catch (failure) {
+            throw this.reanchorImport(failure, declaration.token);
+        }
+    }
+
+
+    /**
+     * A fault inside an imported document is reported at the statement that imported it (§11.2): the
+     * document a caller is holding is the importing one, and the line they can go and look at is the
+     * import. A cycle keeps its own span — it is reported at the reference that closes it, not at
+     * every statement it was reached through.
+     */
+    private reanchorImport(
+        failure: unknown,
+        token: Token,
+    ) {
+        if (failure instanceof DeonError && failure.code !== DiagnosticCode.CYCLE) {
+            return new DeonError(failure.code, failure.message, token);
+        }
+
+        return failure;
     }
 
 

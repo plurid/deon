@@ -135,6 +135,17 @@
             "expected": { "name": "imported" }
         },
         {
+            "id": "import-fault-anchors-at-the-importing-statement",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import child from ./child\n{ #child }",
+                "/project/child.deon": "{ a b\n][ }"
+            },
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 1 }
+        },
+        {
             "id": "canonical-map-order",
             "required": true,
             "source": "{ z last\na first }",
@@ -726,14 +737,21 @@
             "required": true,
             "source": "{ a #{ x } }",
             "error": "DEON_PARSE_EXPECTED",
-            "position": { "line": 1, "column": 3 }
+            "position": { "line": 1, "column": 5 }
         },
         {
             "id": "interpolation-rejects-an-empty-reference",
             "required": true,
             "source": "{ a #{} }",
             "error": "DEON_PARSE_EXPECTED",
-            "position": { "line": 1, "column": 3 }
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "interpolation-fault-anchors-at-the-carrying-string",
+            "required": true,
+            "source": "{ key ab#{ x } }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 7 }
         },
         {
             "id": "structure-allows-a-trailing-comma",

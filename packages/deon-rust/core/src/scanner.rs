@@ -77,17 +77,16 @@ fn classify_bracket(content: &str) -> Access {
     Access::Key(content.to_string())
 }
 
-/// Validates the reference inside a `#{...}` interpolation against the reference grammar (§6, §10),
-/// which forbids surrounding whitespace and an empty reference. Returns the 1-based column, *within
-/// the `#{...}` text*, of the first offending character, or `None` when the reference is well-formed.
+/// Reports whether the reference inside a `#{...}` interpolation is malformed against the reference
+/// grammar (§6, §10), which forbids surrounding whitespace and an empty reference. Returns `true`
+/// when the reference is ill-formed and `false` when it is well-formed.
 ///
-/// The reference implementation parses the reference with a fresh cursor over just this text, so its
-/// diagnostic is positioned relative to the `#{`, not to the document — the `#` sits at column 1 and
-/// the reference therefore begins at column 3. A `#{ x }` and a `#{}` both fault at column 3, where a
-/// reference name was due; a `#{x }` faults at column 4, where the `}` was.
-fn interpolation_fault(inner: &str) -> Option<usize> {
+/// It answers only *whether* the reference is faulty, never *where*: by §11.2 an interpolation's
+/// diagnostic is anchored at the string that carries it, because the reference within was recovered
+/// by decoding and has no source position of its own. The caller positions the fault at the carrying
+/// string's start, so this validation carries no column.
+fn interpolation_fault(inner: &str) -> bool {
     let characters: Vec<char> = inner.chars().collect();
-    let column = |index: usize| index + 3;
     let mut index = 0;
 
     // The head: an environment name, a quoted name, or a bare-name run. It may not be empty and may
@@ -100,7 +99,7 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                 index += 1;
             }
             if index == start {
-                return Some(column(index));
+                return true;
             }
         }
         Some('\'') => {
@@ -112,7 +111,7 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                 index += 1;
             }
             if characters.get(index) != Some(&'\'') {
-                return Some(column(index));
+                return true;
             }
             index += 1;
         }
@@ -122,7 +121,7 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                 index += 1;
             }
             if index == start {
-                return Some(column(index));
+                return true;
             }
         }
     }
@@ -137,7 +136,7 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                     index += 1;
                 }
                 if index == start {
-                    return Some(column(index));
+                    return true;
                 }
             }
             '[' => {
@@ -151,7 +150,7 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                         index += 1;
                     }
                     if characters.get(index) != Some(&'\'') {
-                        return Some(column(index));
+                        return true;
                     }
                     index += 1;
                 } else {
@@ -163,20 +162,20 @@ fn interpolation_fault(inner: &str) -> Option<usize> {
                         index += 1;
                     }
                     if index == start {
-                        return Some(column(index));
+                        return true;
                     }
                 }
                 if characters.get(index) != Some(&']') {
-                    return Some(column(index));
+                    return true;
                 }
                 index += 1;
             }
             // Anything else where a segment or the end was due: the `}` was expected here.
-            _ => return Some(column(index)),
+            _ => return true,
         }
     }
 
-    None
+    false
 }
 
 /// A newline, a carriage return, or a tab that a string could not otherwise carry: an unquoted
@@ -504,13 +503,14 @@ impl Scanner {
         let lexeme = self.slice(start, self.current).to_string();
 
         // The reference between the braces must be a well-formed reference with no surrounding
-        // whitespace (specification 10). The strict implementations read it with a fresh cursor over
-        // this text, so a fault is positioned relative to the `#{` rather than to the document.
-        if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
+        // whitespace (specification 10). A fault has no position of its own inside the braces: by
+        // §11.2 the diagnostic is anchored at the string that carries the interpolation, which for a
+        // standalone one is this token itself, so it points at the `#{`'s own start.
+        if interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
             return err(
                 DiagnosticCode::ParseExpected,
                 "An interpolation needs a reference immediately between its braces.",
-                &self.span(start, 1, fault),
+                &self.span(start, line, column),
             );
         }
 
@@ -847,11 +847,11 @@ impl Scanner {
                 if self.peek(offset) == '}' {
                     let reference: String = (3..offset).map(|at| self.peek(at)).collect();
 
-                    if let Some(fault) = interpolation_fault(&reference) {
+                    if interpolation_fault(&reference) {
                         return err(
                             DiagnosticCode::ParseExpected,
                             "An interpolation needs a reference immediately between its braces.",
-                            &self.span(self.current, 1, fault),
+                            &self.span(start, line, column),
                         );
                     }
 
@@ -875,11 +875,12 @@ impl Scanner {
 
     /// Consumes a `#{...}` from the cursor, which sits on the `#`, reading the reference to its
     /// closing `}`. An unterminated one is `DEON_LEX_UNTERMINATED`; an empty or whitespace-surrounded
-    /// reference is `DEON_PARSE_EXPECTED` at the position a fresh cursor over the `#{...}` gives, so the
-    /// diagnostic is relative to the `#{` rather than to the document (specification 10). Shared by a
-    /// real interpolation written inside a word and by an escaped one `\#{...}`, which is lexed
-    /// identically and differs only in that `decode_minimal` keeps it as literal text (specification
-    /// 4.3) — so an escaped interpolation reports the very code and position a real one reports.
+    /// reference is `DEON_PARSE_EXPECTED` anchored at the start of the string that carries it — the
+    /// carrying word `start` handed in here — because the reference within has no source position of
+    /// its own (§11.2, specification 10). Shared by a real interpolation written inside a word and by
+    /// an escaped one `\#{...}`, which is lexed identically and differs only in that `decode_minimal`
+    /// keeps it as literal text (specification 4.3) — so an escaped interpolation reports the very
+    /// code and position a real one reports.
     fn consume_interpolation(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
         let interpolation_start = self.current;
 
@@ -904,11 +905,11 @@ impl Scanner {
 
         let lexeme = self.slice(interpolation_start, self.current).to_string();
 
-        if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
+        if interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
             return err(
                 DiagnosticCode::ParseExpected,
                 "An interpolation needs a reference immediately between its braces.",
-                &self.span(interpolation_start, 1, fault),
+                &self.span(start, line, column),
             );
         }
 

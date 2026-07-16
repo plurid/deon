@@ -47,6 +47,12 @@ typedef struct {
     deon_span       span;
     deon_diagnostic extra[8]; /* import-trace frames, if any */
     size_t          extra_len;
+    /* §11.2: while a string is being decoded, interp_anchor holds the start of the string that carries
+     * the interpolation. A malformed reference inside `#{ ... }` has no source position of its own — it
+     * was recovered by decoding — so its diagnostic is reported here, at the carrying string, rather than
+     * at a position inside it. interp_anchor_set is true only during that decode. */
+    deon_span       interp_anchor;
+    bool            interp_anchor_set;
 } deon_ctx;
 
 void deon_fail(deon_ctx *ctx, deon_code code, const char *message, deon_span span);

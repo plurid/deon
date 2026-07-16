@@ -468,10 +468,22 @@ impl<'a> Interpreter<'a> {
         nested.filebase = fetched.filebase;
         nested.resource_stack.push(id.clone());
 
-        let tokens = Scanner::new(&fetched.data, &id).scan()?;
-        let document = Parser::new(tokens, &id).parse()?;
-
-        self.interpret(&document, &nested)
+        // A fault inside the imported document is reported at the statement that imported it (§11.2):
+        // the document a caller is holding is the importing one, and the line they can go and look at
+        // is the import. A cycle keeps its own span — it is reported at the reference that closes it,
+        // not at every statement it was reached through.
+        Scanner::new(&fetched.data, &id)
+            .scan()
+            .and_then(|tokens| Parser::new(tokens, &id).parse())
+            .and_then(|document| self.interpret(&document, &nested))
+            .map_err(|mut failure| {
+                if failure.code != DiagnosticCode::Cycle {
+                    if let Some(first) = failure.diagnostics.first_mut() {
+                        first.span = resource.span.clone();
+                    }
+                }
+                failure
+            })
     }
 
     /// A resource supplied through the `resources` option, which is how a test, or an editor, hands

@@ -648,31 +648,25 @@ def parse_reference(text: str, token: Token) -> Reference:
 
     The reference is written immediately between the braces, with no surrounding whitespace, and it
     must not be empty (specification 10): `#{}` and `#{ name }` are `DEON_PARSE_EXPECTED`, not an
-    empty or a trimmed reference. A fault is anchored the way the strict implementations anchor it —
-    relative to the `#{` opener, so a fault at offset `k` of the reference text is at line 1, column
-    `3 + k`, the two opener characters lying before it. Its access segments obey the same key/index
-    rule as a leaflink: a dot or quoted segment is a key, and a bracket segment is an index only when
-    it is all decimal digits.
+    empty or a trimmed reference. A fault is anchored at the string that carries the interpolation
+    (specification 11.2): the reference was recovered by decoding and has no source position of its
+    own, so the diagnostic points at the carrying string token's own start rather than at a position
+    inside it. Its access segments obey the same key/index rule as a leaflink: a dot or quoted
+    segment is a key, and a bracket segment is an index only when it is all decimal digits.
     """
     from .scanner import NAME_CHARACTERS
 
     stops = " \t\n,{}[]()<>'`"
 
     def fault(offset: int):
-        column = 3 + offset
-
+        # Specification 11.2: an interpolation's diagnostic is at the string that carries it, not at a
+        # position inside it. The reference was recovered by decoding and has no source position of its
+        # own, so `offset` — an index into that decoded text — is not a source position and is
+        # deliberately unused: the fault anchors at the carrying string token's own span.
         return error(
             DiagnosticCode.PARSE_EXPECTED,
             "An interpolation names a reference written immediately between its braces.",
-            Span(
-                source=token.source,
-                start=0,
-                end=0,
-                line=1,
-                column=column,
-                end_line=1,
-                end_column=column,
-            ),
+            token.span(),
         )
 
     def quoted(at: int) -> tuple[str, int]:
