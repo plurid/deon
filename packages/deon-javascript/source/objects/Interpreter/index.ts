@@ -1608,7 +1608,10 @@ class Interpreter {
         const slash = clean.lastIndexOf('/');
         const dot = clean.lastIndexOf('.');
 
-        return dot > slash ? clean.slice(dot).toLowerCase() : '.deon';
+        // The extension is matched literally (specification 9): `.JSON` is an other extension, a
+        // resource-format error, not folded to the `.json` it resembles — as on the fetched path,
+        // where `solveExtensionName` compares the case as written.
+        return dot > slash ? clean.slice(dot) : '.deon';
     }
 
 

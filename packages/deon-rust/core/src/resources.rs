@@ -301,7 +301,9 @@ pub fn extension(target: &str, kind: ResourceKind) -> String {
     let dot = clean.rfind('.').map(|at| at as isize).unwrap_or(-1);
 
     if dot > slash {
-        clean[dot as usize..].to_lowercase()
+        // The extension is matched literally (specification 9): `.JSON` is an other extension, a
+        // resource-format error, not folded to the `.json` it resembles.
+        clean[dot as usize..].to_string()
     } else {
         ".deon".to_string()
     }

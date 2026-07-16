@@ -421,6 +421,20 @@
             }
         },
         {
+            "id": "resource-format-extension-is-case-sensitive",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import data from ./data.JSON\n{ ...#data }",
+                "/project/data.JSON": "{\"a\": 1}"
+            },
+            "error": "DEON_RESOURCE_FORMAT",
+            "position": {
+                "line": 1,
+                "column": 1
+            }
+        },
+        {
             "id": "resource-format-invalid-json",
             "required": true,
             "file": "/project/main.deon",
