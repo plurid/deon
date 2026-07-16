@@ -58,6 +58,12 @@ typedef struct {
      * at a position inside it. interp_anchor_set is true only during that decode. */
     deon_span       interp_anchor;
     bool            interp_anchor_set;
+    /* §11: the running count of Unicode code points produced by substitution (interpolation and string
+     * spread), and the ceiling it may not exceed. Shared across a whole evaluation — a document and the
+     * documents it imports run on one ctx, so one counter bounds them all. The limit is resolved from the
+     * host's expansion option once, in evaluate(). */
+    uint64_t        expansion_count;
+    uint64_t        expansion_limit;
 } deon_ctx;
 
 void deon_fail(deon_ctx *ctx, deon_code code, const char *message, deon_span span);

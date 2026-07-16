@@ -67,6 +67,12 @@ private func optionsOf(_ request: DeonValue) -> Options {
     o.allowNetwork = fieldString(request, "allowNetwork", "false") == "true"
     o.datasignFiles = stringList(request, "datasignFiles")
     o.datasignMap = stringMap(request, "datasignMap")
+    // budgets.expansion is a string count (spec/harness/README.md); an absent or zero one takes the
+    // default in the library.
+    if let budgets = field(request, "budgets"), case .string(let s)? = field(budgets, "expansion"),
+       let n = UInt64(s) {
+        o.expansion = n
+    }
     return o
 }
 

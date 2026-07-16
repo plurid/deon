@@ -82,6 +82,9 @@ public struct Options {
     public var token = ""
     public var allowFilesystem = false
     public var allowNetwork = false
+    /// The maximum number of Unicode code points an evaluation may produce by substitution before it is
+    /// refused with `DEON_LIMIT_EXCEEDED` (§11). 0 means the specification's default.
+    public var expansion: UInt64 = 0
     public var cache = false
     public var cacheDuration = 0
     public var cacheDirectory = ""
@@ -124,6 +127,7 @@ private func buildOptions(_ options: Options, _ retainer: Retainer) -> deon_opti
     native.token = retainer.dup(options.token)
     native.allow_filesystem = options.allowFilesystem
     native.allow_network = options.allowNetwork
+    native.expansion = options.expansion
     native.cache = options.cache
     native.cache_duration = Int32(clamping: options.cacheDuration)
     native.cache_directory = options.cacheDirectory.isEmpty ? nil : retainer.dup(options.cacheDirectory)

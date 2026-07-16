@@ -191,8 +191,11 @@ impl<'a> Evaluator<'a> {
 
                 MapItem::Spread { reference, span } => {
                     match self.reference(reference, span, locals)? {
-                        // A string spreads into a map under its decimal character indices.
+                        // A string spreads into a map under its decimal character indices, each
+                        // character copied and so each one counted against the budget (specification 11).
                         Value::String(spread) => {
+                            self.expand(spread.chars().count())?;
+
                             for (index, character) in spread.chars().enumerate() {
                                 result.insert(index.to_string(), Value::string(character.to_string()));
                             }

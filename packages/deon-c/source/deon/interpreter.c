@@ -121,6 +121,29 @@ static const char *pair_lookup_str(const deon_pair *pairs, size_t len, deon_str 
 /* #endregion */
 
 /* #region evaluation */
+/* §11: the number of Unicode code points (scalars, not bytes) in a UTF-8 string. What a substitution
+ * adds to the expansion counter. */
+static uint64_t codepoint_count(const char *s, size_t len) {
+    const char *end = s + len;
+    uint64_t n = 0;
+    while (s < end) { int w; utf8_decode(s, end, &w); s += w; n++; }
+    return n;
+}
+
+/* §11: an evaluation crossed its expansion budget. The blown-up value has no source position of its
+ * own — the doubling happened across many strings — so, like the writer's depth refusal, it is anchored
+ * at the head of the document, byte offset 0, line 1, column 1. */
+static void expansion_fail(interpreter *in) {
+    deon_fail(in->ctx, DEON_LIMIT_EXCEEDED, "The expansion budget was exceeded.", span_head(in->source_name));
+}
+
+/* §11: account for `n` code points produced by substitution and stop the moment the running count
+ * exceeds the limit — before the gigabytes are assembled, not after. */
+static void expansion_add(interpreter *in, uint64_t n) {
+    in->ctx->expansion_count += n;
+    if (in->ctx->expansion_count > in->ctx->expansion_limit) expansion_fail(in);
+}
+
 static deon_value *eval_scalar(interpreter *in, node *n) {
     /* A single literal part is the common case; return it without building. */
     sb b = {0};
@@ -140,6 +163,10 @@ static deon_value *eval_scalar(interpreter *in, node *n) {
             deon_fail(in->ctx, DEON_TYPE_MISMATCH, "An interpolation must resolve to a string.", n->span);
         }
         sb_put(&b, value->as.string.data, value->as.string.len);
+        /* §11: the substituted code points count against the budget. Check after this one addition, and
+         * free the half-built string before failing so the abort leaks nothing. */
+        in->ctx->expansion_count += codepoint_count(value->as.string.data, value->as.string.len);
+        if (in->ctx->expansion_count > in->ctx->expansion_limit) { sb_free(&b); expansion_fail(in); }
     }
     return value_string(in->ctx->a, sb_into_arena(&b, in->ctx->a));
 }
@@ -151,7 +178,9 @@ static void spread_into_map(interpreter *in, deon_value *dest, reference ref) {
             map_set(in->ctx->a, dest, value->as.map.keys[i], value->as.map.values[i]);
         }
     } else if (value->kind == DEON_STRING) {
-        /* A string spreads into a map using decimal character indices (section 7). */
+        /* A string spreads into a map using decimal character indices (section 7). §11: each code point
+         * copied counts against the budget; account for them before building, so a blow-up stops here. */
+        expansion_add(in, codepoint_count(value->as.string.data, value->as.string.len));
         const char *s = value->as.string.data;
         const char *end = s + value->as.string.len;
         int index = 0;
@@ -177,6 +206,9 @@ static void spread_into_list(interpreter *in, deon_value *dest, reference ref) {
     if (value->kind == DEON_LIST) {
         for (size_t i = 0; i < value->as.list.len; i++) list_push(in->ctx->a, dest, value->as.list.items[i]);
     } else if (value->kind == DEON_STRING) {
+        /* §11: each code point copied into the list counts against the budget; account for them before
+         * building, so a blow-up stops here rather than after the list is assembled. */
+        expansion_add(in, codepoint_count(value->as.string.data, value->as.string.len));
         const char *s = value->as.string.data;
         const char *end = s + value->as.string.len;
         while (s < end) {
@@ -698,7 +730,9 @@ static deon_value *reanchored(deon_ctx *ctx, deon_value *(*body)(void *), void *
         return v;
     }
     memcpy(ctx->jmp, outer, sizeof(jmp_buf));
-    if (ctx->code != DEON_CYCLE) ctx->span = at;
+    /* A cycle keeps its own span; an expansion-budget refusal keeps its document-start anchor (§11)
+     * rather than being moved to the import site. Every other fault is re-anchored to `at`. */
+    if (ctx->code != DEON_CYCLE && ctx->code != DEON_LIMIT_EXCEEDED) ctx->span = at;
     longjmp(ctx->jmp, 1);
 }
 
@@ -799,6 +833,11 @@ deon_value *evaluate(deon_ctx *ctx, document_ast *doc, const deon_options *optio
     interpreter *in = interpreter_fresh(ctx, options);
     in->source_name = options->source_name && options->source_name[0] ? options->source_name : "<memory>";
     in->filebase = options->filebase ? options->filebase : "";
+
+    /* §11: resolve the expansion budget once for the whole evaluation (imports share this ctx and its
+     * counter). An absent or zero option means the default. The counter starts at zero (ctx_new). */
+    ctx->expansion_count = 0;
+    ctx->expansion_limit = options->expansion ? options->expansion : DEON_DEFAULT_EXPANSION;
 
     strset *opened = arena_alloc(ctx->a, sizeof(strset));
     memset(opened, 0, sizeof(*opened));

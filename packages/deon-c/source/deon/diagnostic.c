@@ -18,6 +18,7 @@ static const char *const CODE_NAMES[] = {
     "DEON_RESOURCE_IO",
     "DEON_RESOURCE_FORMAT",
     "DEON_LINT_DUPLICATE_KEY",
+    "DEON_LIMIT_EXCEEDED",
 };
 
 const char *deon_code_name(deon_code code) {

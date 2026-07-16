@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* The fourteen diagnostic codes, and there are no others (diagnostics.md). The catalogue is closed. */
+/* The fifteen diagnostic codes, and there are no others (diagnostics.md). The catalogue is closed. */
 typedef enum {
     DEON_OK = 0,
     DEON_LEX_UNTERMINATED,
@@ -33,7 +33,10 @@ typedef enum {
     DEON_CAPABILITY_DENIED,
     DEON_RESOURCE_IO,
     DEON_RESOURCE_FORMAT,
-    DEON_LINT_DUPLICATE_KEY
+    DEON_LINT_DUPLICATE_KEY,
+    /* §11: an evaluation whose substitutions produced more code points than the host's expansion budget
+     * allows — the guard against a billion-laughs blow-up. Anchored at the document start. */
+    DEON_LIMIT_EXCEEDED
 } deon_code;
 
 /* The wire name of a code, as it appears in a fixture, a tool's output, and a host's log. */
@@ -142,6 +145,11 @@ typedef struct {
     bool allow_filesystem;
     bool allow_network;
 
+    /* §11: the maximum number of Unicode code points an evaluation may produce by substitution
+     * (interpolation and string spread) before it is refused with DEON_LIMIT_EXCEEDED. 0 means the
+     * default, DEON_DEFAULT_EXPANSION. */
+    uint64_t expansion;
+
     bool        cache;
     int         cache_duration;      /* milliseconds; 0 means the default (one hour) */
     const char *cache_directory;     /* NULL means ~/.deon-cache */
@@ -169,6 +177,10 @@ deon_stringify_options deon_default_stringify_options(void);
 typedef struct deon_document deon_document;
 
 #define DEON_VERSION "0.0.0-11"
+
+/* The default expansion budget (§11): 2^26 code points. A tiny document never approaches it; a
+ * billion-laughs blow-up crosses it long before it assembles the gigabytes. */
+#define DEON_DEFAULT_EXPANSION 67108864ULL
 
 /* #region reading */
 deon_document *deon_parse(const char *source, size_t len);

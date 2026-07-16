@@ -469,7 +469,12 @@ class Evaluator {
 
             // A string spreads into a map under its decimal character indices.
             if (typeof spread === 'string') {
-                Array.from(spread).forEach((character, index) => {
+                const points = Array.from(spread);
+
+                // Copying those code points is expansion, counted against the budget (specification 11).
+                this.charge(points.length);
+
+                points.forEach((character, index) => {
                     setOrdered(result, String(index), character);
                 });
             } else if (!Array.isArray(spread)) {

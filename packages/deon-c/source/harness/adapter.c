@@ -133,6 +133,14 @@ static deon_options options_of(const deon_value *req, deon_pair **owned, size_t 
     o.allow_filesystem = strcmp(field_str(req, "allowFilesystem", "false"), "true") == 0;
     o.allow_network = strcmp(field_str(req, "allowNetwork", "false"), "true") == 0;
 
+    /* budgets.expansion is a string count (spec/harness/README.md); an absent or zero one takes the
+     * default in the library. */
+    deon_value *budgets = deon_map_get(req, "budgets");
+    if (budgets && budgets->kind == DEON_MAP) {
+        deon_value *exp = deon_map_get(budgets, "expansion");
+        if (exp && exp->kind == DEON_STRING) o.expansion = strtoull(exp->as.string.data, NULL, 10);
+    }
+
     size_t n = 0;
     o.resources = owned[n] = pairs_of(req, "files", &o.resources_len); (void)owned_cap; n++;
     o.absolute_paths = owned[n] = pairs_of(req, "absolutePaths", &o.absolute_paths_len); n++;
