@@ -26,12 +26,19 @@ func isURL(target string) bool {
 }
 
 func extensionOf(target string) string {
+	p := target
 	if isURL(target) {
 		if parsed, err := url.Parse(target); err == nil {
-			return path.Ext(parsed.Path)
+			p = parsed.Path
 		}
 	}
-	return path.Ext(target)
+	ext := path.Ext(p)
+	// A leading dot opens a dotfile like `.env`, which has no extension (specification 9): path.Ext
+	// returns `.env` for it, so a suffix that is the whole final segment is treated as no extension.
+	if ext == path.Base(p) {
+		return ""
+	}
+	return ext
 }
 
 func directoryOf(target string) string {

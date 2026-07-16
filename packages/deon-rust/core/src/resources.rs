@@ -194,7 +194,9 @@ pub fn resource_target(resource: &Resource, options: &ParseOptions) -> String {
         }
     }
 
-    let normalized = target.replace('\\', "/");
+    // The separator is `/`, and only `/` (specification 9): a backslash is an ordinary character in
+    // a target, not a separator, so it is left exactly as written.
+    let normalized = target;
     let absolute = is_absolute_path(&normalized);
 
     let base = if !filebase.is_empty() {
@@ -273,13 +275,15 @@ pub fn with_import_extension(target: &str, kind: ResourceKind) -> String {
     };
 
     let slash = pathname
-        .rfind(['/', '\\'])
+        .rfind('/')
         .map(|at| at as isize)
         .unwrap_or(-1);
 
     let dot = pathname.rfind('.').map(|at| at as isize).unwrap_or(-1);
 
-    if dot > slash {
+    // A dot that opens the last segment is a leading dot, not an extension (specification 9): a
+    // dotfile like `.env` has no extension and so takes the appended `.deon`.
+    if dot > slash + 1 {
         return target.to_string();
     }
 
@@ -300,9 +304,10 @@ pub fn extension(target: &str, kind: ResourceKind) -> String {
     let slash = clean.rfind('/').map(|at| at as isize).unwrap_or(-1);
     let dot = clean.rfind('.').map(|at| at as isize).unwrap_or(-1);
 
-    if dot > slash {
-        // The extension is matched literally (specification 9): `.JSON` is an other extension, a
-        // resource-format error, not folded to the `.json` it resembles.
+    // The dot must fall past the first character of the last segment: a leading dot opens a dotfile
+    // like `.env`, which has no extension (specification 9). The extension is then matched literally,
+    // so `.JSON` is an other extension, not folded to the `.json` it resembles.
+    if dot > slash + 1 {
         clean[dot as usize..].to_string()
     } else {
         ".deon".to_string()

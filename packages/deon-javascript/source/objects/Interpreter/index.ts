@@ -1531,7 +1531,9 @@ class Interpreter {
             return new URL(target, urlBase).href;
         }
 
-        const normalizedTarget = target.replace(/\\/g, '/');
+        // The separator is `/`, and only `/` (specification 9): a backslash is an ordinary character
+        // in a target, not a separator, so the target is left exactly as written.
+        const normalizedTarget = target;
         const absolute = normalizedTarget.startsWith('/')
             || /^[A-Za-z]:\//.test(normalizedTarget);
 
@@ -1586,9 +1588,12 @@ class Interpreter {
         const suffixIndex = target.search(/[?#]/);
         const pathname = suffixIndex === -1 ? target : target.slice(0, suffixIndex);
         const suffix = suffixIndex === -1 ? '' : target.slice(suffixIndex);
-        const slash = Math.max(pathname.lastIndexOf('/'), pathname.lastIndexOf('\\'));
+        // The separator is `/`, and only `/` (specification 9); a backslash is an ordinary character.
+        const slash = pathname.lastIndexOf('/');
 
-        if (pathname.lastIndexOf('.') > slash) {
+        // A dot past the first character of the last segment is an extension; a leading dot opens a
+        // dotfile like `.env`, which has none and so takes the appended `.deon`.
+        if (pathname.lastIndexOf('.') > slash + 1) {
             return target;
         }
 
@@ -1608,10 +1613,11 @@ class Interpreter {
         const slash = clean.lastIndexOf('/');
         const dot = clean.lastIndexOf('.');
 
-        // The extension is matched literally (specification 9): `.JSON` is an other extension, a
-        // resource-format error, not folded to the `.json` it resembles — as on the fetched path,
-        // where `solveExtensionName` compares the case as written.
-        return dot > slash ? clean.slice(dot) : '.deon';
+        // The dot must fall past the first character of the last segment: a leading dot opens a
+        // dotfile like `.env`, which has no extension (specification 9). The extension is then matched
+        // literally, so `.JSON` is an other extension, not folded to the `.json` it resembles — as on
+        // the fetched path, where `solveExtensionName` compares the case as written.
+        return dot > slash + 1 ? clean.slice(dot) : '.deon';
     }
 
 

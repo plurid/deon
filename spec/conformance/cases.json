@@ -435,6 +435,30 @@
             }
         },
         {
+            "id": "resolver-leading-dot-is-not-an-extension",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import env from ./.env\n{ #env.key }",
+                "/project/.env.deon": "{ key appended }"
+            },
+            "expected": {
+                "key": "appended"
+            }
+        },
+        {
+            "id": "resolver-backslash-is-an-ordinary-character",
+            "required": true,
+            "file": "/project/main.deon",
+            "files": {
+                "/project/main.deon": "import child from ./sub\\child\n{ #child.name }",
+                "/project/sub\\child.deon": "{ name literal }"
+            },
+            "expected": {
+                "name": "literal"
+            }
+        },
+        {
             "id": "resource-format-invalid-json",
             "required": true,
             "file": "/project/main.deon",
