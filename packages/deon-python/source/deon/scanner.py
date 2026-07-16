@@ -641,9 +641,26 @@ class Scanner:
         if self.peek() == "$":
             self.advance()
 
-            name = self.bare_name(start, "Expected an environment name after '$'.")
+            # An environment head is '$' then a non-empty bare-name (`environment-reference = "$",
+            # bare-name`, deon.ebnf:42). A lone '$', or a '$' trailed by a non-bare-name character
+            # such as a second '$', has an empty name and is `DEON_PARSE_EXPECTED` at the character
+            # where the name was due — not `DEON_LEX_INVALID` at the '#', which is where the shared
+            # `bare_name` would point. The name run stops on the first non-bare-name character, so it
+            # never swallows the extra '$' of '$$X'.
+            name_start = self.mark()
+            begin = self.current
 
-            return Reference(head=name, environment=True)
+            while not self.at_end() and self.peek() in NAME_CHARACTERS:
+                self.advance()
+
+            if self.current == begin:
+                raise self.fail(
+                    DiagnosticCode.PARSE_EXPECTED,
+                    "A reference name was expected here.",
+                    name_start,
+                )
+
+            return Reference(head=self.source[begin : self.current], environment=True)
 
         if self.peek() == "'":
             head_start = self.mark()

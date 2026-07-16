@@ -786,10 +786,36 @@ impl Scanner {
         line: usize,
         column: usize,
     ) -> DResult<()> {
-        // The head: a quoted name, or a bare run up to the first '.', '[', or a terminator. An
-        // environment head keeps its leading '$', which the evaluator reads.
+        // The head: a quoted name, an environment head, or a bare run up to the first '.', '[', or a
+        // terminator. An environment head keeps its leading '$', which the evaluator reads.
         let head = if self.peek(0) == '\'' {
             self.quoted_reference_name(start, line, column)?
+        } else if self.peek(0) == '$' {
+            // An environment head is `$` then a non-empty bare-name (`environment-reference = "$",
+            // bare-name`, deon.ebnf:42): letters, digits, `_`, and `-`. A lone `$`, or a `$` trailed
+            // by a non-bare-name character such as a second `$`, has an empty name and is
+            // `DEON_PARSE_EXPECTED` at the character where the name was due — matching the other
+            // implementations, which report there rather than at the `#`. The name run stops on the
+            // first non-bare-name character, so it never swallows the extra `$` of `$$X`.
+            self.advance();
+
+            let (at, at_line, at_column) = (self.current, self.line, self.column);
+            let mut name = String::new();
+
+            while !self.at_end() && is_reference_name(self.peek(0)) {
+                name.push(self.advance());
+            }
+
+            if name.is_empty() {
+                return self.parse_expected(
+                    "A reference name was expected here.",
+                    at,
+                    at_line,
+                    at_column,
+                );
+            }
+
+            format!("${name}")
         } else {
             let mut head = String::new();
 

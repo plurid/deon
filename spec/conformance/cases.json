@@ -898,6 +898,20 @@
             "position": { "line": 1, "column": 3 }
         },
         {
+            "id": "environment-reference-requires-a-name",
+            "required": true,
+            "source": "{ h #$ }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 7 }
+        },
+        {
+            "id": "environment-reference-name-excludes-the-dollar",
+            "required": true,
+            "source": "{ h #$$X }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 7 }
+        },
+        {
             "id": "structure-allows-a-trailing-comma",
             "required": true,
             "source": "{ p <a, b> [1, 2,] }",
