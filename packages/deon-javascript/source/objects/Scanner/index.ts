@@ -754,6 +754,18 @@ class Scanner {
         column: number,
         unterminatedQuote = false,
     ) {
+        // The dispatcher consumes a value's first character before calling this, so a value that opens
+        // with the '\' of an escaped interpolation arrives with the cursor already on its '#{'. Rewind
+        // onto that backslash so a value-initial '\#{...}' takes the very same escaped-interpolation
+        // path as a mid-word one, rather than the greedy '#{' branch — which would read a
+        // whitespace-only reference through the group's closing brace and refuse `\#{x ` where a
+        // mid-word `p\#{x ` falls back to the literal '#{' (specification 4.3: value-initial and
+        // mid-string escaped interpolations behave identically).
+        if (this.current === start + 1 && this.source.startsWith('\\#{', start)) {
+            this.current = start;
+            this.column -= 1;
+        }
+
         while (!this.atEnd()) {
             const character = this.peek();
 
@@ -771,36 +783,27 @@ class Scanner {
             }
 
             if (this.source.startsWith('#{', this.current)) {
-                this.advance(); // #
-                this.advance(); // {
-                const contentStart = this.current;
-
-                while (!this.atEnd() && this.peek() !== '}') {
-                    this.advance();
-                }
-
-                if (this.atEnd()) {
-                    this.fail(
-                        TokenType.SIGNIFIER,
-                        DiagnosticCode.LEX_UNTERMINATED,
-                        'Unterminated interpolation.',
-                        start,
-                        line,
-                        column,
-                    );
-                }
-
-                const content = this.source.slice(contentStart, this.current);
-                this.advance(); // }
-
-                this.checkInterpolation(content);
+                this.bareInterpolation(start, line, column);
                 continue;
             }
 
+            // An escaped interpolation `\#{reference}` is lexed exactly as the `#{reference}` it
+            // mirrors, and kept as the literal characters `#{reference}` rather than resolved
+            // (specification 4.3, 10). It is read through its closing `}` — so a word carrying one
+            // (`p\#{x}q`) is not cut in two at the brace — whenever a reference actually closes it.
+            // Where none does before the word ends (a space, the group's edge), the backslash escapes
+            // only the `#{` opener and the reference text is ordinary content, which keeps `p\#{q` the
+            // literal `p#{q`. In either case `decodeMinimal` turns the `\#{` into the literal `#{`.
             if (this.source.startsWith('\\#{', this.current)) {
-                this.advance();
-                this.advance();
-                this.advance();
+                if (this.escapedInterpolationCloses()) {
+                    this.advance(); // the escaping backslash
+                    this.bareInterpolation(start, line, column);
+                } else {
+                    this.advance(); // \
+                    this.advance(); // #
+                    this.advance(); // {
+                }
+
                 continue;
             }
 
@@ -818,6 +821,76 @@ class Scanner {
             column,
             unterminatedQuote,
         );
+    }
+
+
+    /**
+     * Consumes a `#{...}` written inside an unquoted word, the cursor on its `#`, reading through the
+     * closing `}` and validating the reference exactly as a value-position interpolation is
+     * (specification 10). An unterminated one is `DEON_LEX_UNTERMINATED`; an empty or
+     * whitespace-surrounded reference is `DEON_PARSE_EXPECTED` at the position a real one gives. Shared
+     * by a real interpolation and by the closed form of an escaped one, so both report the same code
+     * and position.
+     */
+    private bareInterpolation(
+        start: number,
+        line: number,
+        column: number,
+    ) {
+        this.advance(); // #
+        this.advance(); // {
+        const contentStart = this.current;
+
+        while (!this.atEnd() && this.peek() !== '}') {
+            this.advance();
+        }
+
+        if (this.atEnd()) {
+            this.fail(
+                TokenType.SIGNIFIER,
+                DiagnosticCode.LEX_UNTERMINATED,
+                'Unterminated interpolation.',
+                start,
+                line,
+                column,
+            );
+        }
+
+        const content = this.source.slice(contentStart, this.current);
+        this.advance(); // }
+
+        this.checkInterpolation(content);
+    }
+
+
+    /**
+     * Whether an escaped `\#{...}` at the cursor is closed by a `}` that a reference reaches — scanning
+     * forward from past the `\#{` over the characters a reference may hold. When a `}` is reached, the
+     * escaped interpolation is lexed through its brace exactly like a real one (`\#{x}`); when a space
+     * or the group's edge comes first, no reference closes it, so the backslash escapes only the `#{`
+     * opener and the following text is ordinary content (`p\#{q` stays the literal `p#{q`) — the
+     * lenient-versus-strict split section 4.3 settles in favour of a reference actually closing.
+     */
+    private escapedInterpolationCloses() {
+        let index = this.current + 3; // past the '\#{'
+
+        while (index < this.source.length) {
+            const character = this.source[index];
+
+            if (character === '}') {
+                return true;
+            }
+
+            // A reference is name characters, dots, brackets, quotes, and the environment '$'. Anything
+            // else — a space, a comma, another opener — ends the word before a reference could close.
+            if (!/[A-Za-z0-9_.$'\[\]-]/.test(character)) {
+                return false;
+            }
+
+            index += 1;
+        }
+
+        return false;
     }
 
 

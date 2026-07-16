@@ -974,18 +974,44 @@ final class Parser {
                 consumeInterpolationRaw(raw);
                 continue;
             }
-            if (r == '\\') {
-                // Keep the backslash and the character it escapes verbatim; decode() reads them once. "\#{"
-                // is three source characters taken as a unit, so its '{' is not mistaken for a bracketing
-                // delimiter that would end the value.
-                raw.appendCodePoint(advance());
-                if (!atEnd()) {
-                    if (peek() == '#' && peekAt(1) == '{') {
-                        raw.appendCodePoint(advance());
-                        raw.appendCodePoint(advance());
-                    } else {
+            if (r == '\\' && peekAt(1) == '#' && peekAt(2) == '{') {
+                // \#{reference} is an escaped interpolation: written and lexed exactly as the
+                // interpolation it mirrors — the same reference closed by the same '}' — but kept as
+                // the literal characters #{reference} rather than resolved (sections 4.3 and 10). It is
+                // classified against a sub-parse anchored at the '#', so an empty reference is refused
+                // where a real #{} is. A '\#{' whose reference is not immediately closed by '}' is not
+                // an escaped interpolation at all: there the backslash merely escapes '#{' to literal
+                // text and ordinary scanning resumes, so `p\#{q ` reads as the literal `p#{q`.
+                int hashPos = pos + 1;
+                int lineEnd = hashPos;
+                while (lineEnd < count && !isNewline(runes[lineEnd])) {
+                    lineEnd++;
+                }
+                Parser probe = new Parser(slice(hashPos, lineEnd), "");
+                probe.advance(); // #
+                probe.advance(); // {
+                probe.parseReference(); // an empty reference throws DEON_PARSE_EXPECTED, as a real #{} does
+                if (probe.peek() == '}') {
+                    // Copy \#{reference} verbatim, its '}' taken too, so the single decode pass below
+                    // renders the literal characters #{reference}.
+                    int interpolationRunes = probe.pos + 1; // '#{' + reference + '}'
+                    raw.appendCodePoint(advance()); // '\'
+                    for (int i = 0; i < interpolationRunes; i++) {
                         raw.appendCodePoint(advance());
                     }
+                    continue;
+                }
+                // No closing '}': the backslash escapes '#{' to literal text; keep all three verbatim.
+                raw.appendCodePoint(advance()); // '\'
+                raw.appendCodePoint(advance()); // '#'
+                raw.appendCodePoint(advance()); // '{'
+                continue;
+            }
+            if (r == '\\') {
+                // Keep the backslash and the character it escapes verbatim; decode() reads them once.
+                raw.appendCodePoint(advance());
+                if (!atEnd()) {
+                    raw.appendCodePoint(advance());
                 }
                 continue;
             }

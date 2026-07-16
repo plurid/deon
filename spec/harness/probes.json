@@ -120,5 +120,7 @@
     {"id": "access-quoted-key-into-a-map-resolves", "source": "m { a b }\n{ v #m['a'] }"},
     {"id": "access-decimal-key-into-a-map-resolves", "source": "m { '1.0' hit }\n{ v #m[1.0] }"},
     {"id": "structure-row-trailing-comma", "source": "{ p <id, name> [1, One,] }"},
+    {"id": "escaped-interpolation-double", "source": "{ a \\#{x}\\#{y} }"},
+    {"id": "escaped-interpolation-empty-is-an-error", "source": "{ a \\#{} }"},
     {"id": "nesting-at-the-limit-is-accepted", "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[x]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] }"}
 ]

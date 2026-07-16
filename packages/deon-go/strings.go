@@ -127,16 +127,20 @@ func (p *parser) unquoted() node {
 			p.consumeInterpolationRaw(&raw)
 			continue
 		}
+		// `\#{` opens an escaped interpolation (§4.3, §10): it is written and lexed exactly as the
+		// `#{...}` it mirrors, so its closing `}` is read into the word rather than ending it, but its
+		// characters are kept literally when the raw is decoded. Without a clean single-line close it is
+		// the plain escape for a literal `#{`, which the decode pass produces from the `\#{` left here.
+		if p.startsWith("\\#{") {
+			p.consumeEscapedInterpolationRaw(&raw)
+			continue
+		}
 		if r == '\\' {
 			// A backslash takes the character after it, so an escaped delimiter does not end anything;
-			// both characters are kept raw for the single decode pass below. `\#{` is the three-character
-			// escape for a literal `#{`, so its `{` is taken too rather than left to end the value.
+			// both characters are kept raw for the single decode pass below.
 			raw = append(raw, p.advance())
 			if !p.atEnd() {
 				raw = append(raw, p.advance())
-				if raw[len(raw)-1] == '#' && p.peek() == '{' {
-					raw = append(raw, p.advance())
-				}
 			}
 			continue
 		}
@@ -181,6 +185,39 @@ func (p *parser) consumeInterpolationRaw(raw *[]rune) {
 		}
 		*raw = append(*raw, p.advance())
 	}
+}
+
+// consumeEscapedInterpolationRaw copies `\#{...}` into the raw source so the closing `}` of a
+// well-formed escaped interpolation is read into the word rather than ending it. It takes `\#{`, a
+// reference with no interior whitespace, and a closing `}`. When no `}` closes it on the line — a
+// space, a comma, a newline, a non-reference delimiter, or the value's end comes first — only `\#{`
+// is taken; that escape decodes to a literal `#{` and the rest is read as ordinary text (§4.3, §10).
+// Whether the reference is well-formed, and an empty one an error, is decided when the raw is decoded,
+// so an escaped interpolation faults exactly where the real interpolation it mirrors would.
+func (p *parser) consumeEscapedInterpolationRaw(raw *[]rune) {
+	*raw = append(*raw, p.advance(), p.advance(), p.advance()) // \ # {
+	for !p.atEnd() {
+		r := p.peek()
+		if r == '}' {
+			*raw = append(*raw, p.advance())
+			return
+		}
+		if isSpace(r) || isNewline(r) || r == ',' || isNonReferenceDelimiter(r) {
+			return
+		}
+		*raw = append(*raw, p.advance())
+	}
+}
+
+// isNonReferenceDelimiter reports the bracketing delimiters that cannot occur in a reference and so
+// end an escaped interpolation's scan without closing it. `[` and `]` are excluded because a bracket
+// access is part of a reference; `}` is handled by the caller as the closer.
+func isNonReferenceDelimiter(r rune) bool {
+	switch r {
+	case '{', '(', ')', '<', '>':
+		return true
+	}
+	return false
 }
 
 func isHardDelimiter(r rune) bool {
@@ -297,8 +334,19 @@ func decodeInner(raw []rune, active rune) []stringPart {
 				literal.WriteRune(active)
 				i++
 			case next == '#' && peek(1) == '{':
-				literal.WriteString("#{")
-				i += 2
+				// `\#{...}` is an escaped interpolation: lexed exactly as the `#{...}` it mirrors — its
+				// reference validated, an empty or whitespace one reported as the same DEON_PARSE_EXPECTED
+				// at the same position a real interpolation gives — but the characters `#{...}` are kept
+				// literally rather than resolved (§4.3, §10). With no clean close on the line the `\#{` is
+				// the plain escape for a literal `#{`.
+				if n := escapedInterpolationLength(raw[i:]); n > 0 {
+					parseInnerReference(raw[i : i+n]) // validate; raises on a bad reference at the mirror position
+					literal.WriteString(string(raw[i : i+n]))
+					i += n
+				} else {
+					literal.WriteString("#{")
+					i += 2
+				}
 			case next == 'n':
 				literal.WriteRune('\n')
 				i++
@@ -326,6 +374,22 @@ func decodeInner(raw []rune, active rune) []stringPart {
 
 	flush()
 	return ensureParts(parts)
+}
+
+// escapedInterpolationLength reports the length of a `#{reference}` at the front of raw — the opener,
+// the reference, and the closing `}` — or 0 when no `}` closes it before a whitespace character or the
+// end. It decides only where an escaped interpolation ends; whether the reference between the braces
+// is well-formed is decided by decoding it, exactly as for a real interpolation. raw begins with `#{`.
+func escapedInterpolationLength(raw []rune) int {
+	for j := 2; j < len(raw); j++ {
+		switch raw[j] {
+		case '}':
+			return j + 1
+		case ' ', '\t', '\n', '\r':
+			return 0
+		}
+	}
+	return 0
 }
 
 // parseInnerReference parses one `#{reference}` out of a run of backtick source and reports how many

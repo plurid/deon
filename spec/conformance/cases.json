@@ -65,6 +65,30 @@
             "expected": { "a": "hello world", "b": "hello world", "c": "hello world", "d": "#{name}" }
         },
         {
+            "id": "escaped-interpolation-is-literal-text",
+            "required": true,
+            "source": "{ a \\#{x} }",
+            "expected": { "a": "#{x}" }
+        },
+        {
+            "id": "escaped-interpolation-beside-text",
+            "required": true,
+            "source": "{ a p\\#{x}q }",
+            "expected": { "a": "p#{x}q" }
+        },
+        {
+            "id": "escaped-interpolation-next-to-a-real-one",
+            "required": true,
+            "source": "who world\n{ a \\#{who}#{who} }",
+            "expected": { "a": "#{who}world" }
+        },
+        {
+            "id": "escaped-interpolation-fallback-at-value-start",
+            "required": true,
+            "source": "{ a \\#{x }",
+            "expected": { "a": "#{x" }
+        },
+        {
             "id": "structure-list-of-maps",
             "required": true,
             "source": "{ people <id, name> [1, One\n2, Two] }",

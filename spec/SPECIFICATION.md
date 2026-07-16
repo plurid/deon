@@ -62,7 +62,7 @@ All three forms recognize `#{reference}` interpolation. The following minimal es
 
 - `\\` to one backslash;
 - backslash followed by the active quote delimiter to that delimiter;
-- `\#{` to the literal characters `#{`;
+- `\#{` to a literal interpolation opener. Where a `}` closes a non-empty, whitespace-free reference — exactly the reference a real `#{…}` would take — the *escaped interpolation* `\#{reference}` is kept as the literal characters `#{reference}` rather than resolved, wherever it falls (so `p\#{x}q` is the literal string `p#{x}q`); an empty reference `\#{}` is `DEON_PARSE_EXPECTED` at the same place `#{}` is. Where no such `}` closes the reference before a whitespace, a value-ending delimiter, or the end of the string, the `\#{` is simply the two literal characters `#{` and reading continues (so `p\#{q ` is the literal string `p#{q`), which is how a literal `#{` is written;
 - `\n` to a line feed, `\r` to a carriage return, `\t` to a horizontal tab.
 
 Every other backslash sequence is preserved literally. An unquoted string has no active quote delimiter, so `\'` and `` \` `` are not escapes there and the backslash is kept. An unterminated string, escape, or interpolation is a lexical error.
@@ -145,7 +145,7 @@ Repeated JSON object members follow Deon's last-write-wins map rule.
 
 ## 10. Interpolation and entity calls
 
-`#{reference}` may occur any number of times in any string form. A reference is resolved using the same access rules as a leaflink and MUST produce a string. The reference is written immediately between the braces with no surrounding whitespace and MUST NOT be empty: `#{}` and `#{ name }` are `DEON_PARSE_EXPECTED`, not an empty or trimmed reference. Every occurrence is replaced. `\\#{` writes a literal interpolation opener.
+`#{reference}` may occur any number of times in any string form. A reference is resolved using the same access rules as a leaflink and MUST produce a string. The reference is written immediately between the braces with no surrounding whitespace and MUST NOT be empty: `#{}` and `#{ name }` are `DEON_PARSE_EXPECTED`, not an empty or trimmed reference. Every occurrence is replaced. A backslash keeps an interpolation literal. Where `\#{` is followed by a non-empty, whitespace-free reference closed by `}` — the reference a real `#{…}` would take — the *escaped interpolation* `\#{reference}` is kept as the literal characters `#{reference}` rather than resolved, wherever it appears, including immediately beside other text (`p\#{x}q` is the literal string `p#{x}q`); an empty reference `\#{}` is `DEON_PARSE_EXPECTED` exactly as `#{}` is. Where no `}` closes the reference before a whitespace, a value-ending delimiter, or the end of the string, the `\#{` is simply the two literal characters `#{` and reading continues (`p\#{q ` is the literal string `p#{q`), so a literal `#{` can always be written. Whether an escaped interpolation begins a value or falls within it makes no difference.
 
 A map, list, or string leaflink may be called:
 

@@ -36,5 +36,6 @@ deon_str     literal_of(parser *p, string_part *parts, size_t len);
  * interpolation parsed on the current cursor (both reach the reference parser, which lives in parser.c). */
 parser      *sub_parser(deon_ctx *ctx, const char *utf8, size_t len);
 string_part  parse_interpolation_part(parser *p);
+deon_str     parse_escaped_interpolation_part(parser *p);
 
 #endif

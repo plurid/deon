@@ -773,6 +773,15 @@ impl Scanner {
     /// An unquoted word. It ends at whitespace or at a grouping character, and it swallows any
     /// interpolation written inside it, which is resolved later against the evaluated value.
     fn bare(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
+        // The dispatch in `scan_token` consumed the first character to recognise a bare word; rewind
+        // so the run is read whole from that first character. This lets an escaped interpolation
+        // `\#{…}` at the very start of a value take the same non-greedy path as one written mid-word,
+        // rather than its leading `\` being read past and the `#{` then read greedily — so
+        // value-initial and mid-string escaped interpolations behave identically (specification 4.3).
+        self.current = start;
+        self.line = line;
+        self.column = column;
+
         self.consume_bare_run(start, line, column)?;
 
         let lexeme = self.slice(start, self.current).to_string();
@@ -800,50 +809,94 @@ impl Scanner {
             }
 
             if character == '#' && self.peek(1) == '{' {
-                let interpolation_start = self.current;
-
-                self.advance();
-                self.advance();
-
-                while !self.at_end() && self.peek(0) != '}' {
-                    self.advance();
-                }
-
-                if self.at_end() {
-                    return self.fail(
-                        DiagnosticCode::LexUnterminated,
-                        "Unterminated interpolation.",
-                        start,
-                        line,
-                        column,
-                    );
-                }
-
-                self.advance();
-
-                // An interpolation written inside a word carries the same reference grammar as one
-                // standing alone, and its fault is positioned relative to the `#{` (specification 10).
-                let lexeme = self.slice(interpolation_start, self.current).to_string();
-
-                if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
-                    return err(
-                        DiagnosticCode::ParseExpected,
-                        "An interpolation needs a reference immediately between its braces.",
-                        &self.span(interpolation_start, 1, fault),
-                    );
-                }
-
+                self.consume_interpolation(start, line, column)?;
                 continue;
             }
 
+            // An escaped interpolation `\#{reference}` is the literal text `#{reference}` (§4.3, §10):
+            // the reference is read exactly as a real interpolation's, and a closing `}` reached over
+            // reference characters completes it — `decode_minimal` then keeps it literal rather than
+            // resolving it. It must fire wherever `#{` does, including mid-word, so `p\#{x}q` is the
+            // literal `p#{x}q` and is not cut in two at the brace. An empty reference is the same error
+            // a real `#{}` is. When no `}` closes the reference — a space, a delimiter, or the end
+            // intervenes — the `\#{` is instead the plain escape for the two characters `#{`, and what
+            // follows is ordinary content, so `p\#{q }` is the literal `p#{q`.
             if character == '\\' && self.peek(1) == '#' && self.peek(2) == '{' {
-                self.advance();
-                self.advance();
-                self.advance();
+                let mut offset = 3;
+
+                while !matches!(
+                    self.peek(offset),
+                    '}' | '\0' | ' ' | '\t' | '\r' | '\n' | '{' | '(' | ')' | '<' | '>' | ','
+                ) {
+                    offset += 1;
+                }
+
+                if self.peek(offset) == '}' {
+                    let reference: String = (3..offset).map(|at| self.peek(at)).collect();
+
+                    if let Some(fault) = interpolation_fault(&reference) {
+                        return err(
+                            DiagnosticCode::ParseExpected,
+                            "An interpolation needs a reference immediately between its braces.",
+                            &self.span(self.current, 1, fault),
+                        );
+                    }
+
+                    for _ in 0..=offset {
+                        self.advance();
+                    }
+                } else {
+                    self.advance();
+                    self.advance();
+                    self.advance();
+                }
+
                 continue;
             }
 
             self.advance();
+        }
+
+        Ok(())
+    }
+
+    /// Consumes a `#{...}` from the cursor, which sits on the `#`, reading the reference to its
+    /// closing `}`. An unterminated one is `DEON_LEX_UNTERMINATED`; an empty or whitespace-surrounded
+    /// reference is `DEON_PARSE_EXPECTED` at the position a fresh cursor over the `#{...}` gives, so the
+    /// diagnostic is relative to the `#{` rather than to the document (specification 10). Shared by a
+    /// real interpolation written inside a word and by an escaped one `\#{...}`, which is lexed
+    /// identically and differs only in that `decode_minimal` keeps it as literal text (specification
+    /// 4.3) — so an escaped interpolation reports the very code and position a real one reports.
+    fn consume_interpolation(&mut self, start: usize, line: usize, column: usize) -> DResult<()> {
+        let interpolation_start = self.current;
+
+        self.advance();
+        self.advance();
+
+        while !self.at_end() && self.peek(0) != '}' {
+            self.advance();
+        }
+
+        if self.at_end() {
+            return self.fail(
+                DiagnosticCode::LexUnterminated,
+                "Unterminated interpolation.",
+                start,
+                line,
+                column,
+            );
+        }
+
+        self.advance();
+
+        let lexeme = self.slice(interpolation_start, self.current).to_string();
+
+        if let Some(fault) = interpolation_fault(&lexeme[2..lexeme.len() - 1]) {
+            return err(
+                DiagnosticCode::ParseExpected,
+                "An interpolation needs a reference immediately between its braces.",
+                &self.span(interpolation_start, 1, fault),
+            );
         }
 
         Ok(())

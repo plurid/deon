@@ -801,6 +801,20 @@ string_part parse_interpolation_part(parser *p) {
     return part;
 }
 
+/* An escaped interpolation `\#{reference}` (section 4.3, 10) kept as literal text. The caller has
+ * consumed the `\` and sits on the `#`. The reference is validated exactly as a real interpolation is,
+ * on a fresh cursor that begins at the `#`, so an empty or malformed reference fails with the same code
+ * at the same column a real `#{reference}` reports — the leading `\` is not counted. The verbatim
+ * characters `#{reference}` are returned and the cursor advances past them. */
+deon_str parse_escaped_interpolation_part(parser *p) {
+    size_t hash = p->pos;
+    deon_str rest = slice(p, hash, p->count);
+    parser *sub = sub_parser(p->ctx, rest.data, rest.len);
+    parse_interpolation_part(sub);
+    p->pos = hash + sub->pos;
+    return slice(p, hash, p->pos);
+}
+
 /* Wrappers so strings.c can drive the same live cursor without the static names leaking globally. */
 uint32_t  p_peek(parser *p)                         { return peek(p); }
 uint32_t  p_advance(parser *p)                       { return advance(p); }

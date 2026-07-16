@@ -14,6 +14,7 @@ from .diagnostic import DiagnosticCode, Span, error
 from .jsonread import read_json
 from .options import ParseOptions
 from .parser import MAX_DEPTH, parse_syntax
+from .scanner import escaped_interpolation_end
 from .resources import (
     DEON_EXTENSION,
     IMPORT,
@@ -595,6 +596,22 @@ def decode(raw: str, token: Token, resolve) -> str:
                 continue
 
             if raw.startswith("#{", index + 1):
+                # An escaped interpolation `\#{reference}` is validated exactly like the real
+                # interpolation it mirrors — an empty or whitespace reference is the same
+                # `DEON_PARSE_EXPECTED` at the same `#{`-relative position — but its characters are
+                # kept literally rather than resolved (specification 4.3, 10). When no `}` closes the
+                # reference before whitespace, the `\#{` is a plain escape for the characters `#{`.
+                closing = escaped_interpolation_end(raw, index + 1)
+
+                if closing is not None:
+                    inner = raw[index + 3 : closing]
+                    parse_reference(inner, token)
+                    out.append("#{")
+                    out.append(inner)
+                    out.append("}")
+                    index = closing + 1
+                    continue
+
                 out.append("#{")
                 index += 3
                 continue

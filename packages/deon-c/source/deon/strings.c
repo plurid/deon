@@ -38,6 +38,19 @@ static void flush_literal(parts_builder *b, sb *lit) {
     lit->len = 0;
 }
 
+/* An escaped interpolation `\#{reference}` is complete when a `}` closes a reference that holds no
+ * whitespace, exactly as a real `#{reference}` must (section 4.3, 10). `ref_off` is the offset from the
+ * cursor to the first reference character: 3 at a `\`, or 2 at the `#` of an already-consumed `\`. When
+ * it is not complete — a space, a newline, or the run's end comes first — the `\#{` is only the plain
+ * literal escape for `#{`, and what follows stays ordinary text. */
+static bool escaped_interp_complete(parser *p, int ref_off) {
+    for (int i = ref_off; ; i++) {
+        uint32_t c = peek_at(p, i);
+        if (c == '}') return true;
+        if (c == 0 || is_space(c) || is_newline(c)) return false;
+    }
+}
+
 /* decode reads an extracted run of source into parts, honoring escapes and interpolation. The active
  * quote delimiter — '\'' , '`', or 0 for an unquoted string — is what \' produces inside a single
  * string and preserves verbatim outside one. Every unnamed backslash sequence is kept literally. */
@@ -55,7 +68,15 @@ static string_part *decode(deon_ctx *ctx, const char *utf8, size_t len, uint32_t
             uint32_t n = p_peek(p);
             if (n == '\\') { p_advance(p); sb_putc(&lit, '\\'); }
             else if (active != 0 && n == active) { p_advance(p); sb_put_rune(&lit, active); }
-            else if (n == '#' && peek_at(p, 1) == '{') { p_advance(p); p_advance(p); sb_puts(&lit, "#{"); }
+            else if (n == '#' && peek_at(p, 1) == '{') {
+                /* `\#{reference}` keeps the literal characters `#{reference}` rather than resolving
+                 * them; an empty or malformed reference is the error a real `#{}` is. Without a closing
+                 * `}` before whitespace or the run's end it is only the plain escape for `#{`. */
+                if (escaped_interp_complete(p, 2)) {
+                    deon_str text = parse_escaped_interpolation_part(p);
+                    sb_put(&lit, text.data, text.len);
+                } else { p_advance(p); p_advance(p); sb_puts(&lit, "#{"); }
+            }
             else if (n == 'n') { p_advance(p); sb_putc(&lit, '\n'); }
             else if (n == 'r') { p_advance(p); sb_putc(&lit, '\r'); }
             else if (n == 't') { p_advance(p); sb_putc(&lit, '\t'); }
@@ -223,13 +244,26 @@ node *parse_unquoted(parser *p) {
             break;
         }
         if (r == '\\') {
+            /* A complete escaped interpolation `\#{reference}` (section 4.3) decodes to the literal
+             * characters `#{reference}`. Its `{` and its closing `}` are bracketing delimiters, so the
+             * whole run is taken here, or the loop would stop at a brace and split it. Without a closing
+             * `}` before whitespace or the value's end it is not an interpolation: only the `\#{` escape
+             * for a literal `#{` is taken, and the rest is ordinary content (`p\#{q` is `p#{q`). */
+            if (peek_at(p, 1) == '#' && peek_at(p, 2) == '{' && escaped_interp_complete(p, 3)) {
+                sb_put_rune(&raw, p_advance(p)); /* \ */
+                sb_put_rune(&raw, p_advance(p)); /* # */
+                sb_put_rune(&raw, p_advance(p)); /* { */
+                while (!p_at_end(p) && p_peek(p) != '}') sb_put_rune(&raw, p_advance(p));
+                sb_put_rune(&raw, p_advance(p)); /* } */
+                continue;
+            }
             sb_put_rune(&raw, p_advance(p)); /* the backslash */
             if (!p_at_end(p)) {
                 uint32_t n = p_peek(p);
                 sb_put_rune(&raw, p_advance(p)); /* the escaped character */
-                /* `\#{` is one escape that decodes to the literal `#{`. Its `{` is a bracketing
-                 * delimiter, so the raw collector must take it here, or the loop would stop at the `{`
-                 * and split the escape into `\#` and a stray `{`. decode reads the three bytes back. */
+                /* `\#{` with no clean close is the plain escape for a literal `#{`. Its `{` is a
+                 * bracketing delimiter, so take it here too, or the loop would stop at the `{` and split
+                 * the escape into `\#` and a stray `{`. decode reads the bytes back. */
                 if (n == '#' && !p_at_end(p) && p_peek(p) == '{') sb_put_rune(&raw, p_advance(p));
             }
             continue;

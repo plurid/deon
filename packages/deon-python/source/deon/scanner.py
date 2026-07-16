@@ -62,6 +62,33 @@ def normalize(source: str) -> str:
     return source.replace("\r\n", "\n")
 
 
+def escaped_interpolation_end(text: str, hash_index: int) -> "int | None":
+    r"""The index of the `}` that closes an escaped interpolation whose `#{` begins at `hash_index`,
+    or None when no `}` closes the reference before whitespace or the end of the text.
+
+    An escaped interpolation `\#{reference}` is written and lexed exactly as the interpolation it
+    mirrors — the same reference between the braces, the same closing `}` — but kept literally rather
+    than resolved (specification 4.3, 10). It is recognized only when a `}` follows the reference with
+    no intervening whitespace, exactly as a real interpolation is written; `\#{q ` (a space before any
+    `}`) is therefore a plain `\#{` escape for the two characters `#{`, and the space ends the value.
+    """
+    index = hash_index + 2
+    length = len(text)
+
+    while index < length:
+        character = text[index]
+
+        if character in " \t\r\n":
+            return None
+
+        if character == "}":
+            return index
+
+        index += 1
+
+    return None
+
+
 class Scanner:
     def __init__(self, source: str, source_name: str = "<memory>") -> None:
         self.source = normalize(source)
@@ -295,13 +322,19 @@ class Scanner:
 
             if character == "\\":
                 # A backslash takes what follows it, so an escaped delimiter does not end anything.
-                # `\#{` is the escaped interpolation opener, and it is three characters, not two:
-                # taking only two would leave the `{` behind to be read as something it is not.
                 self.advance()
 
                 if self.peek() == "#" and self.peek(1) == "{":
-                    self.advance()
-                    self.advance()
+                    # An escaped interpolation `\#{reference}` is lexed exactly as the `#{reference}`
+                    # it mirrors, so its closing `}` belongs to it and does not end the word — a word
+                    # carrying one (`p\#{x}q`) is not cut in two at the brace. When no `}` closes the
+                    # reference before whitespace, the `\#{` is a plain escape for the two characters
+                    # `#{` and the rest reads as ordinary text (specification 4.3, 10).
+                    if escaped_interpolation_end(self.source, self.current) is not None:
+                        self.interpolation(self.mark())
+                    else:
+                        self.advance()
+                        self.advance()
                 elif not self.at_end():
                     self.advance()
 

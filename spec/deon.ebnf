@@ -55,23 +55,32 @@ string            = unquoted-string | single-string | multiline-string ;
    unnested comma, newline, bracketing delimiter, or a "#" that starts a link at a token boundary.
    These are lexical rules — section 4.3 is authoritative — and a recognized escape or a "#{"
    interpolation takes precedence over a literal character by longest match. *)
-unquoted-string   = ( unquoted-first | escape | interpolation ),
-                    { unquoted-rest | escape | interpolation } ;
+unquoted-string   = ( unquoted-first | escape | escaped-interpolation | interpolation ),
+                    { unquoted-rest | escape | escaped-interpolation | interpolation } ;
 unquoted-first    = any-character - ( space | newline | "," | "{" | "}" | "[" | "]"
                     | "(" | ")" | "<" | ">" | "'" | "`" | "#" | "\\" ) ;
 unquoted-rest     = any-character - ( newline | "," | "{" | "}" | "[" | "]"
                     | "(" | ")" | "<" | ">" ) ;
 
-single-string     = "'", { single-character | single-escape | interpolation }, "'" ;
-multiline-string  = "`", { multiline-character | multiline-escape | interpolation }, "`" ;
+single-string     = "'", { single-character | single-escape | escaped-interpolation | interpolation }, "'" ;
+multiline-string  = "`", { multiline-character | multiline-escape | escaped-interpolation | interpolation }, "`" ;
 single-character  = any-character - ( "'" | "\\" | newline ) ;
 multiline-character = any-character - ( "`" | "\\" ) ;
 
 interpolation     = "#{", reference, "}" ;
 
+(* An escaped interpolation is the whole-span literal form, preferred by longest match where a "}"
+   closes a non-empty whitespace-free reference: "\#{reference}" is kept as the literal characters
+   "#{reference}" (an empty "\#{}" is DEON_PARSE_EXPECTED, as "#{}" is). Where no such "}" closes the
+   reference before whitespace, a value-ending delimiter, or the string's end, the shorter "\#{"
+   common-escape below applies instead, yielding the two literal characters "#{" — which is how a
+   literal opener is written. Value-initial and mid-string are the same. Section 4.3/10. *)
+escaped-interpolation = "\\", "#{", reference, "}" ;
+
 (* An unquoted string has no active quote delimiter, so it recognizes only the shared escapes; a
    single string additionally reads "\'" and a multiline string "\`" as their delimiter. Every other
-   backslash sequence is preserved literally wherever it appears. *)
+   backslash sequence is preserved literally wherever it appears. The "\#{" alternative is the fallback
+   described above, taken only when no escaped-interpolation closes. *)
 common-escape     = "\\", ( "\\" | "#{" | "n" | "r" | "t" ) ;
 escape            = common-escape ;
 single-escape     = common-escape | "\\'" ;
