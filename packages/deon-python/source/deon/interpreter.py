@@ -14,7 +14,7 @@ from .diagnostic import DiagnosticCode, Span, error
 from .jsonread import read_json
 from .options import ParseOptions
 from .parser import MAX_DEPTH, parse_syntax
-from .scanner import escaped_interpolation_end
+from .scanner import escaped_interpolation_end, unicode_scalar
 from .resources import (
     DEON_EXTENSION,
     IMPORT,
@@ -130,10 +130,13 @@ class Evaluator:
         """Imports, injections, and leaflinks share one flat namespace (specification 3)."""
         for declaration in self.document.declarations:
             if declaration.name in self.declarations:
+                # The primary span stays on the repeat — the character somebody has to go and change.
+                # A related span points back at the first declaration, so the reader can see both.
                 raise error(
                     DiagnosticCode.DUPLICATE_DECLARATION,
                     f"'{declaration.name}' is declared more than once.",
                     declaration.token.span(),
+                    related=[self.declarations[declaration.name].token.span()],
                 )
 
             self.declarations[declaration.name] = declaration
@@ -508,19 +511,26 @@ class Evaluator:
 
         for argument in node.arguments:
             if argument.name in arguments:
+                # The primary span stays on the opening '(' — every entity-call argument fault points
+                # there (specification 11.2) — and the related span marks the repeat, the argument the
+                # reader has to remove.
                 raise error(
                     DiagnosticCode.ENTITY_ARGUMENT,
                     f"The argument '{argument.name}' is given more than once.",
-                    argument.token.span(),
+                    node.token.span(),
+                    related=[argument.token.span()],
                 )
 
             value = self.value(argument.value, scope, depth + 1)
 
             if not isinstance(value, str):
+                # Primary on the '(' as above; related on the offending argument, the one whose value
+                # is not a string.
                 raise error(
                     DiagnosticCode.ENTITY_ARGUMENT,
                     f"The argument '{argument.name}' must be a string.",
-                    argument.token.span(),
+                    node.token.span(),
+                    related=[argument.token.span()],
                 )
 
             arguments[argument.name] = value
@@ -531,10 +541,19 @@ class Evaluator:
             missing = sorted(wanted - given)
             extra = sorted(given - wanted)
 
+            # Primary on the '(' as with every entity-call argument fault (specification 11.2). An
+            # unknown argument is one the reader typed, so the related span points at the first one; a
+            # purely-missing call has no offending argument to point at, so it carries none.
+            related: list[Span] = []
+            if extra:
+                unknown = next(argument for argument in node.arguments if argument.name in set(extra))
+                related = [unknown.token.span()]
+
             raise error(
                 DiagnosticCode.ENTITY_ARGUMENT,
                 f"Entity arguments do not match; missing {missing}, extra {extra}.",
                 node.token.span(),
+                related=related,
             )
 
         self.resolving.append(head)
@@ -594,6 +613,19 @@ def decode(raw: str, token: Token, resolve) -> str:
                 out.append("\t")
                 index += 2
                 continue
+
+            if raw.startswith("u{", index + 1):
+                # A `\u{…}` escape decodes to the Unicode scalar value it names (specification 4.3).
+                # The scanner has already proven every escape well-formed and anchored any malformed
+                # one at its backslash, so a valid code point is assured here; the guard only keeps a
+                # decode from ever reaching `chr(None)`, and cannot itself be taken.
+                closing = raw.find("}", index + 3)
+                code = unicode_scalar(raw[index + 3 : closing]) if closing != -1 else None
+
+                if code is not None:
+                    out.append(chr(code))
+                    index = closing + 1
+                    continue
 
             if raw.startswith("#{", index + 1):
                 # An escaped interpolation `\#{reference}` is validated exactly like the real

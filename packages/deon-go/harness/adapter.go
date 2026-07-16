@@ -280,23 +280,36 @@ func main() {
 	}
 }
 
-func answerFor(r request) map[string]string {
+func answerFor(r request) map[string]any {
 	result, err := performSafely(r)
 	if err != nil {
 		if deonErr, ok := err.(*deon.Error); ok {
-			span := deonErr.Diagnostics[0].Span
-			return map[string]string{
+			diag := deonErr.Diagnostics[0]
+			span := diag.Span
+			// A diagnostic's related spans are part of the contract too (spec/diagnostics.md): each is
+			// reported as its own start/line/column triple, in order. None reported is an empty list,
+			// not null, so the slice is initialised non-nil.
+			related := [][]string{}
+			for _, s := range diag.Related {
+				related = append(related, []string{
+					strconv.Itoa(s.Start),
+					strconv.Itoa(s.Line),
+					strconv.Itoa(s.Column),
+				})
+			}
+			return map[string]any{
 				"id":       r.ID,
 				"ok":       "false",
 				"code":     string(deonErr.Code),
-				"severity": deonErr.Diagnostics[0].Severity,
+				"severity": diag.Severity,
 				"start":    strconv.Itoa(span.Start),
 				"line":     strconv.Itoa(span.Line),
 				"column":   strconv.Itoa(span.Column),
+				"related":  related,
 			}
 		}
 		// The host leaking through is a disagreement, and it says so.
-		return map[string]string{
+		return map[string]any{
 			"id":     r.ID,
 			"ok":     "false",
 			"code":   "HOST_PANIC",
@@ -304,7 +317,7 @@ func answerFor(r request) map[string]string {
 			"column": "0",
 		}
 	}
-	return map[string]string{"id": r.ID, "ok": "true", "result": result}
+	return map[string]any{"id": r.ID, "ok": "true", "result": result}
 }
 
 // performSafely turns a stray panic into an error, so a bug here is reported rather than killing the

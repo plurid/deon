@@ -10,7 +10,7 @@
  * knows its context decides those without a lexer having to guess. */
 
 /* #region setup */
-static parser *parser_new(deon_ctx *ctx, const char *text, size_t len, const char *source_name) {
+static parser *parser_new(deon_ctx *ctx, const char *text, size_t len, const char *source_name, bool scan_controls) {
     /* CRLF folds to LF before anything else (section 4.1), so every offset indexes the normalized
      * source. */
     char *norm = arena_alloc(ctx->a, len + 1);
@@ -48,6 +48,22 @@ static parser *parser_new(deon_ctx *ctx, const char *text, size_t len, const cha
     for (size_t i = 0; i < nlen;) {
         int w;
         uint32_t r = utf8_decode(norm + i, norm + nlen, &w);
+        /* A raw control character has no literal form anywhere in the source (section 4.3): inside a
+         * string, inside a comment, or between tokens. It is caught here, once, as every byte becomes a
+         * rune, so the fault is reported at its own line and column no matter where it falls. Only the
+         * top-level document is scanned; a sub-parser reads a slice this pass already validated. */
+        if (scan_controls && is_control_rune(r)) {
+            deon_span s;
+            s.source = source_name;
+            s.start = off;
+            s.end = off + (size_t)w;
+            s.line = line;
+            s.column = col;
+            s.end_line = line;
+            s.end_column = col + 1;
+            deon_fail(ctx, DEON_LEX_INVALID,
+                      "A control character has no literal form; write it with a '\\u{…}' escape.", s);
+        }
         p->runes[idx] = r;
         p->byte_off[idx] = off;
         p->line[idx] = line;
@@ -313,7 +329,7 @@ static declaration parse_leaflink(parser *p) {
 }
 
 document_ast *parse_document(deon_ctx *ctx, const char *text, size_t len, const char *source_name) {
-    parser *p = parser_new(ctx, text, len, source_name);
+    parser *p = parser_new(ctx, text, len, source_name, true);
     document_ast *doc = arena_alloc(ctx->a, sizeof(*doc));
 
     /* grow declarations dynamically */
@@ -795,7 +811,10 @@ deon_str literal_of(parser *p, string_part *parts, size_t len) {
 }
 
 parser *sub_parser(deon_ctx *ctx, const char *utf8, size_t len) {
-    return parser_new(ctx, utf8, len, "");
+    /* A sub-parser reads a slice of the document the top-level pass already scanned for control
+     * characters, so it does not scan again — and its byte offsets do not map to the original source, so
+     * a fault it raised there would carry the wrong position. */
+    return parser_new(ctx, utf8, len, "", false);
 }
 
 /* One interpolation parsed on the current cursor: `#{ reference }`, returned as a part to resolve at

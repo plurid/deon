@@ -122,5 +122,20 @@
     {"id": "structure-row-trailing-comma", "source": "{ p <id, name> [1, One,] }"},
     {"id": "escaped-interpolation-double", "source": "{ a \\#{x}\\#{y} }"},
     {"id": "escaped-interpolation-empty-is-an-error", "source": "{ a \\#{} }"},
-    {"id": "nesting-at-the-limit-is-accepted", "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[x]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] }"}
+    {"id": "nesting-at-the-limit-is-accepted", "source": "{ a [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[x]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] }"},
+    {"id": "unicode-escape-del-round-trips", "source": "{ a \\u{7f} }"},
+    {"id": "unicode-escape-c1-round-trips", "source": "{ a \\u{9f} }"},
+    {"id": "unicode-escape-tab-canonicalizes-to-t", "source": "{ a x\\u{9}y }"},
+    {"id": "unicode-escape-accepts-uppercase-hex", "source": "{ a \\u{1B} }"},
+    {"id": "unicode-escape-non-hex-is-rejected", "source": "{ a \\u{1g} }"},
+    {"id": "unicode-escape-overflow-is-rejected", "source": "{ a \\u{110000} }"},
+    {"id": "raw-control-in-single-string-is-rejected", "source": "{ a 'x\u001by' }"},
+    {"id": "raw-del-is-rejected", "source": "{ a x\u007fy }"},
+    {"id": "raw-control-in-comment-is-rejected", "source": "{ a b }\n// x\u001by"},
+    {"id": "unicode-escape-in-a-quoted-name", "source": "{ 'k\\u{1b}v' one }"},
+    {"id": "escaped-backslash-before-a-real-interpolation", "source": "n x\n{ a \\\\#{n} }"},
+    {"id": "unicode-escape-max-scalar-value", "source": "{ a \\u{10ffff} }"},
+    {"id": "unicode-escape-at-value-start", "source": "{ a \\u{1b}tail }"},
+    {"id": "unquoted-backslash-two-spaces-keeps-one", "source": "{ a \\  }"},
+    {"id": "unquoted-backslash-tab-is-content", "source": "{ a \\\t }"}
 ]

@@ -268,8 +268,17 @@ def comparable(request: dict, answer: dict) -> object:
     implementations are not required to have written the same sentence. The code, the severity, the
     byte offset, and the line/column are the contract (specification 15). An interpolation fault
     anchors at the string that carries it (specification 11.2), so it too has a shared byte offset.
+
+    A diagnostic's `related` spans — a second position the reader is sent to, such as the first
+    declaration a duplicate collides with — are part of the contract too (`spec/diagnostics.md`). Each
+    is compared as its own `start`/line/column, in order; an implementation that carries none reports
+    an empty list, which is still a thing every implementation must agree on.
     """
     if answer.get("ok") != "true":
+        related = tuple(
+            tuple(str(part) for part in frame)
+            for frame in (answer.get("related") or [])
+        )
         return (
             "error",
             answer.get("code"),
@@ -277,6 +286,7 @@ def comparable(request: dict, answer: dict) -> object:
             str(answer.get("start")),
             str(answer.get("line")),
             str(answer.get("column")),
+            related,
         )
 
     result = answer["result"]

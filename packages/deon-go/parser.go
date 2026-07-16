@@ -95,7 +95,17 @@ func (p *parser) peekAt(offset int) rune {
 }
 
 func (p *parser) advance() rune {
-	r := p.peek()
+	if p.pos >= len(p.runes) {
+		p.pos++
+		return 0
+	}
+	r := p.runes[p.pos]
+	// A raw control character has no literal form and is refused wherever a character is consumed —
+	// string content, a comment, or between tokens — at its own position (§4.3). Tab, line feed, and
+	// carriage return keep their separator roles and are not controls, so they pass through here.
+	if isControl(r) {
+		fail(LexInvalid, "A control character has no literal form; write it with a '\\u{…}' escape.", p.spanAt(p.pos))
+	}
 	p.pos++
 	return r
 }
@@ -147,6 +157,16 @@ func (p *parser) spanBetween(start, end int) Span {
 func isSpace(r rune) bool { return r == ' ' || r == '\t' }
 
 func isNewline(r rune) bool { return r == '\n' }
+
+// isControl reports whether a rune is a control character with no literal form in the source (§4.3): a
+// C0 control other than a horizontal tab, a line feed, or a carriage return; a DEL (U+007F); or a C1
+// control (U+0080 through U+009F). Written raw anywhere — in a string, in a comment, or between tokens
+// — such a character is DEON_LEX_INVALID and must instead be spelled with a `\u{…}` escape.
+func isControl(r rune) bool {
+	return (r < 0x20 && r != '\t' && r != '\n' && r != '\r') ||
+		r == 0x7F ||
+		(r >= 0x80 && r <= 0x9F)
+}
 
 // delimiter reports whether a rune is one of the ten delimiters of section 4.3, which end an unquoted
 // string wherever they occur and no surrounding text makes ordinary.

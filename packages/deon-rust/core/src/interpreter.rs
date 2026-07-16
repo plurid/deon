@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use crate::diagnostic::{err, DResult, DiagnosticCode, Span};
+use crate::diagnostic::{err, DResult, DeonError, Diagnostic, DiagnosticCode, Span};
 use crate::evaluator::Evaluator;
 use crate::json::parse_json;
 use crate::options::ParseOptions;
@@ -51,20 +51,25 @@ fn node_from_value(value: Value, span: &Span) -> ValueNode {
 /// Imports, injections, and leaflinks share one namespace, so a name may be declared only once
 /// (specification 3).
 fn validate_declarations(document: &Document) -> DResult<()> {
-    let mut names: Vec<&str> = Vec::new();
+    let mut names: HashMap<&str, &Span> = HashMap::new();
 
     for declaration in &document.declarations {
         let name = declaration.name();
 
-        if names.contains(&name) {
-            return err(
+        if let Some(first) = names.get(name) {
+            // The primary span stays on the repeat; the reader is sent back to where the name was
+            // first declared through a related span (`spec/diagnostics.md`).
+            let diagnostic = Diagnostic::new(
                 DiagnosticCode::DuplicateDeclaration,
                 format!("Declaration '{name}' is defined more than once."),
-                declaration.span(),
-            );
+                declaration.span().clone(),
+            )
+            .with_related(vec![(*first).clone()]);
+
+            return Err(DeonError::from_diagnostic(diagnostic));
         }
 
-        names.push(name);
+        names.insert(name, declaration.span());
     }
 
     Ok(())

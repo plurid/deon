@@ -216,11 +216,15 @@ const validateDeclarations = (
     const declarations = new Map<string, DeclarationNode>();
 
     for (const declaration of document.declarations) {
-        if (declarations.has(declaration.name)) {
+        const first = declarations.get(declaration.name);
+
+        if (first) {
+            // The repeat is the primary span; the first declaration is where the reader is sent.
             deonError(
                 DiagnosticCode.DUPLICATE_DECLARATION,
                 `Declaration '${declaration.name}' is defined more than once.`,
                 declaration.token,
+                [first.token],
             );
         }
 
@@ -259,11 +263,15 @@ class Evaluator {
                 );
             }
 
-            if (this.declarations.has(declaration.name)) {
+            const first = this.declarations.get(declaration.name);
+
+            if (first) {
+                // The repeat is the primary span; the first declaration is where the reader is sent.
                 deonError(
                     DiagnosticCode.DUPLICATE_DECLARATION,
                     `Declaration '${declaration.name}' is defined more than once.`,
                     declaration.token,
+                    [first.token],
                 );
             }
 
@@ -627,7 +635,8 @@ class Evaluator {
                 deonError(
                     DiagnosticCode.ENTITY_ARGUMENT,
                     `Entity argument '${argument.name}' is repeated.`,
-                    argument.token,
+                    token,
+                    [argument.token],
                 );
             }
 
@@ -637,7 +646,8 @@ class Evaluator {
                 deonError(
                     DiagnosticCode.ENTITY_ARGUMENT,
                     `Entity argument '${argument.name}' must be a string.`,
-                    argument.token,
+                    token,
+                    [argument.token],
                 );
             }
 
@@ -648,11 +658,18 @@ class Evaluator {
         const extra = [...locals.keys()].filter(name => !parameters.has(name));
 
         if (missing.length || extra.length) {
+            // A missing parameter has nowhere to point, so only the extra (unknown) arguments
+            // contribute related spans, taken in source order at each one's name.
+            const extraTokens = args
+                .filter(argument => extra.includes(argument.name))
+                .map(argument => argument.token);
+
             deonError(
                 DiagnosticCode.ENTITY_ARGUMENT,
                 `Entity arguments do not match; missing [${missing.join(', ')}], `
                     + `extra [${extra.join(', ')}].`,
                 token,
+                extraTokens,
             );
         }
 

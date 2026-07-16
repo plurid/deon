@@ -29,6 +29,7 @@ static void diag_push(diag_list *d, deon_code code, deon_str message, deon_span 
     dg->message = message;
     dg->span = span;
     dg->severity = deon_severity_of(code);
+    dg->has_related = false; /* a lint carries no related span */
 }
 
 static void lint_node(node *n, diag_list *d) {

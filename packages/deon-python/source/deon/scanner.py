@@ -53,6 +53,46 @@ PUNCTUATION = {
 }
 
 
+#: The digits a `\u{…}` escape is made of, read case-insensitively.
+HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
+
+
+def is_control(character: str) -> bool:
+    r"""A raw control character, which has no literal form anywhere in the source (specification 4.3).
+
+    A C0 control (U+0000–U+001F) *other than* a horizontal tab, a line feed, or a carriage return —
+    those three keep their separator roles and their `\t`, `\n`, `\r` escapes — together with `DEL`
+    (U+007F) and the C1 controls (U+0080–U+009F). Written raw in a string, in a comment, or between
+    tokens it is a lexical error; a value that must carry one is written with a `\u{…}` escape, the one
+    form that reads back unchanged and keeps canonical output plain text.
+    """
+    code = ord(character)
+
+    if code in (0x09, 0x0A, 0x0D):
+        return False
+
+    return code <= 0x1F or code == 0x7F or 0x80 <= code <= 0x9F
+
+
+def unicode_scalar(digits: str) -> "int | None":
+    r"""The code point a `\u{…}` names, or None when the braces do not hold a Unicode scalar value.
+
+    One to six hexadecimal digits, read case-insensitively, name a scalar value: at most U+10FFFF and
+    never a surrogate U+D800–U+DFFF (specification 4.3). No digits, a non-hexadecimal character, more
+    than six digits, a surrogate, or an out-of-range value is not one, and the escape carrying it is
+    `DEON_LEX_INVALID`.
+    """
+    if not 1 <= len(digits) <= 6 or any(digit not in HEX_DIGITS for digit in digits):
+        return None
+
+    code = int(digits, 16)
+
+    if code > 0x10FFFF or 0xD800 <= code <= 0xDFFF:
+        return None
+
+    return code
+
+
 def normalize(source: str) -> str:
     """Both LF and CRLF are accepted, and everything downstream sees LF (specification 4.1).
 
@@ -134,6 +174,19 @@ def decode_name(raw: str) -> str:
                 index += 2
                 continue
 
+            if raw.startswith("u{", index + 1):
+                # A `\u{…}` escape decodes to the scalar value it names, exactly as in a value string
+                # (specification 4.3, 4.4). The scanner validated it while reading the quoted name, so
+                # a well-formed escape is assured here; anything else falls through to the literal
+                # preservation below and cannot arise.
+                closing = raw.find("}", index + 3)
+                code = unicode_scalar(raw[index + 3 : closing]) if closing != -1 else None
+
+                if code is not None:
+                    out.append(chr(code))
+                    index = closing + 1
+                    continue
+
             if raw.startswith("#{", index + 1):
                 # The common escape: `\#{` is the two literal characters `#{`. A name is never
                 # interpolated, so this never consumes a closing `}` the way an escaped interpolation
@@ -189,6 +242,23 @@ class Scanner:
 
     def advance(self) -> str:
         character = self.source[self.current]
+
+        if is_control(character):
+            # A raw control character is a lexical error wherever it is consumed — inside a string,
+            # inside a comment, or between tokens (specification 4.3) — and every character passes
+            # through here, so one guard catches them all. The cursor steps over it first, so the
+            # diagnostic's span covers exactly the offending character, and it is reported at that
+            # character's own position rather than at whatever token was being read.
+            start = self.mark()
+
+            self.current += 1
+            self.byte += len(character.encode("utf-8"))
+
+            raise self.fail(
+                DiagnosticCode.LEX_INVALID,
+                "A control character must be written with a '\\u{…}' escape.",
+                start,
+            )
 
         self.current += 1
         self.byte += len(character.encode("utf-8"))
@@ -386,6 +456,14 @@ class Scanner:
                 break
 
             if character == "\\":
+                if self.peek(1) == "u" and self.peek(2) == "{":
+                    # A `\u{…}` escape carries braces of its own, so it is consumed as a unit — its
+                    # `{` must not end the word the way a bare brace would (`x\u{1b}y` is one word,
+                    # not `x\u` and a stray map) — and validated here, where the backslash still has a
+                    # source position to anchor a malformed escape at (specification 4.3).
+                    self.unicode_escape(self.mark())
+                    continue
+
                 # A backslash takes what follows it, so an escaped delimiter does not end anything.
                 self.advance()
 
@@ -439,6 +517,46 @@ class Scanner:
 
             self.advance()
 
+    def unicode_escape(self, start: tuple[int, int, int, int]) -> str:
+        r"""Consume and validate a `\u{…}` escape whose backslash is at `start`.
+
+        On entry the cursor is at the backslash; on return it is just past the closing `}`, and the
+        consumed source text is returned so a caller assembling a string's content keeps it verbatim
+        for the decoder. The escape names one to six hexadecimal digits of a Unicode scalar value — an
+        empty, non-hexadecimal, surrogate, or out-of-range escape is `DEON_LEX_INVALID` at the
+        backslash, and input that ends before the closing `}` is `DEON_LEX_UNTERMINATED` there
+        (specification 4.3). The code point itself is produced later, where the string is decoded, so
+        this only proves the escape well-formed and marks off its extent.
+        """
+        begin = self.current
+
+        self.advance()  # the backslash
+        self.advance()  # `u`
+        self.advance()  # `{`
+
+        while True:
+            if self.at_end() or self.peek() == "\n":
+                raise self.fail(
+                    DiagnosticCode.LEX_UNTERMINATED,
+                    "A Unicode escape is unterminated.",
+                    start,
+                )
+
+            if self.peek() == "}":
+                self.advance()
+                break
+
+            self.advance()
+
+        if unicode_scalar(self.source[begin + 3 : self.current - 1]) is None:
+            raise self.fail(
+                DiagnosticCode.LEX_INVALID,
+                "A Unicode escape names one to six hexadecimal digits of a Unicode scalar value.",
+                start,
+            )
+
+        return self.source[begin : self.current]
+
     def single_string(self, start: tuple[int, int, int, int]) -> None:
         """A single-quoted string is confined to one logical line (specification 4.3)."""
         self.advance()
@@ -456,6 +574,10 @@ class Scanner:
             character = self.peek()
 
             if character == "\\":
+                if self.peek(1) == "u" and self.peek(2) == "{":
+                    content.append(self.unicode_escape(self.mark()))
+                    continue
+
                 content.append(self.advance())
 
                 if not self.at_end():
@@ -493,6 +615,10 @@ class Scanner:
             character = self.peek()
 
             if character == "\\":
+                if self.peek(1) == "u" and self.peek(2) == "{":
+                    content.append(self.unicode_escape(self.mark()))
+                    continue
+
                 content.append(self.advance())
 
                 if not self.at_end():

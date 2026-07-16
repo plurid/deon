@@ -9,6 +9,15 @@ import Glibc
 /// The release of the specification this implementation tracks; every implementation prints the same.
 public let deonVersion = String(cString: DEON_VERSION)
 
+/// A secondary source position a diagnostic sends the reader to (spec/diagnostics.md): the first
+/// declaration a duplicate collides with, and so on. It carries the same three measures as a primary
+/// span — the UTF-8 byte offset, the 1-based line, and the code-point column.
+public struct RelatedSpan {
+    public let start: Int
+    public let line: Int
+    public let column: Int
+}
+
 /// A Deon diagnostic surfaced as a Swift error. A code and a position are normative; the message is
 /// prose and is not (spec/diagnostics.md).
 public struct DeonError: Error {
@@ -22,6 +31,9 @@ public struct DeonError: Error {
     public let column: Int
     public let source: String
     public let severity: String
+    /// Secondary positions the reader is sent to (spec/diagnostics.md), in order; empty when the
+    /// diagnostic carries none.
+    public let related: [RelatedSpan]
 }
 
 /// One thing a document declares, and what it would demand of a caller (specification 10).
@@ -215,6 +227,13 @@ public final class Document {
         }
         let e = raw.pointee
         let diagnostic = e.diagnostics.pointee
+        var related: [RelatedSpan] = []
+        if diagnostic.has_related {
+            related.append(RelatedSpan(
+                start: Int(diagnostic.related.start),
+                line: Int(diagnostic.related.line),
+                column: Int(diagnostic.related.column)))
+        }
         return DeonError(
             code: String(cString: deon_code_name(e.code)),
             message: swiftString(e.message),
@@ -223,7 +242,8 @@ public final class Document {
             line: Int(diagnostic.span.line),
             column: Int(diagnostic.span.column),
             source: diagnostic.span.source != nil ? String(cString: diagnostic.span.source!) : "<memory>",
-            severity: diagnostic.severity == 1 ? "warning" : "error")
+            severity: diagnostic.severity == 1 ? "warning" : "error",
+            related: related)
     }
 
     /// Every diagnostic the failure carries, in order — a resource fault brings an import trace, and the
@@ -299,7 +319,7 @@ public final class Document {
 func writeError(_ code: deon_code) -> DeonError {
     DeonError(code: String(cString: deon_code_name(code)),
               message: "The value nests deeper than the limit.",
-              start: 0, end: 0, line: 0, column: 0, source: "<memory>", severity: "error")
+              start: 0, end: 0, line: 0, column: 0, source: "<memory>", severity: "error", related: [])
 }
 
 /// Reads a document, granted nothing. A document that imports is denied — a diagnostic, not a surprise.

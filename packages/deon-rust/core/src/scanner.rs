@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::diagnostic::{err, DResult, DiagnosticCode, Span};
 use crate::syntax::{Access, Reference};
+use crate::text::is_control;
 use crate::token::{Literal, Token, TokenType};
 
 /// Stands in for an escaped `#{`, so that the interpolator, which runs later and over the evaluated
@@ -216,6 +217,54 @@ fn keyword(lexeme: &str) -> Option<TokenType> {
     }
 }
 
+/// The outcome of reading a `\u{…}` escape (§4.3).
+enum UnicodeEscape {
+    /// A well-formed escape: the scalar value it names, and the count of characters it spans from the
+    /// backslash through the closing brace, so the reader can consume the whole of it.
+    Decoded { value: char, length: usize },
+    /// An empty pair, a non-hexadecimal character before the brace, more than six digits, a surrogate,
+    /// or a value beyond `U+10FFFF`.
+    Invalid,
+    /// The input ended before the closing brace.
+    Unterminated,
+}
+
+/// Reads a `\u{…}` escape whose backslash the caller is sitting on. `at(offset)` yields the character
+/// `offset` positions past the backslash, or `None` at the end of input; the caller guarantees that
+/// `at(0)` is the backslash, `at(1)` is `u`, and `at(2)` is `{`.
+///
+/// The braces hold one to six hexadecimal digits, read case-insensitively, naming a Unicode scalar
+/// value — at most `U+10FFFF` and never a surrogate `U+D800`–`U+DFFF`, both of which `char::from_u32`
+/// already refuses (§4.3).
+fn read_unicode_escape(at: impl Fn(usize) -> Option<char>) -> UnicodeEscape {
+    let mut offset = 3;
+    let mut digits = String::new();
+
+    loop {
+        match at(offset) {
+            None => return UnicodeEscape::Unterminated,
+            Some('}') => break,
+            Some(character) if character.is_ascii_hexdigit() => {
+                digits.push(character);
+                offset += 1;
+            }
+            Some(_) => return UnicodeEscape::Invalid,
+        }
+    }
+
+    if digits.is_empty() || digits.len() > 6 {
+        return UnicodeEscape::Invalid;
+    }
+
+    match u32::from_str_radix(&digits, 16).ok().and_then(char::from_u32) {
+        Some(value) => UnicodeEscape::Decoded {
+            value,
+            length: offset + 1,
+        },
+        None => UnicodeEscape::Invalid,
+    }
+}
+
 /// Decodes the escapes of a string. `delimiter` is the quote the string was written in, if any: a
 /// backslash before it means the quote itself, rather than the end of the string.
 ///
@@ -233,6 +282,23 @@ pub fn decode_minimal(raw: &str, delimiter: Option<char>) -> String {
             value.push_str(ESCAPED_INTERPOLATION);
             index += 3;
             continue;
+        }
+
+        // A `\u{…}` escape names a Unicode scalar value (§4.3). The scanner has already validated
+        // every escape at its source position, so only a well-formed one is decoded here; a malformed
+        // one that reaches this infallible reader is left as its literal characters rather than
+        // panicked on.
+        if characters[index] == '\\'
+            && characters.get(index + 1) == Some(&'u')
+            && characters.get(index + 2) == Some(&'{')
+        {
+            if let UnicodeEscape::Decoded { value: scalar, length } =
+                read_unicode_escape(|offset| characters.get(index + offset).copied())
+            {
+                value.push(scalar);
+                index += length;
+                continue;
+            }
         }
 
         if characters[index] == '\\' && index + 1 < characters.len() {
@@ -382,6 +448,8 @@ impl Scanner {
     }
 
     pub fn scan(mut self) -> DResult<Vec<Token>> {
+        self.reject_raw_controls()?;
+
         while !self.at_end() {
             self.scan_token()?;
         }
@@ -397,6 +465,68 @@ impl Scanner {
         });
 
         Ok(self.tokens)
+    }
+
+    /// A control character has no literal form anywhere in the source — inside a string, inside a
+    /// comment, or in the whitespace between tokens — so the whole source is swept for one before a
+    /// token is read, and a raw control is `DEON_LEX_INVALID` at its own position (§4.3). Sweeping up
+    /// front means every context is covered by one rule, and the position is exact because the sweep
+    /// counts lines and columns the way the scanner itself does, over the same normalized source.
+    fn reject_raw_controls(&self) -> DResult<()> {
+        let mut line = 1;
+        let mut column = 1;
+
+        for (at, (_, character)) in self.characters.iter().enumerate() {
+            if is_control(*character) {
+                return err(
+                    DiagnosticCode::LexInvalid,
+                    "A control character has no literal form; write it as a '\\u{…}' escape.",
+                    &self.span(at, line, column),
+                );
+            }
+
+            if *character == '\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// The cursor sits on the backslash of a `\u{…}` escape (`peek(0)` is `\`, `peek(1)` is `u`,
+    /// `peek(2)` is `{`). Validates and consumes the whole escape, or fails at the backslash: a
+    /// malformed escape is `DEON_LEX_INVALID` and one that runs off the end before its closing brace
+    /// is `DEON_LEX_UNTERMINATED`, both anchored where the escape began (§4.3). On success the escape's
+    /// characters are consumed and left in the source run for `decode_minimal` to turn into the scalar.
+    fn consume_unicode_escape(&mut self, at: usize, line: usize, column: usize) -> DResult<()> {
+        match read_unicode_escape(|offset| {
+            self.characters.get(self.current + offset).map(|(_, c)| *c)
+        }) {
+            UnicodeEscape::Decoded { length, .. } => {
+                for _ in 0..length {
+                    self.advance();
+                }
+
+                Ok(())
+            }
+            UnicodeEscape::Invalid => self.fail(
+                DiagnosticCode::LexInvalid,
+                "A Unicode escape names a scalar value as one to six hexadecimal digits, at most U+10FFFF and never a surrogate.",
+                at,
+                line,
+                column,
+            ),
+            UnicodeEscape::Unterminated => self.fail(
+                DiagnosticCode::LexUnterminated,
+                "A Unicode escape must be closed with '}'.",
+                at,
+                line,
+                column,
+            ),
+        }
     }
 
     fn scan_token(&mut self) -> DResult<()> {
@@ -559,6 +689,16 @@ impl Scanner {
 
             if delimiter == '\'' && character == '\n' {
                 return self.unterminated_quote(start, line, column);
+            }
+
+            // A `\u{…}` escape is validated at the backslash and consumed whole, so a malformed one
+            // fails there rather than being kept as literal text; its characters stay in `raw` for
+            // `decode_minimal` to turn into the scalar (§4.3).
+            if character == '\\' && self.peek(1) == 'u' && self.peek(2) == '{' {
+                let before = self.current;
+                self.consume_unicode_escape(before, self.line, self.column)?;
+                raw.push_str(self.slice(before, self.current));
+                continue;
             }
 
             // An escaped delimiter must not end the string, so a backslash always takes the next
@@ -746,6 +886,15 @@ impl Scanner {
         let mut raw = String::new();
 
         while !self.at_end() && self.peek(0) != '\'' {
+            // A quoted name shares the escape decoder, so a `\u{…}` escape is validated at the
+            // backslash here too and its characters kept for `decode_minimal` (§4.3, §4.4).
+            if self.peek(0) == '\\' && self.peek(1) == 'u' && self.peek(2) == '{' {
+                let before = self.current;
+                self.consume_unicode_escape(before, self.line, self.column)?;
+                raw.push_str(self.slice(before, self.current));
+                continue;
+            }
+
             if self.peek(0) == '\\' && self.current + 1 < self.characters.len() {
                 raw.push(self.advance());
             }
@@ -814,6 +963,19 @@ impl Scanner {
             let character = self.peek(0);
 
             if matches!(character, ' ' | '\t' | '\r' | '\n') {
+                // A space or tab held against a lone backslash is that backslash's literal partner,
+                // not the separator whitespace that ends the value: a `\` attaches the single
+                // character after it (§4.3), so `a \ ` carries the two-character value `\ ` rather
+                // than a lone backslash with the space trimmed away. Only an odd run of backslashes
+                // just consumed leaves such a lone backslash against the cursor; an even run is
+                // complete `\\` escapes, which attach nothing, so their trailing whitespace is
+                // trimmed as any separator is. Exactly the one attached character is taken — any
+                // whitespace beyond it has a non-backslash predecessor and so breaks here as usual.
+                if matches!(character, ' ' | '\t') && self.preceding_backslashes(start) % 2 == 1 {
+                    self.advance();
+                    continue;
+                }
+
                 break;
             }
 
@@ -864,6 +1026,13 @@ impl Scanner {
                     self.advance();
                 }
 
+                continue;
+            }
+
+            // A `\u{…}` escape, validated at the backslash and consumed whole (§4.3). Its characters
+            // stay in the run, which `decode_minimal` later turns into the scalar.
+            if character == '\\' && self.peek(1) == 'u' && self.peek(2) == '{' {
+                self.consume_unicode_escape(self.current, self.line, self.column)?;
                 continue;
             }
 
@@ -1025,6 +1194,22 @@ impl Scanner {
             Some((_, character)) => *character,
             None => '\0',
         }
+    }
+
+    /// Counts the backslashes standing immediately before the cursor, reaching back no earlier than
+    /// `floor`. An odd count leaves a lone backslash against the cursor — one that escapes whatever
+    /// follows it — while an even count is a run of complete `\\` escapes, which escapes nothing
+    /// (§4.3). Used to tell a value-ending separator space from one a trailing backslash has claimed.
+    fn preceding_backslashes(&self, floor: usize) -> usize {
+        let mut index = self.current;
+        let mut count = 0;
+
+        while index > floor && self.characters[index - 1].1 == '\\' {
+            index -= 1;
+            count += 1;
+        }
+
+        count
     }
 
     fn at_end(&self) -> bool {

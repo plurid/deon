@@ -102,6 +102,23 @@ const isLowSurrogate = (
 
 
 /**
+ * A control character that has no literal form in a document (specification 4.3): a C0 control other
+ * than a horizontal tab, a line feed, or a carriage return — which keep their separator roles — a
+ * `DEL` (`U+007F`), or a C1 control (`U+0080` through `U+009F`). Written raw anywhere in the source,
+ * such a character is a lexical error at its own position; it is carried instead by a `\u{…}` escape.
+ */
+const isControl = (
+    character: string,
+) => {
+    const code = character.charCodeAt(0);
+
+    return (code <= 0x1F && code !== 0x09 && code !== 0x0A && code !== 0x0D)
+        || code === 0x7F
+        || (code >= 0x80 && code <= 0x9F);
+}
+
+
+/**
  * The number of UTF-8 bytes the UTF-16 code unit at `index` contributes to the encoded source. A
  * character in the Basic Multilingual Plane is one code unit and one, two, or three bytes; an astral
  * character is written as a surrogate pair whose leading half carries all four of its bytes and
@@ -177,6 +194,29 @@ export const decodeMinimal = (
             value += ESCAPED_INTERPOLATION;
             index += 2;
             continue;
+        }
+
+        // A `\u{HEX}` escape decodes to the Unicode scalar value its one-to-six case-insensitive
+        // hexadecimal digits name (specification 4.3). The scanner has already refused a malformed one
+        // at its backslash, so a well-formed escape is decoded here and a would-be malformed run — one
+        // only a path that never met the scanner could carry — is left as its literal characters
+        // rather than throwing without a position to point at.
+        if (raw.startsWith('\\u{', index)) {
+            const close = raw.indexOf('}', index + 3);
+
+            if (close !== -1) {
+                const hex = raw.slice(index + 3, close);
+
+                if (/^[0-9A-Fa-f]{1,6}$/.test(hex)) {
+                    const codePoint = parseInt(hex, 16);
+
+                    if (codePoint <= 0x10FFFF && !(codePoint >= 0xD800 && codePoint <= 0xDFFF)) {
+                        value += String.fromCodePoint(codePoint);
+                        index = close;
+                        continue;
+                    }
+                }
+            }
         }
 
         if (raw[index] === '\\' && index + 1 < raw.length) {
@@ -699,6 +739,13 @@ class Scanner {
                 );
             }
 
+            // A `\u{…}` escape is validated at its backslash and read through its closing brace, so its
+            // literal characters are retained here and turned into the code point by `decodeMinimal`.
+            if (character === '\\' && this.peek(1) === 'u' && this.peek(2) === '{') {
+                raw += this.unicodeEscape(TokenType.STRING);
+                continue;
+            }
+
             // An escaped delimiter must not end the string, so a backslash always takes the next
             // character with it.
             if (character === '\\' && this.current + 1 < this.source.length) {
@@ -718,6 +765,67 @@ class Scanner {
             line,
             column,
         );
+    }
+
+
+    /**
+     * Validates and consumes the `\u{HEX}` escape the cursor sits on — the cursor is on its backslash
+     * — returning the exact source characters so a caller building a raw buffer keeps them; the code
+     * point itself is produced later, by `decodeMinimal`. `HEX` is one to six case-insensitive
+     * hexadecimal digits naming a Unicode scalar value: at most `U+10FFFF`, and never a surrogate
+     * (`U+D800` through `U+DFFF`). An empty escape, a non-hexadecimal digit, an over-long run, an
+     * out-of-range value, or a surrogate is `DEON_LEX_INVALID`; a brace that never closes before the
+     * end of the source is `DEON_LEX_UNTERMINATED`. Both anchor at the backslash (specification 4.3),
+     * so the escape is measured ahead of the cursor and consumed only once it is known to be valid.
+     */
+    private unicodeEscape(
+        type: TokenType,
+    ) {
+        const backslash = this.current;
+        const line = this.line;
+        const column = this.column;
+
+        let scan = backslash + 3; // past the '\u{'
+        while (scan < this.source.length && this.source[scan] !== '}') {
+            scan += 1;
+        }
+
+        if (scan >= this.source.length) {
+            this.fail(
+                type,
+                DiagnosticCode.LEX_UNTERMINATED,
+                'Unterminated unicode escape.',
+                backslash,
+                line,
+                column,
+            );
+        }
+
+        const hex = this.source.slice(backslash + 3, scan);
+        const codePoint = /^[0-9A-Fa-f]{1,6}$/.test(hex) ? parseInt(hex, 16) : Number.NaN;
+
+        if (
+            Number.isNaN(codePoint)
+            || codePoint > 0x10FFFF
+            || (codePoint >= 0xD800 && codePoint <= 0xDFFF)
+        ) {
+            this.fail(
+                type,
+                DiagnosticCode.LEX_INVALID,
+                'A unicode escape names one to six hexadecimal digits of a Unicode scalar value.',
+                backslash,
+                line,
+                column,
+            );
+        }
+
+        // The validated escape holds only ASCII hex and braces — no newline, no control — so
+        // consuming it advances one column each without tripping the raw-control guard in `advance`.
+        while (this.current <= scan) {
+            this.advance();
+        }
+
+        return this.source.slice(backslash, this.current);
     }
 
 
@@ -866,13 +974,24 @@ class Scanner {
         unterminatedQuote = false,
     ) {
         // The dispatcher consumes a value's first character before calling this, so a value that opens
-        // with the '\' of an escaped interpolation arrives with the cursor already on its '#{'. Rewind
-        // onto that backslash so a value-initial '\#{...}' takes the very same escaped-interpolation
-        // path as a mid-word one, rather than the greedy '#{' branch — which would read a
-        // whitespace-only reference through the group's closing brace and refuse `\#{x ` where a
-        // mid-word `p\#{x ` falls back to the literal '#{' (specification 4.3: value-initial and
-        // mid-string escaped interpolations behave identically).
-        if (this.current === start + 1 && this.source.startsWith('\\#{', start)) {
+        // with the '\' of an escape arrives with the cursor already past that backslash. Rewind onto it
+        // so a value-initial escape — an escaped backslash `\\`, a unicode escape `\u{…}`, or an
+        // escaped interpolation `\#{…}` — takes the very same path as a mid-word one, rather than the
+        // greedy '#{' branch or, for `\u{…}`, a `{` that would otherwise end the value (specification
+        // 4.3: value-initial and mid-string escapes behave identically). A value-initial backslash that
+        // attaches a space or a tab (`\ `, `\<tab>`) is rewound the same way: with the cursor already
+        // past the backslash the loop would break on that whitespace and drop it, so it is put back onto
+        // the backslash for the attach branch below to keep the whitespace as content.
+        if (
+            this.current === start + 1
+            && (
+                this.source.startsWith('\\\\', start)
+                || this.source.startsWith('\\u{', start)
+                || this.source.startsWith('\\#{', start)
+                || this.source.startsWith('\\ ', start)
+                || this.source.startsWith('\\\t', start)
+            )
+        ) {
             this.current = start;
             this.column -= 1;
         }
@@ -898,6 +1017,23 @@ class Scanner {
                 continue;
             }
 
+            // An escaped backslash is taken as a unit, so the second backslash never opens a further
+            // escape: `\\u{1b}` is a backslash then the literal `u{1b}` — whose `{` ends the unquoted
+            // value — rather than a unicode escape, and `\\#{x}` a backslash then a real interpolation.
+            if (this.source.startsWith('\\\\', this.current)) {
+                this.advance();
+                this.advance();
+                continue;
+            }
+
+            // A `\u{…}` unicode escape is read through its closing brace so its `{` does not end the
+            // value, and a malformed one fails at the backslash (specification 4.3). Its literal
+            // characters stay in the lexeme and become the code point through `decodeMinimal`.
+            if (this.source.startsWith('\\u{', this.current)) {
+                this.unicodeEscape(TokenType.SIGNIFIER);
+                continue;
+            }
+
             // An escaped interpolation `\#{reference}` is lexed exactly as the `#{reference}` it
             // mirrors, and kept as the literal characters `#{reference}` rather than resolved
             // (specification 4.3, 10). It is read through its closing `}` — so a word carrying one
@@ -915,6 +1051,20 @@ class Scanner {
                     this.advance(); // {
                 }
 
+                continue;
+            }
+
+            // A lone backslash immediately before a space or a tab attaches that one whitespace
+            // character as literal content (specification 4.3): it belongs to the preserved backslash
+            // sequence rather than to the separator whitespace that boundary trimming removes, so the
+            // value written `\ ` is the two characters backslash and space, its trailing space
+            // surviving. A backslash that completes an escape — `\\`, `\u{…}`, `\#{` — has already been
+            // taken above, so the one reaching here does not, and it attaches its neighbour. Only that
+            // single character is kept: any whitespace beyond it is ordinary trailing separator
+            // whitespace, and the loop breaks on it next as usual.
+            if (character === '\\' && (this.peek(1) === ' ' || this.peek(1) === '\t')) {
+                this.advance(); // the backslash
+                this.advance(); // the attached space or tab
                 continue;
             }
 
@@ -1069,12 +1219,30 @@ class Scanner {
 
 
     private advance() {
-        const character = this.source[this.current++] ?? '\0';
+        const index = this.current;
+        const character = this.source[index] ?? '\0';
+        this.current = index + 1;
+
+        // A raw control character has no literal form anywhere in the source — inside a string, inside
+        // a comment, or between tokens — and is refused at its own position (specification 4.3). Every
+        // consumed character passes through here, so this one guard covers them all; the length check
+        // excludes the '\0' the read yields past the end, which names no source character. The failure
+        // is reported before the position advances, so it sits on the control rather than past it.
+        if (index < this.source.length && isControl(character)) {
+            this.fail(
+                TokenType.SIGNIFIER,
+                DiagnosticCode.LEX_INVALID,
+                'A control character must be written with a \\u{…} escape.',
+                index,
+                this.line,
+                this.column,
+            );
+        }
 
         if (character === '\n') {
             this.line += 1;
             this.column = 1;
-        } else if (!(isLowSurrogate(character) && isHighSurrogate(this.source[this.current - 2]))) {
+        } else if (!(isLowSurrogate(character) && isHighSurrogate(this.source[index - 1]))) {
             // The trailing half of a surrogate pair completes the astral character its leading half
             // began, so it does not open a new column: the pair is one code point, and therefore one
             // column. `current` still advances by a code unit, so byte offsets and lexeme slices are

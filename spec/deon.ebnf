@@ -25,9 +25,10 @@ list              = "[", trivia,
                     [ list-item, { separator, list-item }, [ separator ] ], "]" ;
 list-item         = spread | value ;
 
+(* A structure with no rows is an empty list, so the rows are optional; a signature still stands. *)
 structure         = "<", trivia, name, { trivia, ",", trivia, name }, trivia,
-                    ">", trivia, "[", trivia, structure-row,
-                    { newline, trivia, structure-row }, trivia, "]" ;
+                    ">", trivia, "[", trivia, [ structure-row,
+                    { newline, trivia, structure-row } ], trivia, "]" ;
 structure-row     = value, { trivia, ",", trivia, value }, [ trivia, "," ] ;
 
 link              = "#", reference ;
@@ -46,7 +47,7 @@ dot-access        = ".", bare-name ;
    is taken literally as a map key (section 6). It may not be empty and may not contain whitespace. *)
 bracket-access    = "[", ( digits | bracket-key | quoted-name ), "]" ;
 bracket-key       = bracket-character, { bracket-character } ;
-bracket-character = any-character - ( "]" | space | newline | "," ) ;
+bracket-character = any-character - ( "]" | space | newline | "," | control ) ;
 
 string            = unquoted-string | single-string | multiline-string ;
 
@@ -54,18 +55,20 @@ string            = unquoted-string | single-string | multiline-string ;
    quote and a "#" that does not open "#{" are ordinary literal content; the string ends only at an
    unnested comma, newline, bracketing delimiter, or a "#" that starts a link at a token boundary.
    These are lexical rules — section 4.3 is authoritative — and a recognized escape or a "#{"
-   interpolation takes precedence over a literal character by longest match. *)
+   interpolation takes precedence over a literal character by longest match. A leading backslash
+   begins an escape where one is recognized and is otherwise a literal backslash (section 4.3), so a
+   value may begin with "\q" even though unquoted-first excludes the backslash character itself. *)
 unquoted-string   = ( unquoted-first | escape | escaped-interpolation | interpolation ),
                     { unquoted-rest | escape | escaped-interpolation | interpolation } ;
 unquoted-first    = any-character - ( space | newline | "," | "{" | "}" | "[" | "]"
-                    | "(" | ")" | "<" | ">" | "'" | "`" | "#" | "\\" ) ;
+                    | "(" | ")" | "<" | ">" | "'" | "`" | "#" | "\\" | control ) ;
 unquoted-rest     = any-character - ( newline | "," | "{" | "}" | "[" | "]"
-                    | "(" | ")" | "<" | ">" ) ;
+                    | "(" | ")" | "<" | ">" | control ) ;
 
 single-string     = "'", { single-character | single-escape | escaped-interpolation | interpolation }, "'" ;
 multiline-string  = "`", { multiline-character | multiline-escape | escaped-interpolation | interpolation }, "`" ;
-single-character  = any-character - ( "'" | "\\" | newline ) ;
-multiline-character = any-character - ( "`" | "\\" ) ;
+single-character  = any-character - ( "'" | "\\" | newline | control ) ;
+multiline-character = any-character - ( "`" | "\\" | control ) ;
 
 interpolation     = "#{", reference, "}" ;
 
@@ -81,10 +84,17 @@ escaped-interpolation = "\\", "#{", reference, "}" ;
    single string additionally reads "\'" and a multiline string "\`" as their delimiter. Every other
    backslash sequence is preserved literally wherever it appears. The "\#{" alternative is the fallback
    described above, taken only when no escaped-interpolation closes. *)
-common-escape     = "\\", ( "\\" | "#{" | "n" | "r" | "t" ) ;
+common-escape     = "\\", ( "\\" | "#{" | "n" | "r" | "t" | unicode-escape ) ;
 escape            = common-escape ;
 single-escape     = common-escape | "\\'" ;
 multiline-escape  = common-escape | "\\`" ;
+
+(* "\u{…}" is one to six hexadecimal digits naming a Unicode scalar value: at most U+10FFFF and never a
+   surrogate. It decodes to that code point and is the only way a control character appears in a string.
+   An empty, non-hexadecimal, surrogate, or out-of-range escape is DEON_LEX_INVALID at the backslash, and
+   input that ends before the closing brace is DEON_LEX_UNTERMINATED (section 4.3). *)
+unicode-escape    = "u", "{", hex-digit, { hex-digit }, "}" ;
+hex-digit         = digit | "a"…"f" | "A"…"F" ;
 
 (* A name is never interpolated (section 4.4). A quoted name is lexed like a single-string with the
    same escapes, but a "#{" in name position is literal text rather than an interpolation, so the key
@@ -100,11 +110,13 @@ trivia            = { space | newline | line-comment | block-comment } ;
 required-space    = space, { space } ;
 space             = " " | "\t" ;
 newline           = "\n" | "\r\n" ;
-line-comment      = "//", { any-character - newline }, [ newline ] ;
-block-comment     = "/*", { any-character - "*/" }, "*/" ;
+line-comment      = "//", { any-character - ( newline | control ) }, [ newline ] ;
+block-comment     = "/*", { any-character - "*/" - control }, "*/" ;
 
 letter            = "A"…"Z" | "a"…"z" ;
 digit             = "0"…"9" ;
 digits            = digit, { digit } ;
 any-character     = ? any Unicode scalar value ? ;
+control           = ? a C0 control (U+0000–U+001F) other than a horizontal tab, a line feed, or a
+                      carriage return; a DEL (U+007F); or a C1 control (U+0080–U+009F) ? ;
 EOF               = ? end of input ? ;

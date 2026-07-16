@@ -50,7 +50,31 @@ interface Range {
 
 
 /**
+ * The span a token occupies. Both the primary underline and every related span are built from a
+ * token this same way, so the two never drift in what they measure.
+ */
+const rangeFromToken = (
+    token: Token,
+): Range => ({
+    start: {
+        offset: token.byteStart,
+        line: token.line,
+        column: token.column,
+    },
+    end: {
+        offset: token.byteEnd,
+        line: token.endLine,
+        column: token.endColumn,
+    },
+});
+
+
+/**
  * What went wrong, and exactly where. An editor reads the range to underline the offending text.
+ *
+ * `related` carries secondary spans the reader is sent to — the first declaration behind a duplicate,
+ * for instance — as full ranges, built from their tokens exactly as the primary is (spec/diagnostics.md).
+ * A diagnostic with nowhere else to point leaves it empty.
  */
 export class DeonDiagnostic {
     public readonly code: DiagnosticCodeValue;
@@ -58,30 +82,21 @@ export class DeonDiagnostic {
     public readonly message: string;
     public readonly source: string;
     public readonly range: Range;
+    public readonly related: Range[];
 
     constructor(
         code: DiagnosticCodeValue,
         message: string,
         token: Token,
         severity: 'error' | 'warning' = 'error',
+        related: Token[] = [],
     ) {
         this.code = code;
         this.severity = severity;
         this.message = message;
         this.source = token.source;
-
-        this.range = {
-            start: {
-                offset: token.byteStart,
-                line: token.line,
-                column: token.column,
-            },
-            end: {
-                offset: token.byteEnd,
-                line: token.endLine,
-                column: token.endColumn,
-            },
-        };
+        this.range = rangeFromToken(token);
+        this.related = related.map(rangeFromToken);
     }
 }
 
@@ -97,12 +112,13 @@ export class DeonError extends Error {
         code: DiagnosticCodeValue,
         message: string,
         token: Token,
+        related: Token[] = [],
     ) {
         super(message);
 
         this.name = 'DeonError';
         this.code = code;
-        this.diagnostics = [new DeonDiagnostic(code, message, token)];
+        this.diagnostics = [new DeonDiagnostic(code, message, token, 'error', related)];
     }
 }
 
@@ -116,12 +132,14 @@ export const deonError: (
     code: DiagnosticCodeValue,
     message: string,
     token: Token,
+    related?: Token[],
 ) => never = (
     code,
     message,
     token,
+    related = [],
 ) => {
-    throw new DeonError(code, message, token);
+    throw new DeonError(code, message, token, related);
 };
 
 

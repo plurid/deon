@@ -221,6 +221,30 @@ final class Parser {
         return new DeonException(code, message, span);
     }
 
+    /** A C0 control other than tab, line feed, or carriage return; a DEL; or a C1 control (section 4.3). */
+    private static boolean isControl(int r) {
+        return (r < 0x20 && r != '\t' && r != '\n' && r != '\r')
+                || r == 0x7f
+                || (r >= 0x80 && r <= 0x9f);
+    }
+
+    /**
+     * A control character has no literal form and is a lexical error wherever it is written raw — inside a
+     * string, inside a comment, or between tokens (section 4.3). The source is normalized code points, so
+     * one pass over it catches every raw control at its own position, whatever token would have consumed
+     * it; a control that arrives by a Unicode escape is a decoded value, not raw source, and is
+     * untouched here.
+     */
+    private void rejectRawControls() {
+        for (int i = 0; i < count; i++) {
+            if (isControl(runes[i])) {
+                throw fail(Code.LEX_INVALID,
+                        "A control character has no literal form; write it with a '\\u{…}' escape.",
+                        spanAt(i));
+            }
+        }
+    }
+
     // #region names
     private String name() {
         int start = pos;
@@ -320,6 +344,7 @@ final class Parser {
     }
 
     DocumentAst parseDocument() {
+        rejectRawControls();
         DocumentAst doc = new DocumentAst();
         doc.declarations = new ArrayList<>();
 
@@ -739,7 +764,7 @@ final class Parser {
     // #region strings (section 4.3)
     // Each form collects the raw source it spans, then decodes that source once: escapes are read,
     // `#{reference}` is turned into a part, and the active quote delimiter is preserved verbatim.
-    private List<StringPart> decode(String utf8, int active, Span carrier) {
+    private List<StringPart> decode(String utf8, int active, Span carrier, int originStart, boolean contentAtInputEnd) {
         Parser p = new Parser(utf8, "");
         List<StringPart> parts = new ArrayList<>();
         StringBuilder lit = new StringBuilder();
@@ -747,6 +772,7 @@ final class Parser {
         while (!p.atEnd()) {
             int r = p.peek();
             if (r == '\\') {
+                int escStart = p.pos;
                 p.advance();
                 if (p.atEnd()) {
                     lit.append('\\');
@@ -772,6 +798,11 @@ final class Parser {
                 } else if (n == 't') {
                     p.advance();
                     lit.append('\t');
+                } else if (n == 'u' && p.peekAt(1) == '{') {
+                    // The one escape that reaches beyond the seven ASCII forms: a Unicode scalar value by
+                    // number (section 4.3). Its fault is anchored at the backslash, which sits at
+                    // originStart + escStart in this parser's source.
+                    lit.append(Character.toChars(decodeUnicodeEscape(p, originStart + escStart, contentAtInputEnd)));
                 } else {
                     p.advance();
                     lit.append('\\');
@@ -789,6 +820,66 @@ final class Parser {
             parts.add(new StringPart(""));
         }
         return parts;
+    }
+
+    /**
+     * A Unicode-scalar escape — a backslash then {@code u{HEX}} (section 4.3): one to six hexadecimal
+     * digits, read case-insensitively, naming a Unicode scalar value that decodes to that code point. On
+     * entry {@code p} sits on the {@code u}; on return it sits just past the closing brace. The value
+     * must not exceed U+10FFFF and must not be a surrogate; an empty escape, a non-hex digit, more than
+     * six digits, a surrogate, or an out-of-range value is DEON_LEX_INVALID. An escape closed by anything
+     * other than {@code '}'} is malformed the same way: only reaching the true end of the whole input is
+     * DEON_LEX_UNTERMINATED, whereas a closing quote, a backtick, or a newline arriving first — a
+     * character that is neither a hex digit nor {@code '}'} — is DEON_LEX_INVALID. {@code contentAtInputEnd}
+     * says whether the end of this string's content is that true end of input. Every fault is anchored at
+     * the backslash, whose index in this parser's source is {@code anchorRune}.
+     */
+    private int decodeUnicodeEscape(Parser p, int anchorRune, boolean contentAtInputEnd) {
+        p.advance(); // u
+        p.advance(); // {
+        long cp = 0;
+        int digits = 0;
+        boolean bad = false;
+        while (!p.atEnd() && p.peek() != '}') {
+            int h = hexValue(p.peek());
+            if (h < 0) {
+                bad = true;
+            }
+            cp = (cp << 4) | (h < 0 ? 0 : h);
+            digits++;
+            p.advance();
+        }
+        if (p.atEnd()) {
+            // The escape reached the end of the string's content without a '}'. When that content is the
+            // true end of input the escape is unterminated; otherwise the content was ended by a delimiter
+            // — a closing quote, a backtick, or a newline — that closes the escape with a non-'}', non-hex
+            // character, which is malformed exactly as a bad digit is.
+            throw fail(contentAtInputEnd ? Code.LEX_UNTERMINATED : Code.LEX_INVALID,
+                    contentAtInputEnd
+                            ? "A '\\u{…}' escape was opened and never closed."
+                            : "A '\\u{…}' escape must close with '}' before the string ends.",
+                    spanAt(anchorRune));
+        }
+        p.advance(); // }
+        if (bad || digits == 0 || digits > 6 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+            throw fail(Code.LEX_INVALID,
+                    "A '\\u{…}' escape names one to six hexadecimal digits of a Unicode scalar value.",
+                    spanAt(anchorRune));
+        }
+        return (int) cp;
+    }
+
+    private static int hexValue(int r) {
+        if (r >= '0' && r <= '9') {
+            return r - '0';
+        }
+        if (r >= 'a' && r <= 'f') {
+            return r - 'a' + 10;
+        }
+        if (r >= 'A' && r <= 'F') {
+            return r - 'A' + 10;
+        }
+        return -1;
     }
 
     private static void flushLiteral(List<StringPart> parts, StringBuilder lit) {
@@ -837,6 +928,7 @@ final class Parser {
     }
 
     private List<StringPart> parseSingleString() {
+        int contentStart = pos + 1; // the first content rune, just past the opening quote
         Span open = point();
         advance(); // '
         StringBuilder raw = new StringBuilder();
@@ -865,7 +957,9 @@ final class Parser {
             }
             raw.appendCodePoint(advance());
         }
-        return decode(raw.toString(), '\'', open);
+        // The content is closed by the quote, never by the end of input, so a mid-escape end of content
+        // is a delimiter-closed (malformed) escape, not an unterminated one.
+        return decode(raw.toString(), '\'', open, contentStart, false);
     }
 
     private static boolean isTrimmable(int r) {
@@ -873,6 +967,7 @@ final class Parser {
     }
 
     private List<StringPart> parseBacktickString() {
+        int contentStart = pos + 1; // the first content rune, just past the opening backtick
         Span open = point();
         advance(); // `
         List<Integer> runeList = new ArrayList<>();
@@ -910,7 +1005,10 @@ final class Parser {
         for (int i = startIdx; i < endIdx; i++) {
             raw.appendCodePoint(runeList.get(i));
         }
-        return decode(raw.toString(), '`', open);
+        // Boundary trimming only removes runes from the ends, so the kept content stays contiguous with
+        // the source: its first rune sits at contentStart + startIdx. The content is closed by the
+        // backtick, never by the end of input, so a mid-escape end of content is malformed, not unterminated.
+        return decode(raw.toString(), '`', open, contentStart + startIdx, false);
     }
 
     // #region unquoted
@@ -1029,6 +1127,22 @@ final class Parser {
                 raw.appendCodePoint(advance()); // '{'
                 continue;
             }
+            if (r == '\\' && peekAt(1) == 'u' && peekAt(2) == '{') {
+                // A backslash-u escape carries braces that would otherwise end the unquoted value as hard
+                // delimiters; copy the whole escape verbatim, through its closing '}', so the single
+                // decode pass below reads it as one escape rather than the value breaking at the '{'. A
+                // malformed or unclosed escape is diagnosed there, anchored at this backslash.
+                raw.appendCodePoint(advance()); // '\'
+                raw.appendCodePoint(advance()); // 'u'
+                raw.appendCodePoint(advance()); // '{'
+                while (!atEnd() && peek() != '}' && !isNewline(peek())) {
+                    raw.appendCodePoint(advance());
+                }
+                if (!atEnd() && peek() == '}') {
+                    raw.appendCodePoint(advance()); // '}'
+                }
+                continue;
+            }
             if (r == '\\') {
                 // Keep the backslash and the character it escapes verbatim; decode() reads them once.
                 raw.appendCodePoint(advance());
@@ -1044,7 +1158,10 @@ final class Parser {
             throw fail(Code.PARSE_EXPECTED, "A value was expected here.", spanAt(start));
         }
         ScalarNode n = new ScalarNode();
-        n.parts = decode(raw.toString(), 0, spanAt(start));
+        // The unquoted run is contiguous with its source (no runes are dropped before the first), so a
+        // decode fault maps back through start. An unquoted value alone can run to the true end of input,
+        // so a mid-escape end of content is unterminated only when the parser is genuinely at that end.
+        n.parts = decode(raw.toString(), 0, spanAt(start), start, atEnd());
         n.span = spanBetween(start, pos);
         return n;
     }

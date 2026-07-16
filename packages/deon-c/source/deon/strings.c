@@ -10,6 +10,66 @@
  * interior quote or `#` as ordinary literal text, ending only at an unnested comma, newline, bracketing
  * delimiter, or a link-starting `#` at a token boundary. */
 
+/* #region unicode escape (section 4.3)
+ * `\u{HEX}` names a Unicode scalar value as one to six hexadecimal digits, read case-insensitively, and
+ * decodes to that code point UTF-8 encoded. The body is validated where the string's raw source is
+ * collected, on the live document cursor, so a malformed escape is reported at its own backslash rather
+ * than at the carrying string; the one decode pass over the collected source then re-reads the escape it
+ * already proved well-formed and encodes it. */
+#define UE_MESSAGE "A '\\u{…}' escape names a Unicode scalar value as one to six hexadecimal digits."
+
+typedef enum { UE_OK, UE_INVALID, UE_UNTERMINATED } ue_status;
+
+static int hex_value(uint32_t c) {
+    if (c >= '0' && c <= '9') return (int)(c - '0');
+    if (c >= 'a' && c <= 'f') return (int)(c - 'a' + 10);
+    if (c >= 'A' && c <= 'F') return (int)(c - 'A' + 10);
+    return -1;
+}
+
+/* On entry the cursor is on the 'u' of a `\u{…}` escape — the caller has consumed the backslash and
+ * checked that the next rune is '{'. Reads the brace-delimited body and advances past the closing '}'.
+ * Returns UE_OK with *cp set; UE_INVALID for an empty body, a non-hex character before the brace, more
+ * than six digits, a surrogate, or a value above U+10FFFF; UE_UNTERMINATED when the input ends first. */
+static ue_status scan_unicode_escape(parser *p, uint32_t *cp) {
+    p_advance(p); /* u */
+    p_advance(p); /* { */
+    uint32_t value = 0;
+    int digits = 0;
+    for (;;) {
+        if (p_at_end(p)) return UE_UNTERMINATED;
+        uint32_t c = p_peek(p);
+        if (c == '}') { p_advance(p); break; }
+        int hv = hex_value(c);
+        if (hv < 0) return UE_INVALID;
+        value = (value << 4) | (uint32_t)hv;
+        if (++digits > 6) return UE_INVALID;
+        p_advance(p);
+    }
+    if (digits == 0) return UE_INVALID;
+    if (value > 0x10FFFF) return UE_INVALID;
+    if (value >= 0xD800 && value <= 0xDFFF) return UE_INVALID;
+    *cp = value;
+    return UE_OK;
+}
+
+/* At `\u{`, on the live document cursor: validate the escape (a malformed one is reported at its own
+ * backslash) and append its verbatim source to the collected raw, for the decode pass to re-read. */
+static void take_unicode_escape(parser *p, sb *raw) {
+    size_t bs = p->pos;
+    p_advance(p); /* backslash */
+    uint32_t cp;
+    ue_status st = scan_unicode_escape(p, &cp);
+    if (st != UE_OK) {
+        deon_fail(p->ctx, st == UE_UNTERMINATED ? DEON_LEX_UNTERMINATED : DEON_LEX_INVALID,
+                  st == UE_UNTERMINATED ? "A '\\u{…}' escape was opened and never closed." : UE_MESSAGE,
+                  span_at(p, bs));
+    }
+    deon_str v = slice(p, bs, p->pos);
+    sb_put(raw, v.data, v.len);
+}
+/* #endregion */
+
 typedef struct {
     string_part *parts;
     size_t       len;
@@ -90,6 +150,13 @@ static string_part *decode(deon_ctx *ctx, const char *utf8, size_t len, uint32_t
             else if (n == 'n') { p_advance(p); sb_putc(&lit, '\n'); }
             else if (n == 'r') { p_advance(p); sb_putc(&lit, '\r'); }
             else if (n == 't') { p_advance(p); sb_putc(&lit, '\t'); }
+            else if (n == 'u' && peek_at(p, 1) == '{') {
+                /* The escape was proved well-formed and in range where the raw source was collected, so
+                 * this pass only re-reads it and UTF-8 encodes the code point it names. */
+                uint32_t cp;
+                if (scan_unicode_escape(p, &cp) == UE_OK) utf8_encode(cp, &lit);
+                else utf8_encode(0xFFFD, &lit); /* unreachable: collection validated it */
+            }
             else { p_advance(p); sb_putc(&lit, '\\'); sb_put_rune(&lit, n); }
         } else if (p_starts_with(p, "#{")) {
             flush_literal(&b, &lit);
@@ -142,6 +209,7 @@ string_part *parse_single_string(parser *p, size_t *out_len) {
         if (is_newline(r)) {
             deon_fail(p->ctx, DEON_LEX_UNTERMINATED, "A single-quoted string may not cross a line.", open);
         }
+        if (r == '\\' && peek_at(p, 1) == 'u' && peek_at(p, 2) == '{') { take_unicode_escape(p, &raw); continue; }
         if (r == '\\') {
             sb_put_rune(&raw, p_advance(p));
             if (!p_at_end(p)) sb_put_rune(&raw, p_advance(p));
@@ -172,6 +240,7 @@ string_part *parse_backtick_string(parser *p, size_t *out_len) {
         }
         uint32_t r = p_peek(p);
         if (r == '`') { p_advance(p); break; }
+        if (r == '\\' && peek_at(p, 1) == 'u' && peek_at(p, 2) == '{') { take_unicode_escape(p, &raw); continue; }
         if (r == '\\') {
             sb_put_rune(&raw, p_advance(p));
             if (p_at_end(p)) {
@@ -256,6 +325,10 @@ node *parse_unquoted(parser *p) {
             break;
         }
         if (r == '\\') {
+            /* A `\u{…}` escape encloses its hex body in braces, which are bracketing delimiters, so the
+             * whole run is taken here or the loop would stop at the `{` and split it. The body is
+             * validated on this cursor, so a malformed one is reported at its own backslash. */
+            if (peek_at(p, 1) == 'u' && peek_at(p, 2) == '{') { take_unicode_escape(p, &raw); continue; }
             /* A complete escaped interpolation `\#{reference}` (section 4.3) decodes to the literal
              * characters `#{reference}`. Its `{` and its closing `}` are bracketing delimiters, so the
              * whole run is taken here, or the loop would stop at a brace and split it. Without a closing

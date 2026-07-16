@@ -60,10 +60,13 @@ type Diagnostic struct {
 	Message  string
 	Span     Span
 	Severity string
+	// Related are secondary positions the reader is sent to beyond the primary Span — the first
+	// declaration a duplicate collides with, say (spec/diagnostics.md). Empty for most faults.
+	Related []Span
 }
 
-func diagnosticOf(code Code, message string, span Span) Diagnostic {
-	return Diagnostic{Code: code, Message: message, Span: span, Severity: severityOf(code)}
+func diagnosticOf(code Code, message string, span Span, related ...Span) Diagnostic {
+	return Diagnostic{Code: code, Message: message, Span: span, Severity: severityOf(code), Related: related}
 }
 
 // Error is what crosses the public boundary when a document is bad. Evaluation is atomic: the first
@@ -76,11 +79,11 @@ type Error struct {
 	Diagnostics []Diagnostic
 }
 
-func newError(code Code, message string, span Span) *Error {
+func newError(code Code, message string, span Span, related ...Span) *Error {
 	return &Error{
 		Code:        code,
 		Message:     message,
-		Diagnostics: []Diagnostic{diagnosticOf(code, message, span)},
+		Diagnostics: []Diagnostic{diagnosticOf(code, message, span, related...)},
 	}
 }
 
@@ -94,8 +97,8 @@ func (e *Error) Error() string {
 // so the raise is a panic and every public entry point recovers it into a returned error. Nothing
 // but an *Error is ever raised this way, and recoverError re-panics anything that is not one, so a
 // genuine host panic is never swallowed.
-func fail(code Code, message string, span Span) {
-	panic(newError(code, message, span))
+func fail(code Code, message string, span Span, related ...Span) {
+	panic(newError(code, message, span, related...))
 }
 
 // recoverError turns a raised *Error back into a returned one. It is deferred at every public

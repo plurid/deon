@@ -104,9 +104,19 @@ private func okResponse(_ id: String, _ result: String) -> String {
 }
 
 private func errorResponse(_ id: String, _ error: DeonError) -> String {
-    "{\"id\":\(jsonQuote(id)),\"ok\":\"false\",\"code\":\(jsonQuote(error.code))"
+    // related spans (spec/diagnostics.md): each a [start, line, column] triple of strings, in order — the
+    // same three measures as the primary. A diagnostic with none reports an empty list.
+    var related = "["
+    for (i, r) in error.related.enumerated() {
+        if i > 0 {
+            related += ","
+        }
+        related += "[\"\(r.start)\",\"\(r.line)\",\"\(r.column)\"]"
+    }
+    related += "]"
+    return "{\"id\":\(jsonQuote(id)),\"ok\":\"false\",\"code\":\(jsonQuote(error.code))"
         + ",\"severity\":\(jsonQuote(error.severity)),\"start\":\"\(error.start)\""
-        + ",\"line\":\"\(error.line)\",\"column\":\"\(error.column)\"}"
+        + ",\"line\":\"\(error.line)\",\"column\":\"\(error.column)\",\"related\":\(related)}"
 }
 
 private func panicResponse(_ id: String) -> String {

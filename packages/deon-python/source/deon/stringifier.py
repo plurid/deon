@@ -16,6 +16,7 @@ from typing import Mapping
 
 from .options import StringifyOptions
 from .parser import MAX_DEPTH, is_bare_name
+from .scanner import is_control
 from .value import DeonMap, Value, coerce
 
 
@@ -69,6 +70,11 @@ def can_be_bare(text: str) -> bool:
     if any(character in UNSAFE for character in text):
         return False
 
+    # A raw control character is a lexical error, and has no literal form to stand bare as: it is
+    # written with a `\u{…}` escape, which only a quoted string carries (specification 4.3, 12).
+    if any(is_control(character) for character in text):
+        return False
+
     # A `#` forces a quote wherever it falls. At a token boundary a bare `#` reads back as a link and
     # `#{` as an interpolation; an interior `#` is harmless literal text under specification 4.3, and
     # is quoted all the same, because where a shorter safe form and a safer one both read back the
@@ -102,6 +108,11 @@ def escaped(text: str, delimiter: str) -> str:
             out.append("\\r")
         elif character == "\t":
             out.append("\\t")
+        elif is_control(character):
+            # Every other control character is written `\u{h}`, its code point in lowercase hex with
+            # no leading zeros (specification 12): the escape character is `\u{1b}`, a null `\u{0}`, a
+            # DEL `\u{7f}`. A tab, a line feed, and a carriage return kept their spellings above.
+            out.append("\\u{" + format(ord(character), "x") + "}")
         else:
             out.append(character)
 
@@ -113,11 +124,14 @@ def write_string(text: str) -> str:
         return text
 
     # A backtick string carries a value only when that value begins and ends with a non-whitespace
-    # character and contains no carriage return (specification 12) — because a backtick trims its
-    # boundary whitespace on the way back in, so a value with any would not survive the round trip.
+    # character and contains no carriage return and no other control character (specification 12) —
+    # a backtick trims its boundary whitespace on the way back in, so a value with any would not
+    # survive the round trip, and a control has no literal form a backtick could hold, so it is
+    # single-quoted and its control written `\u{…}` instead.
     if (
         "\n" in text
         and "\r" not in text
+        and not any(is_control(character) for character in text)
         and text[:1].strip() != ""
         and text[-1:].strip() != ""
     ):

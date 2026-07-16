@@ -101,6 +101,11 @@ typedef struct {
     deon_str  message;
     deon_span span;
     int       severity; /* 0 = error, 1 = warning */
+    /* A secondary source position the reader is sent to (diagnostics.md): the first declaration a
+     * duplicate collides with, and so on. One optional span for now; has_related is false unless the
+     * diagnostic carries one, in which case related holds the same three measures as span. */
+    deon_span related;
+    bool      has_related;
 } deon_diagnostic;
 
 typedef struct {

@@ -223,10 +223,29 @@ fn answer(id: &str, result: deon::DResult<String>) -> String {
             quote(&text),
         ),
         Err(failure) => {
-            let span = &failure.diagnostics[0].span;
+            let diagnostic = &failure.diagnostics[0];
+            let span = &diagnostic.span;
+
+            // The secondary positions, each a [start, line, column] triple of strings, exactly the
+            // three measures the primary carries. Built by hand like the rest of the envelope, so a
+            // diagnostic with nothing else to point at emits `[]`.
+            let related = format!(
+                "[{}]",
+                diagnostic
+                    .related
+                    .iter()
+                    .map(|related_span| format!(
+                        "[{},{},{}]",
+                        quote(&related_span.start.to_string()),
+                        quote(&related_span.line.to_string()),
+                        quote(&related_span.column.to_string()),
+                    ))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            );
 
             format!(
-                "{{{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{}}}",
+                "{{{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{}}}",
                 quote("id"),
                 quote(id),
                 quote("ok"),
@@ -241,6 +260,8 @@ fn answer(id: &str, result: deon::DResult<String>) -> String {
                 quote(&span.line.to_string()),
                 quote("column"),
                 quote(&span.column.to_string()),
+                quote("related"),
+                related,
             )
         }
     }

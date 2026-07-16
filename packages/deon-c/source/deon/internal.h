@@ -45,6 +45,11 @@ typedef struct {
     deon_code       code;
     deon_str        message;
     deon_span       span;
+    /* A secondary position the reader is sent to (diagnostics.md), carried through the longjmp alongside
+     * the primary span. has_related is false for every diagnostic but the few that point elsewhere — a
+     * fresh ctx is zero-initialized, and deon_fail clears it, so only deon_fail_related sets it. */
+    deon_span       related;
+    bool            has_related;
     deon_diagnostic extra[8]; /* import-trace frames, if any */
     size_t          extra_len;
     /* §11.2: while a string is being decoded, interp_anchor holds the start of the string that carries
@@ -56,6 +61,9 @@ typedef struct {
 } deon_ctx;
 
 void deon_fail(deon_ctx *ctx, deon_code code, const char *message, deon_span span);
+/* Like deon_fail, but the diagnostic also carries a related span — a secondary source position the
+ * reader is sent to (diagnostics.md), such as the first declaration a duplicate collides with. */
+void deon_fail_related(deon_ctx *ctx, deon_code code, const char *message, deon_span span, deon_span related);
 /* #endregion */
 
 /* #region UTF-8 */
@@ -65,6 +73,10 @@ uint32_t utf8_decode(const char *s, const char *end, int *width);
 int      utf8_width(uint32_t rune);
 void     utf8_encode(uint32_t rune, sb *b);
 bool     utf8_valid(const char *s, size_t len);
+/* A control code point with no literal form in Deon source (section 4.3): a C0 control other than a
+ * horizontal tab, a line feed, and a carriage return; a DEL (U+007F); or a C1 control (U+0080–U+009F).
+ * Written raw it is a lexical error; written back it takes a `\u{…}` escape. */
+bool     is_control_rune(uint32_t cp);
 /* #endregion */
 
 /* #region syntax tree */

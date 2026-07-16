@@ -93,6 +93,12 @@ func (p *parser) backtickString() []stringPart {
 			break
 		}
 		if r == '\\' {
+			// A `\u{…}` escape is validated and taken whole here, at the live cursor, so a malformed one
+			// is anchored at its backslash (§4.3); every other backslash takes the one character after it.
+			if p.peekAt(1) == 'u' && p.peekAt(2) == '{' {
+				p.takeUnicodeEscape(&raw)
+				continue
+			}
 			raw = append(raw, p.advance())
 			if p.atEnd() {
 				fail(LexUnterminated, "A backtick string ended in an unfinished escape.", p.spanAt(open))
@@ -166,6 +172,14 @@ func (p *parser) unquoted() node {
 			continue
 		}
 		if r == '\\' {
+			// A `\u{…}` escape is validated here, at the live cursor, so a malformed one is anchored at
+			// its backslash (§4.3) and the whole escape — its braces included — is taken as one unit
+			// rather than broken by the `{` and `}`, which end an unquoted value everywhere else. The
+			// source runes are kept for the single decode pass below, which turns them into the code point.
+			if p.peekAt(1) == 'u' && p.peekAt(2) == '{' {
+				p.takeUnicodeEscape(&raw)
+				continue
+			}
 			// A backslash takes the character after it, so an escaped delimiter does not end anything;
 			// both characters are kept raw for the single decode pass below.
 			raw = append(raw, p.advance())
@@ -286,6 +300,86 @@ func (p *parser) interpolation() stringPart {
 	return stringPart{interp: &ref}
 }
 
+// uEscKind is how a `\u{…}` escape turned out when scanned.
+type uEscKind int
+
+const (
+	uOK uEscKind = iota // a well-formed escape naming a Unicode scalar value
+	uInvalid            // empty, a non-hex digit, more than six digits, a surrogate, or past U+10FFFF
+	uUnterminated       // the source ended before the closing brace
+)
+
+const (
+	msgUnicodeInvalid      = "A '\\u{…}' escape names a Unicode scalar value as one to six hexadecimal digits from U+0000 to U+10FFFF, excluding the surrogates."
+	msgUnicodeUnterminated = "A '\\u{…}' escape was opened and never closed."
+)
+
+// scanUnicodeEscape reads a `\u{HEX}` escape whose backslash is runes[i]; the caller has established
+// that runes[i+1] is 'u' and runes[i+2] is '{'. It returns the decoded code point, the number of runes
+// the whole escape spans (from the backslash through the closing brace), and how it turned out. A
+// value is one to six hexadecimal digits read case-insensitively (§4.3); the empty `\u{}`, a non-hex
+// character before the brace, more than six digits, a surrogate (U+D800–U+DFFF), or a value past
+// U+10FFFF is uInvalid, and running off the end before the brace is uUnterminated.
+func scanUnicodeEscape(runes []rune, i int) (rune, int, uEscKind) {
+	value := 0
+	digits := 0
+	for j := i + 3; ; j++ {
+		if j >= len(runes) {
+			return 0, 0, uUnterminated
+		}
+		c := runes[j]
+		if c == '}' {
+			if digits == 0 {
+				return 0, 0, uInvalid
+			}
+			if value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) {
+				return 0, 0, uInvalid
+			}
+			return rune(value), (j + 1) - i, uOK
+		}
+		d, ok := hexValue(c)
+		if !ok {
+			return 0, 0, uInvalid
+		}
+		digits++
+		if digits > 6 {
+			return 0, 0, uInvalid
+		}
+		value = value*16 + d
+	}
+}
+
+func hexValue(r rune) (int, bool) {
+	switch {
+	case r >= '0' && r <= '9':
+		return int(r - '0'), true
+	case r >= 'a' && r <= 'f':
+		return int(r-'a') + 10, true
+	case r >= 'A' && r <= 'F':
+		return int(r-'A') + 10, true
+	}
+	return 0, false
+}
+
+// takeUnicodeEscape validates a `\u{…}` escape at the live cursor and copies its source runes into raw,
+// so the later decode pass reads it as one code point. The cursor is at the backslash, with `u` and `{`
+// known to follow. A malformed escape is DEON_LEX_INVALID and one that runs off the end
+// DEON_LEX_UNTERMINATED, both anchored at the backslash (§4.3). Used by the two string forms that
+// collect a raw run before decoding it — the unquoted string and the backtick string.
+func (p *parser) takeUnicodeEscape(raw *[]rune) {
+	open := p.pos
+	_, length, kind := scanUnicodeEscape(p.runes, open)
+	switch kind {
+	case uUnterminated:
+		fail(LexUnterminated, msgUnicodeUnterminated, p.spanAt(open))
+	case uInvalid:
+		fail(LexInvalid, msgUnicodeInvalid, p.spanAt(open))
+	}
+	for k := 0; k < length; k++ {
+		*raw = append(*raw, p.advance())
+	}
+}
+
 // decodeEscape decodes a backslash sequence at the cursor. The active quote is the string's own
 // delimiter — `'`, “ ` “, or 0 for an unquoted string — so that `\'` is a quote inside a single
 // string and preserved verbatim outside one. Every sequence the specification does not name is kept
@@ -318,6 +412,16 @@ func (p *parser) decodeEscape(active rune) string {
 	case r == 't':
 		p.advance()
 		return "\t"
+	case r == 'u' && p.peekAt(1) == '{':
+		cp, length, kind := scanUnicodeEscape(p.runes, open)
+		switch kind {
+		case uUnterminated:
+			fail(LexUnterminated, msgUnicodeUnterminated, p.spanAt(open))
+		case uInvalid:
+			fail(LexInvalid, msgUnicodeInvalid, p.spanAt(open))
+		}
+		p.pos = open + length
+		return string(cp)
 	default:
 		// Preserved literally: the backslash and whatever followed it.
 		p.advance()
@@ -389,6 +493,19 @@ func decodeInner(raw []rune, active rune, carrier Span) []stringPart {
 			case next == 't':
 				literal.WriteRune('\t')
 				i++
+			case next == 'u' && peek(1) == '{':
+				// The backslash is at i-1. A malformed escape is normally caught at the live cursor,
+				// where it is anchored at that backslash; this decode of an already-extracted slice is
+				// the fallback, so its diagnostic falls back to the carrying string (§11.2).
+				cp, length, kind := scanUnicodeEscape(raw, i-1)
+				if kind != uOK {
+					if kind == uUnterminated {
+						fail(LexUnterminated, msgUnicodeUnterminated, carrier)
+					}
+					fail(LexInvalid, msgUnicodeInvalid, carrier)
+				}
+				literal.WriteRune(cp)
+				i = (i - 1) + length
 			default:
 				literal.WriteRune('\\')
 				literal.WriteRune(next)

@@ -41,6 +41,13 @@ uint32_t utf8_decode(const char *s, const char *end, int *width) {
     return rune;
 }
 
+bool is_control_rune(uint32_t cp) {
+    if (cp <= 0x1F) return cp != 0x09 && cp != 0x0A && cp != 0x0D; /* C0 except tab, LF, CR */
+    if (cp == 0x7F) return true;                                   /* DEL */
+    if (cp >= 0x80 && cp <= 0x9F) return true;                     /* C1 */
+    return false;
+}
+
 int utf8_width(uint32_t rune) {
     if (rune < 0x80) return 1;
     if (rune < 0x800) return 2;

@@ -95,6 +95,12 @@
             "expected": { "people": [{ "id": "1", "name": "One" }, { "id": "2", "name": "Two" }] }
         },
         {
+            "id": "empty-structure-is-an-empty-list",
+            "required": true,
+            "source": "{ s <id, name>[] }",
+            "expected": { "s": [] }
+        },
+        {
             "id": "entity-call",
             "required": true,
             "source": "template { message Hello #{name} }\n{ result #template(name One) }",
@@ -105,7 +111,8 @@
             "required": true,
             "source": "value one\nvalue two\n{ #value }",
             "error": "DEON_DUPLICATE_DECLARATION",
-            "position": { "line": 2, "column": 1 }
+            "position": { "line": 2, "column": 1 },
+            "related": [{ "line": 1, "column": 1 }]
         },
         {
             "id": "unresolved-link",
@@ -162,6 +169,12 @@
             "required": true,
             "source": "{ laid `\n    a\n    b\n    `\nwritten `a\\nb\\n` }",
             "expected": { "laid": "a\n    b", "written": "a\nb\n" }
+        },
+        {
+            "id": "unquoted-backslash-space-is-content",
+            "required": true,
+            "source": "{ a \\ }",
+            "canonical": "{\n    a '\\ '\n}\n"
         },
         {
             "id": "canonical-round-trip-boundary-whitespace",
@@ -238,6 +251,52 @@
             }
         },
         {
+            "id": "unicode-escape-decodes-an-escape-character",
+            "required": true,
+            "source": "{ a x\\u{1b}y }",
+            "canonical": "{\n    a 'x\\u{1b}y'\n}\n"
+        },
+        {
+            "id": "unicode-escape-writes-a-null-back",
+            "required": true,
+            "source": "{ a \\u{0} }",
+            "canonical": "{\n    a '\\u{0}'\n}\n"
+        },
+        {
+            "id": "unicode-escape-decodes-a-non-bmp-character",
+            "required": true,
+            "source": "{ a \\u{1f600} }",
+            "canonical": "{\n    a 😀\n}\n"
+        },
+        {
+            "id": "raw-control-character-is-rejected",
+            "required": true,
+            "source": "{ a x\u001by }",
+            "error": "DEON_LEX_INVALID",
+            "position": { "line": 1, "column": 6 }
+        },
+        {
+            "id": "empty-unicode-escape-is-rejected",
+            "required": true,
+            "source": "{ a \\u{} }",
+            "error": "DEON_LEX_INVALID",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "surrogate-unicode-escape-is-rejected",
+            "required": true,
+            "source": "{ a \\u{d800} }",
+            "error": "DEON_LEX_INVALID",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "unicode-escape-closed-by-quote-is-invalid",
+            "required": true,
+            "source": "{ a '\\u{1b' }",
+            "error": "DEON_LEX_INVALID",
+            "position": { "line": 1, "column": 6 }
+        },
+        {
             "id": "quoted-map-key-is-literal-not-interpolated",
             "required": true,
             "source": "{ 'a#{n}' v }",
@@ -303,20 +362,32 @@
             "required": true,
             "source": "template { message Hello #{name} }\n{ result #template(other One) }",
             "error": "DEON_ENTITY_ARGUMENT",
-            "position": {
-                "line": 2,
-                "column": 19
-            }
+            "position": { "line": 2, "column": 19 },
+            "related": [{ "line": 2, "column": 20 }]
         },
         {
             "id": "entity-argument-repeated",
             "required": true,
             "source": "template { message Hello #{name} }\n{ result #template(name One, name Two) }",
             "error": "DEON_ENTITY_ARGUMENT",
-            "position": {
-                "line": 2,
-                "column": 30
-            }
+            "position": { "line": 2, "column": 19 },
+            "related": [{ "line": 2, "column": 30 }]
+        },
+        {
+            "id": "entity-argument-missing",
+            "required": true,
+            "source": "template { message Hello #{name} }\n{ result #template() }",
+            "error": "DEON_ENTITY_ARGUMENT",
+            "position": { "line": 2, "column": 19 },
+            "related": []
+        },
+        {
+            "id": "entity-argument-non-string",
+            "required": true,
+            "source": "template { message Hello #{name} }\nbag { k v }\n{ result #template(name #bag) }",
+            "error": "DEON_ENTITY_ARGUMENT",
+            "position": { "line": 3, "column": 19 },
+            "related": [{ "line": 3, "column": 20 }]
         },
         {
             "id": "capability-denied-filesystem",

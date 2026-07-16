@@ -80,10 +80,19 @@ class Diagnostic:
     message: str
     span: Span
     severity: str = field(default="error")
+    #: Secondary source positions the reader is sent to (spec/diagnostics.md line 3) — for a duplicate
+    #: declaration, the first declaration; empty when there is nowhere else to point.
+    related: list[Span] = field(default_factory=list)
 
     @staticmethod
-    def of(code: str, message: str, span: Span) -> "Diagnostic":
-        return Diagnostic(code=code, message=message, span=span, severity=severity_of(code))
+    def of(code: str, message: str, span: Span, related: Optional[list[Span]] = None) -> "Diagnostic":
+        return Diagnostic(
+            code=code,
+            message=message,
+            span=span,
+            severity=severity_of(code),
+            related=list(related) if related else [],
+        )
 
     @property
     def line(self) -> int:
@@ -103,12 +112,12 @@ class DeonError(Exception):
     document.
     """
 
-    def __init__(self, code: str, message: str, span: Span) -> None:
+    def __init__(self, code: str, message: str, span: Span, related: Optional[list[Span]] = None) -> None:
         super().__init__(message)
 
         self.code = code
         self.message = message
-        self.diagnostics: list[Diagnostic] = [Diagnostic.of(code, message, span)]
+        self.diagnostics: list[Diagnostic] = [Diagnostic.of(code, message, span, related)]
 
     @property
     def span(self) -> Span:
@@ -120,8 +129,8 @@ class DeonError(Exception):
         return f"{span.source}:{span.line}:{span.column} {self.code} {self.message}"
 
 
-def error(code: str, message: str, span: Span) -> "DeonError":
-    return DeonError(code, message, span)
+def error(code: str, message: str, span: Span, related: Optional[list[Span]] = None) -> "DeonError":
+    return DeonError(code, message, span, related)
 
 
 def resource_error(code: str, message: str, source_name: str) -> "DeonError":

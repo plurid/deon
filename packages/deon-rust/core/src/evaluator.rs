@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use crate::diagnostic::{err, DResult, DiagnosticCode, Span};
+use crate::diagnostic::{err, DResult, DeonError, Diagnostic, DiagnosticCode, Span};
 use crate::options::ParseOptions;
 use crate::scanner::{parse_reference, ESCAPED_INTERPOLATION};
 use crate::syntax::{
@@ -45,12 +45,17 @@ impl<'a> Evaluator<'a> {
                     );
                 }
                 Declaration::Leaflink(leaflink) => {
-                    if declarations.contains_key(leaflink.name.as_str()) {
-                        return err(
+                    if let Some(first) = declarations.get(leaflink.name.as_str()) {
+                        // The primary span stays on the repeat; a related span sends the reader
+                        // back to the first declaration of the name (`spec/diagnostics.md`).
+                        let diagnostic = Diagnostic::new(
                             DiagnosticCode::DuplicateDeclaration,
                             format!("Declaration '{}' is defined more than once.", leaflink.name),
-                            &leaflink.span,
-                        );
+                            leaflink.span.clone(),
+                        )
+                        .with_related(vec![first.span.clone()]);
+
+                        return Err(DeonError::from_diagnostic(diagnostic));
                     }
 
                     declarations.insert(&leaflink.name, leaflink);
@@ -419,21 +424,31 @@ impl<'a> Evaluator<'a> {
 
         for argument in arguments {
             if locals.contains_key(&argument.name) {
-                return err(
+                // The argument list opens the fault; a related span points at the repeat itself
+                // (specification 11.2).
+                let diagnostic = Diagnostic::new(
                     DiagnosticCode::EntityArgument,
                     format!("Entity argument '{}' is repeated.", argument.name),
-                    &argument.span,
-                );
+                    span.clone(),
+                )
+                .with_related(vec![argument.span.clone()]);
+
+                return Err(DeonError::from_diagnostic(diagnostic));
             }
 
             let value = self.value(&argument.value, outer)?;
 
             let Value::String(value) = value else {
-                return err(
+                // The argument list opens the fault; a related span points at the non-string
+                // argument (specification 11.2).
+                let diagnostic = Diagnostic::new(
                     DiagnosticCode::EntityArgument,
                     format!("Entity argument '{}' must be a string.", argument.name),
-                    &argument.span,
-                );
+                    span.clone(),
+                )
+                .with_related(vec![argument.span.clone()]);
+
+                return Err(DeonError::from_diagnostic(diagnostic));
             };
 
             locals.insert(argument.name.clone(), value);
@@ -453,15 +468,26 @@ impl<'a> Evaluator<'a> {
             .collect();
 
         if !missing.is_empty() || !extra.is_empty() {
-            return err(
+            // The argument list opens the fault; each extra argument earns a related span, while a
+            // purely missing argument has nowhere else to point (specification 11.2).
+            let related: Vec<Span> = arguments
+                .iter()
+                .filter(|argument| !parameters.iter().any(|parameter| parameter == &argument.name))
+                .map(|argument| argument.span.clone())
+                .collect();
+
+            let diagnostic = Diagnostic::new(
                 DiagnosticCode::EntityArgument,
                 format!(
                     "Entity arguments do not match; missing [{}], extra [{}].",
                     missing.join(", "),
                     extra.join(", "),
                 ),
-                span,
-            );
+                span.clone(),
+            )
+            .with_related(related);
+
+            return Err(DeonError::from_diagnostic(diagnostic));
         }
 
         let name = reference.identity();

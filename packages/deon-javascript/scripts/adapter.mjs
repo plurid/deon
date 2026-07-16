@@ -114,6 +114,7 @@ for await (const line of lines) {
                 start: String(diagnostic.range.start.offset),
                 line: String(diagnostic.range.start.line),
                 column: String(diagnostic.range.start.column),
+                related: diagnostic.related.map(r => [String(r.start.offset), String(r.start.line), String(r.start.column)]),
             }
             : {
                 id: request.id,

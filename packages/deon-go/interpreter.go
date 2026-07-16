@@ -37,9 +37,11 @@ func (in *interpreter) run(doc *document) Value {
 
 	for i := range doc.declarations {
 		decl := &doc.declarations[i]
-		if _, exists := in.declarations[decl.name]; exists {
+		if first, exists := in.declarations[decl.name]; exists {
+			// The repeat stays the primary span; the first declaration becomes the single related span
+			// the reader is sent to (spec/diagnostics.md).
 			fail(DuplicateDeclaration,
-				"The name '"+decl.name+"' is declared more than once.", decl.nameSpan)
+				"The name '"+decl.name+"' is declared more than once.", decl.nameSpan, first.nameSpan)
 		}
 		in.declarations[decl.name] = decl
 	}
@@ -268,15 +270,17 @@ func (in *interpreter) evalCall(n *callNode) Value {
 	locals := map[string]string{}
 	for _, arg := range n.args {
 		if _, dup := locals[arg.name]; dup {
-			fail(EntityArgument, "The argument '"+arg.name+"' is given more than once.", arg.nameSpan)
+			// Every argument fault anchors its primary span at the opening '(' (argsSpan); the offending
+			// argument's name becomes the single related span the reader is sent to (spec §11.2).
+			fail(EntityArgument, "The argument '"+arg.name+"' is given more than once.", n.argsSpan, arg.nameSpan)
 		}
 		if !params[arg.name] {
-			fail(EntityArgument, "'"+name+"' has no parameter '"+arg.name+"'.", n.argsSpan)
+			fail(EntityArgument, "'"+name+"' has no parameter '"+arg.name+"'.", n.argsSpan, arg.nameSpan)
 		}
 		value := in.eval(arg.value)
 		text, isString := value.(string)
 		if !isString {
-			fail(EntityArgument, "The argument '"+arg.name+"' must be a string.", arg.nameSpan)
+			fail(EntityArgument, "The argument '"+arg.name+"' must be a string.", n.argsSpan, arg.nameSpan)
 		}
 		locals[arg.name] = text
 	}

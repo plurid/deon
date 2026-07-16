@@ -64,6 +64,21 @@ public final class Harness {
             jsonString(b, Integer.toString(d.span.line));
             b.append(",\"column\":");
             jsonString(b, Integer.toString(d.span.column));
+            b.append(",\"related\":[");
+            for (int r = 0; r < d.related.size(); r++) {
+                if (r > 0) {
+                    b.append(',');
+                }
+                deon.Span rs = d.related.get(r);
+                b.append('[');
+                jsonString(b, Integer.toString(rs.start));
+                b.append(',');
+                jsonString(b, Integer.toString(rs.line));
+                b.append(',');
+                jsonString(b, Integer.toString(rs.column));
+                b.append(']');
+            }
+            b.append(']');
             b.append('}');
             return b.toString();
         } catch (RuntimeException e) {

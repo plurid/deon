@@ -105,6 +105,10 @@ pub struct Diagnostic {
     pub severity: Severity,
     pub message: String,
     pub span: Span,
+    /// Secondary positions the reader is sent to after the primary span: the first declaration a
+    /// duplicate repeats, for one (`spec/diagnostics.md`). Empty unless a diagnostic has somewhere
+    /// else worth pointing at.
+    pub related: Vec<Span>,
 }
 
 impl Diagnostic {
@@ -114,7 +118,15 @@ impl Diagnostic {
             severity: code.severity(),
             message: message.into(),
             span,
+            related: Vec::new(),
         }
+    }
+
+    /// Attaches the secondary positions a reader should also be shown, and returns the diagnostic so
+    /// a raise site can write it in one expression.
+    pub fn with_related(mut self, related: Vec<Span>) -> Self {
+        self.related = related;
+        self
     }
 }
 
@@ -135,6 +147,16 @@ impl DeonError {
             code,
             message: message.clone(),
             diagnostics: vec![Diagnostic::new(code, message, span)],
+        }
+    }
+
+    /// Carries out a diagnostic that was built up with more than a primary span — related positions,
+    /// for one — rather than assembling a bare one from a code, a message, and a span.
+    pub fn from_diagnostic(diagnostic: Diagnostic) -> Self {
+        Self {
+            code: diagnostic.code,
+            message: diagnostic.message.clone(),
+            diagnostics: vec![diagnostic],
         }
     }
 }

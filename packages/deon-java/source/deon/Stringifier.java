@@ -94,6 +94,13 @@ final class Stringifier {
                 || (c >= '0' && c <= '9') || c == '_' || c == '-';
     }
 
+    /** A C0 control other than tab, line feed, or carriage return; a DEL; or a C1 control (section 12). */
+    private static boolean isControl(int cp) {
+        return (cp < 0x20 && cp != '\t' && cp != '\n' && cp != '\r')
+                || cp == 0x7f
+                || (cp >= 0x80 && cp <= 0x9f);
+    }
+
     private static boolean needsQuote(String s) {
         if (s.isEmpty()) {
             return true;
@@ -108,7 +115,8 @@ final class Stringifier {
             // A '#' anywhere forces a quote (section 12): even where section 4.3 makes it harmless
             // literal text — an interior '#', or a leading one that is not a link — the safer form is the
             // canonical one, so two implementations never disagree about a value's canonical text.
-            if (delim(c) || c == '#' || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\') {
+            if (delim(c) || c == '#' || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\'
+                    || isControl(c)) {
                 return true;
             }
             if (c == '/' && i + 1 < s.length() && (s.charAt(i + 1) == '/' || s.charAt(i + 1) == '*')) {
@@ -127,6 +135,11 @@ final class Stringifier {
             if (s.charAt(i) == '\r') {
                 return false;
             }
+            // A control other than tab or line feed cannot ride inside a backtick string — it has only
+            // the Unicode escape, which the single-quoted form carries (section 12) — so it forces a quote.
+            if (isControl(s.charAt(i))) {
+                return false;
+            }
         }
         if (!hasNewline) {
             return false;
@@ -138,24 +151,32 @@ final class Stringifier {
 
     private void quoteString(String s) {
         b.append('\'');
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c == '\\') {
+        // Iterate by code point so a non-BMP scalar is one character, not a surrogate pair, and only a
+        // true control is escaped (section 12).
+        int i = 0;
+        while (i < s.length()) {
+            int cp = s.codePointAt(i);
+            if (cp == '\\') {
                 b.append("\\\\");
-            } else if (c == '\'') {
+            } else if (cp == '\'') {
                 b.append("\\'");
-            } else if (c == '\n') {
+            } else if (cp == '\n') {
                 b.append("\\n");
-            } else if (c == '\r') {
+            } else if (cp == '\r') {
                 b.append("\\r");
-            } else if (c == '\t') {
+            } else if (cp == '\t') {
                 b.append("\\t");
-            } else if (c == '#' && i + 1 < s.length() && s.charAt(i + 1) == '{') {
+            } else if (cp == '#' && i + 1 < s.length() && s.charAt(i + 1) == '{') {
                 b.append("\\#{");
-                i++;
+                i += 2;
+                continue;
+            } else if (isControl(cp)) {
+                // The code point in lowercase hexadecimal with no leading zeros, as u{0}, u{1b}, u{7f}.
+                b.append("\\u{").append(Integer.toHexString(cp)).append('}');
             } else {
-                b.append(c);
+                b.appendCodePoint(cp);
             }
+            i += Character.charCount(cp);
         }
         b.append('\'');
     }

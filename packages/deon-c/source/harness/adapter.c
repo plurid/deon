@@ -181,7 +181,24 @@ static void answer_error(buf *out, const char *id, const deon_error *e) {
     json_string(out, line, strlen(line));
     bputs(out, ",\"column\":");
     json_string(out, col, strlen(col));
-    bputc(out, '}');
+    /* related spans (diagnostics.md): each a [start, line, column] triple of strings, in order — the same
+     * three measures as the primary. A diagnostic with none reports an empty list. */
+    bputs(out, ",\"related\":[");
+    if (e->diagnostics_len && e->diagnostics[0].has_related) {
+        deon_span r = e->diagnostics[0].related;
+        char rline[16], rcol[16], rstart[32];
+        snprintf(rline, sizeof(rline), "%d", r.line);
+        snprintf(rcol, sizeof(rcol), "%d", r.column);
+        snprintf(rstart, sizeof(rstart), "%zu", r.start);
+        bputc(out, '[');
+        json_string(out, rstart, strlen(rstart));
+        bputc(out, ',');
+        json_string(out, rline, strlen(rline));
+        bputc(out, ',');
+        json_string(out, rcol, strlen(rcol));
+        bputc(out, ']');
+    }
+    bputs(out, "]}");
 }
 
 /* A writer refused a value that nests past the limit (section 11.1). The value carries no source span

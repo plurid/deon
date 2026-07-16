@@ -36,6 +36,16 @@ void deon_fail(deon_ctx *ctx, deon_code code, const char *message, deon_span spa
     ctx->code = code;
     ctx->message = arena_str_cstr(ctx->a, message);
     ctx->span = span;
+    ctx->has_related = false;
+    longjmp(ctx->jmp, 1);
+}
+
+void deon_fail_related(deon_ctx *ctx, deon_code code, const char *message, deon_span span, deon_span related) {
+    ctx->code = code;
+    ctx->message = arena_str_cstr(ctx->a, message);
+    ctx->span = span;
+    ctx->related = related;
+    ctx->has_related = true;
     longjmp(ctx->jmp, 1);
 }
 

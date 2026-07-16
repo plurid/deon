@@ -41,6 +41,10 @@ static void fill_error(deon_document *doc, deon_ctx *ctx) {
     d->message = ctx->message;
     d->span = ctx->span;
     d->severity = deon_severity_of(ctx->code);
+    /* A fresh ctx is zero-initialized (ctx_new) and deon_fail clears has_related, so this defaults false
+     * for every diagnostic but the few raised through deon_fail_related. */
+    d->related = ctx->related;
+    d->has_related = ctx->has_related;
     doc->error.diagnostics = d;
     doc->error.diagnostics_len = 1;
 }

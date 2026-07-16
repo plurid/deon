@@ -282,14 +282,14 @@ static deon_value *eval_call(interpreter *in, node *n) {
     for (size_t i = 0; i < n->as.call.args_len; i++) {
         call_arg a = n->as.call.args[i];
         for (size_t j = 0; j < nb; j++) if (str_eq_str(bindings[j].name, a.name)) {
-            deon_fail(in->ctx, DEON_ENTITY_ARGUMENT, "An argument is given more than once.", a.name_span);
+            deon_fail_related(in->ctx, DEON_ENTITY_ARGUMENT, "An argument is given more than once.", n->as.call.args_span, a.name_span);
         }
         if (!strset_has(&params, a.name)) {
-            deon_fail(in->ctx, DEON_ENTITY_ARGUMENT, "There is no such parameter.", n->as.call.args_span);
+            deon_fail_related(in->ctx, DEON_ENTITY_ARGUMENT, "There is no such parameter.", n->as.call.args_span, a.name_span);
         }
         deon_value *v = eval(in, a.value);
         if (v->kind != DEON_STRING) {
-            deon_fail(in->ctx, DEON_ENTITY_ARGUMENT, "An argument must be a string.", a.name_span);
+            deon_fail_related(in->ctx, DEON_ENTITY_ARGUMENT, "An argument must be a string.", n->as.call.args_span, a.name_span);
         }
         bindings[nb].name = a.name;
         bindings[nb].value = v->as.string;
@@ -721,7 +721,9 @@ static deon_value *import_deon_body(void *arg) {
     for (size_t i = 0; i < doc->decls_len; i++) {
         declaration *d = &doc->decls[i];
         for (size_t j = 0; j < sub->decls_len; j++) if (str_eq_str(sub->decls[j].name, d->name)) {
-            deon_fail(in->ctx, DEON_DUPLICATE_DECLARATION, "The name is declared more than once.", d->name_span);
+            /* point at the repeat, and send the reader back to the first declaration (diagnostics.md) */
+            deon_fail_related(in->ctx, DEON_DUPLICATE_DECLARATION, "The name is declared more than once.",
+                              d->name_span, sub->decls[j].decl->name_span);
         }
         sub->decls[sub->decls_len].name = d->name;
         sub->decls[sub->decls_len].decl = d;
@@ -809,7 +811,9 @@ deon_value *evaluate(deon_ctx *ctx, document_ast *doc, const deon_options *optio
     for (size_t i = 0; i < doc->decls_len; i++) {
         declaration *d = &doc->decls[i];
         for (size_t j = 0; j < in->decls_len; j++) if (str_eq_str(in->decls[j].name, d->name)) {
-            deon_fail(ctx, DEON_DUPLICATE_DECLARATION, "The name is declared more than once.", d->name_span);
+            /* point at the repeat, and send the reader back to the first declaration (diagnostics.md) */
+            deon_fail_related(ctx, DEON_DUPLICATE_DECLARATION, "The name is declared more than once.",
+                              d->name_span, in->decls[j].decl->name_span);
         }
         if (in->decls_len == cap) {
             cap *= 2;

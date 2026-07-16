@@ -44,7 +44,12 @@ final class Interpreter {
     void register(List<Declaration> declarationList) {
         for (Declaration d : declarationList) {
             if (declarations.containsKey(d.name)) {
-                throw new DeonException(Code.DUPLICATE_DECLARATION, "The name is declared more than once.", d.nameSpan);
+                // The primary span stays on the repeat; a related span sends the reader back to the
+                // first declaration, which is already stored under this name.
+                Span first = declarations.get(d.name).nameSpan;
+                Diagnostic diagnostic = new Diagnostic(
+                    Code.DUPLICATE_DECLARATION, "The name is declared more than once.", d.nameSpan, List.of(first));
+                throw new DeonException(Code.DUPLICATE_DECLARATION, List.of(diagnostic));
             }
             declarations.put(d.name, d);
         }
@@ -180,20 +185,23 @@ final class Interpreter {
         Set<String> params = interpolationNames(decl.value);
         Map<String, String> bindings = new LinkedHashMap<>();
         for (CallArg a : n.args) {
+            // Every argument fault anchors its primary span at the opening '(' (n.argsSpan); a related
+            // span sends the reader to the offending argument's own name (spec/diagnostics §11.2).
             if (bindings.containsKey(a.name)) {
-                throw new DeonException(Code.ENTITY_ARGUMENT, "An argument is given more than once.", a.nameSpan);
+                throw entityArgument("An argument is given more than once.", n.argsSpan, a.nameSpan);
             }
             if (!params.contains(a.name)) {
-                throw new DeonException(Code.ENTITY_ARGUMENT, "There is no such parameter.", n.argsSpan);
+                throw entityArgument("There is no such parameter.", n.argsSpan, a.nameSpan);
             }
             Object v = eval(a.value);
             if (!(v instanceof String s)) {
-                throw new DeonException(Code.ENTITY_ARGUMENT, "An argument must be a string.", a.nameSpan);
+                throw entityArgument("An argument must be a string.", n.argsSpan, a.nameSpan);
             }
             bindings.put(a.name, s);
         }
         for (String param : params) {
             if (!bindings.containsKey(param)) {
+                // A missing argument has no token to point at, so it carries no related span.
                 throw new DeonException(Code.ENTITY_ARGUMENT, "A required argument is missing.", n.argsSpan);
             }
         }
@@ -209,6 +217,15 @@ final class Interpreter {
             locals.pop();
             calling.remove(name);
         }
+    }
+
+    /**
+     * An entity-call argument fault (unknown, duplicate, or non-string): the primary span underlines the
+     * opening '(' of the argument list, and a single related span points at the offending argument's name.
+     */
+    private static DeonException entityArgument(String message, Span argsSpan, Span offending) {
+        Diagnostic diagnostic = new Diagnostic(Code.ENTITY_ARGUMENT, message, argsSpan, List.of(offending));
+        return new DeonException(Code.ENTITY_ARGUMENT, List.of(diagnostic));
     }
     // #endregion
 

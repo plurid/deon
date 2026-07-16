@@ -112,6 +112,9 @@ def main() -> None:
                 "start": str(span.start),
                 "line": str(span.line),
                 "column": str(span.column),
+                "related": [
+                    [str(s.start), str(s.line), str(s.column)] for s in failure.diagnostics[0].related
+                ],
             }
         except Exception as failure:  # the host leaking through is a disagreement, and it says so
             answer = {

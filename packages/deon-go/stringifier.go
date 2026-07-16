@@ -2,6 +2,7 @@ package deon
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -165,7 +166,9 @@ func writeScalar(s string) string {
 
 // useBacktick reports whether a string that must be quoted is best carried by a backtick string: it
 // holds a real line break, which single-quoting would have to escape, and it qualifies for the one
-// form that keeps a line break literal (specification 12).
+// form that keeps a line break literal (specification 12). A control character other than the line
+// break — a carriage return, or any of the set section 4.3 forbids raw — disqualifies it: those have
+// no literal form and must be written as `\u{…}` escapes, which only the single-quoted form carries.
 func useBacktick(s string) bool {
 	if !strings.ContainsRune(s, '\n') || strings.ContainsRune(s, '\r') {
 		return false
@@ -174,6 +177,11 @@ func useBacktick(s string) bool {
 	first, last := runes[0], runes[len(runes)-1]
 	if isSpace(first) || first == '\n' || isSpace(last) || last == '\n' {
 		return false
+	}
+	for _, r := range runes {
+		if isControl(r) {
+			return false
+		}
 	}
 	return true
 }
@@ -214,10 +222,11 @@ func needsQuote(s string) bool {
 		// Each of these carries structural meaning where a value may begin or continue, so a string
 		// holding one does not read back unquoted (specification 12): a bare backslash reads as an
 		// escape, a bare tab as separating whitespace, a bracketing delimiter as the edge of a group,
-		// and a comma or line feed as a separator. A `#` is quoted wherever it falls — a leading one
-		// opens a link, a `...#` a spread, `#{` an interpolation — and even a harmless interior `#` is
-		// quoted so two implementations agree on the canonical form (specification 13).
-		if isDelimiter(r) || r == ',' || r == '#' || r == '\n' || r == '\r' || r == '\t' || r == '\\' {
+		// a comma or line feed as a separator, and a raw control character as a lexical error. A `#` is
+		// quoted wherever it falls — a leading one opens a link, a `...#` a spread, `#{` an
+		// interpolation — and even a harmless interior `#` is quoted so two implementations agree on the
+		// canonical form (specification 13).
+		if isDelimiter(r) || r == ',' || r == '#' || r == '\n' || r == '\r' || r == '\t' || r == '\\' || isControl(r) {
 			return true
 		}
 	}
@@ -247,6 +256,13 @@ func quoteString(s string) string {
 		case r == '#' && i+1 < len(runes) && runes[i+1] == '{':
 			b.WriteString("\\#{")
 			i++
+		case isControl(r):
+			// A control character has no literal form: it is written `\u{h}`, its code point in lowercase
+			// hexadecimal with no leading zeros (§4.3, §12). Tab, line feed, and carriage return are not
+			// controls and keep their `\t`, `\n`, and `\r` spellings, handled above.
+			b.WriteString("\\u{")
+			b.WriteString(strconv.FormatInt(int64(r), 16))
+			b.WriteByte('}')
 		default:
 			b.WriteRune(r)
 		}

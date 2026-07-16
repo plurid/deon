@@ -132,8 +132,20 @@ const escapeShared = (
 
 
 /**
+ * A control character with no literal form (specification 4.3): a C0 control other than a horizontal
+ * tab, a line feed, or a carriage return; a `DEL` (`U+007F`); or a C1 control (`U+0080` through
+ * `U+009F`). A value carrying one is singlequoted and the control written as a `\u{…}` escape, which
+ * is the one spelling that reads back unchanged and keeps canonical output plain text.
+ */
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]/;
+const CONTROL_ALL = new RegExp(CONTROL.source, 'g');
+
+
+/**
  * A singlequoted string cannot cross a newline, so its line breaks are written as escapes. Unlike a
- * backticked string, it keeps the whitespace at its boundaries exactly as it is given.
+ * backticked string, it keeps the whitespace at its boundaries exactly as it is given. A control
+ * character is written `\u{h}`, its code point in lowercase hexadecimal with no leading zeros, while
+ * a tab, a line feed, and a carriage return keep their `\t`, `\n`, and `\r` spellings.
  */
 const quoted = (
     value: string,
@@ -141,7 +153,8 @@ const quoted = (
     .replace(/'/g, '\\\'')
     .replace(/\r/g, '\\r')
     .replace(/\n/g, '\\n')
-    .replace(/\t/g, '\\t')}'`;
+    .replace(/\t/g, '\\t')
+    .replace(CONTROL_ALL, character => '\\u{' + (character.codePointAt(0) as number).toString(16) + '}')}'`;
 
 
 /**
@@ -164,9 +177,10 @@ const unsafe = /#|\\|[\[\]{},()<>]|\/\/|\/\*|['`]/;
 /**
  * Writes a string in the shortest form that reads back unchanged.
  *
- * Backticks can hold a laid-out value only when nothing at its boundaries would be trimmed away, and
- * only when it carries no carriage return, which the source normalization would fold into the line
- * ending. Everything else is singlequoted, where an escape says precisely what is meant.
+ * Backticks can hold a laid-out value only when nothing at its boundaries would be trimmed away, only
+ * when it carries no carriage return, which the source normalization would fold into the line ending,
+ * and only when it carries no other control character, which has no backtick form. Everything else is
+ * singlequoted, where an escape says precisely what is meant.
  */
 const scalar = (
     value: string,
@@ -177,11 +191,11 @@ const scalar = (
 
     const bounded = value !== value.trim();
 
-    if (/\n/.test(value) && !bounded && !/\r/.test(value)) {
+    if (/\n/.test(value) && !bounded && !/\r/.test(value) && !CONTROL.test(value)) {
         return multiline(value);
     }
 
-    if (bounded || /[\n\r\t]/.test(value) || unsafe.test(value)) {
+    if (bounded || /[\n\r\t]/.test(value) || CONTROL.test(value) || unsafe.test(value)) {
         return quoted(value);
     }
 

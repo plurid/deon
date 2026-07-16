@@ -1,7 +1,7 @@
 //! A value back into source (specification 12).
 
 use crate::options::StringifyOptions;
-use crate::text::{is_bare_name, is_unsafe_scalar};
+use crate::text::{is_bare_name, is_control, is_unsafe_scalar};
 use crate::value::Value;
 
 /// What is actually written out: a value, or a leaflink standing in for one that was lifted out of
@@ -41,7 +41,10 @@ fn escape_shared(value: &str) -> String {
 }
 
 /// A singlequoted string cannot cross a newline, so its line breaks are written as escapes. Unlike a
-/// backticked string, it keeps the whitespace at its boundaries exactly as it is given.
+/// backticked string, it keeps the whitespace at its boundaries exactly as it is given. A control
+/// character other than a tab, a line feed, or a carriage return has no literal form and is written
+/// as a `\u{…}` escape, in lowercase and without leading zeroes, the one spelling that reads back
+/// unchanged and keeps the output plain text (§4.3).
 fn quoted(value: &str) -> String {
     let escaped = escape_shared(value)
         .replace('\'', "\\'")
@@ -49,7 +52,19 @@ fn quoted(value: &str) -> String {
         .replace('\n', "\\n")
         .replace('\t', "\\t");
 
-    format!("'{escaped}'")
+    let mut out = String::with_capacity(escaped.len() + 2);
+    out.push('\'');
+
+    for character in escaped.chars() {
+        if is_control(character) {
+            out.push_str(&format!("\\u{{{:x}}}", character as u32));
+        } else {
+            out.push(character);
+        }
+    }
+
+    out.push('\'');
+    out
 }
 
 /// A backticked string trims the whitespace at its boundaries, so it can only hold a value that has
@@ -70,11 +85,16 @@ fn scalar(value: &str) -> String {
 
     let bounded = value != value.trim();
 
-    if value.contains('\n') && !bounded && !value.contains('\r') {
+    // A control character has no backtick spelling: a backtick string carries it raw, which is a
+    // lexical error on the way back, so a value that holds one is singlequoted and the control is
+    // written as a `\u{…}` escape (§4.3).
+    let control = value.chars().any(is_control);
+
+    if value.contains('\n') && !bounded && !value.contains('\r') && !control {
         return multiline(value);
     }
 
-    if bounded || value.contains(['\n', '\r', '\t']) || is_unsafe_scalar(value) {
+    if bounded || control || value.contains(['\n', '\r', '\t']) || is_unsafe_scalar(value) {
         return quoted(value);
     }
 

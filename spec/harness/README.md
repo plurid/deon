@@ -58,10 +58,18 @@ A probe that expects a *refusal* must isolate the fault it is probing. The harne
 or, when the document is refused:
 
 ```json
-{ "id": "case-name", "ok": "false", "code": "DEON_LEX_UNTERMINATED", "severity": "error", "start": "6", "line": "1", "column": "7" }
+{ "id": "case-name", "ok": "false", "code": "DEON_LEX_UNTERMINATED", "severity": "error", "start": "6", "line": "1", "column": "7", "related": [] }
 ```
 
 A refusal is a *result*, not a crash: an implementation that cannot read a document must say so with a code, a severity, and a position, and the harness compares those exactly as it compares a value. The position is a UTF-8 **byte offset** (`start`) into the CRLF-normalized source, alongside a 1-based `line` and a code-point `column`; the byte offset is measured the same way by every implementation, so a non-ASCII character before the fault can no longer shift one implementation's offset out of step with the others.
+
+A diagnostic may also carry **`related`** spans — a list, each a second place the reader is sent to look. The clearest case is a duplicate declaration, whose diagnostic points at the repeat and whose one related span points at the original:
+
+```json
+{ "id": "case-name", "ok": "false", "code": "DEON_DUPLICATE_DECLARATION", "severity": "error", "start": "10", "line": "2", "column": "1", "related": [["0", "1", "1"]] }
+```
+
+Each related span is a `[start, line, column]` triple in the same three measures as the primary — the UTF-8 byte offset, the 1-based line, the code-point column — and the list is compared in order (`spec/diagnostics.md`). An implementation that carries no related span reports `[]`, which every implementation must still agree on.
 
 An adapter must never let a host exception escape. A `RecursionError`, an `OSError`, or a JSON decoder's own complaint is the host leaking through, and the harness will report it as a disagreement — correctly, because it is one.
 

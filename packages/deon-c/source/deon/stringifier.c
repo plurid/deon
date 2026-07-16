@@ -23,6 +23,17 @@ static bool c_name(unsigned char c) {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
            (c >= '0' && c <= '9') || c == '_' || c == '-';
 }
+
+/* A control character (section 4.3) is written with a `\u{…}` escape — its code point in lowercase
+ * hexadecimal with no leading zeros — the one form that reads back unchanged and keeps the output plain
+ * text: the escape character is `\u{1b}`, a null is `\u{0}`, a DEL is `\u{7f}`. */
+static void write_u_escape(sb *b, uint32_t cp) {
+    char hex[8];
+    int n = snprintf(hex, sizeof hex, "%x", cp);
+    sb_puts(b, "\\u{");
+    sb_put(b, hex, (size_t)n);
+    sb_putc(b, '}');
+}
 /* #endregion */
 
 static bool needs_quote(deon_str s) {
@@ -30,22 +41,39 @@ static bool needs_quote(deon_str s) {
     char first = s.data[0];
     char last = s.data[s.len - 1];
     if (c_space(first) || c_space(last) || first == '\n' || last == '\n') return true;
-    for (size_t i = 0; i < s.len; i++) {
-        char c = s.data[i];
-        /* A quote and an interior `#`, which section 4.3 makes harmless literal text, are quoted all the
-         * same: two implementations may not disagree about the canonical form of a value (section 13), so
-         * where a shorter safe form and a safer one both read back, the safer one is the form. */
-        if (c_delim(c) || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\' || c == '#') return true;
-        if (c == '/' && i + 1 < s.len && (s.data[i + 1] == '/' || s.data[i + 1] == '*')) return true;
+    const char *p = s.data, *end = s.data + s.len;
+    while (p < end) {
+        int w;
+        uint32_t cp = utf8_decode(p, end, &w);
+        /* A raw control character does not read back — it is a lexical error unquoted — so it forces the
+         * quoted form, where it is written `\u{…}`. A C1 control is two source bytes, so the scan works in
+         * code points. */
+        if (is_control_rune(cp)) return true;
+        if (cp < 0x80) {
+            char c = (char)cp;
+            /* A quote and an interior `#`, which section 4.3 makes harmless literal text, are quoted all
+             * the same: two implementations may not disagree about the canonical form of a value (section
+             * 13), so where a shorter safe form and a safer one both read back, the safer one is the form. */
+            if (c_delim(c) || c == ',' || c == '\n' || c == '\r' || c == '\t' || c == '\\' || c == '#') return true;
+            if (c == '/' && p + 1 < end && (p[1] == '/' || p[1] == '*')) return true;
+        }
+        p += w;
     }
     return false;
 }
 
 static bool use_backtick(deon_str s) {
     bool has_nl = false;
-    for (size_t i = 0; i < s.len; i++) {
-        if (s.data[i] == '\n') has_nl = true;
-        if (s.data[i] == '\r') return false;
+    const char *p = s.data, *end = s.data + s.len;
+    while (p < end) {
+        int w;
+        uint32_t cp = utf8_decode(p, end, &w);
+        if (cp == '\n') has_nl = true;
+        if (cp == '\r') return false;
+        /* A backtick string has no escape for a control character, so a value carrying one cannot take
+         * the backtick form; it is single-quoted, where the `\u{…}` escape can spell it. */
+        if (is_control_rune(cp)) return false;
+        p += w;
     }
     if (!has_nl) return false;
     char first = s.data[0], last = s.data[s.len - 1];
@@ -55,15 +83,19 @@ static bool use_backtick(deon_str s) {
 
 static void quote_string(sb *b, deon_str s) {
     sb_putc(b, '\'');
-    for (size_t i = 0; i < s.len; i++) {
-        char c = s.data[i];
-        if (c == '\\') sb_puts(b, "\\\\");
-        else if (c == '\'') sb_puts(b, "\\'");
-        else if (c == '\n') sb_puts(b, "\\n");
-        else if (c == '\r') sb_puts(b, "\\r");
-        else if (c == '\t') sb_puts(b, "\\t");
-        else if (c == '#' && i + 1 < s.len && s.data[i + 1] == '{') { sb_puts(b, "\\#{"); i++; }
-        else sb_putc(b, c);
+    const char *p = s.data, *end = s.data + s.len;
+    while (p < end) {
+        int w;
+        uint32_t cp = utf8_decode(p, end, &w);
+        if (cp == '\\') sb_puts(b, "\\\\");
+        else if (cp == '\'') sb_puts(b, "\\'");
+        else if (cp == '\n') sb_puts(b, "\\n");
+        else if (cp == '\r') sb_puts(b, "\\r");
+        else if (cp == '\t') sb_puts(b, "\\t");
+        else if (cp == '#' && p + 1 < end && p[1] == '{') { sb_puts(b, "\\#{"); p += 2; continue; }
+        else if (is_control_rune(cp)) write_u_escape(b, cp);
+        else sb_put(b, p, (size_t)w);
+        p += w;
     }
     sb_putc(b, '\'');
 }

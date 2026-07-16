@@ -130,6 +130,18 @@ pub fn is_unsafe_scalar(value: &str) -> bool {
     })
 }
 
+/// A control character, which has no literal form in any string, comment, or gap between tokens: a
+/// C0 control (`U+0000`–`U+001F`) other than a horizontal tab, a line feed, or a carriage return; a
+/// `DEL` (`U+007F`); or a C1 control (`U+0080`–`U+009F`) (specification 4.3). Written raw it is a
+/// lexical error; in canonical output it is written with a `\u{…}` escape.
+pub fn is_control(character: char) -> bool {
+    let code = character as u32;
+
+    (code <= 0x1F && !matches!(character, '\t' | '\n' | '\r'))
+        || code == 0x7F
+        || (0x80..=0x9F).contains(&code)
+}
+
 /// The interpolations written in a string: `#{([^}]+)}`.
 ///
 /// The inner text may hold anything but a closing brace, and it may not be empty, so `#{}` is not an
