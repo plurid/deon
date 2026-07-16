@@ -1061,6 +1061,16 @@
             "expected": {
                 "out": "see #{note} here"
             }
+        },
+        {
+            "id": "access-dot-segment-requires-bare-name",
+            "required": true,
+            "source": "{ m x, e #m.+5 }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 13
+            }
         }
     ]
 }

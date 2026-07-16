@@ -794,11 +794,11 @@ impl Scanner {
                     let (at, at_line, at_column) = (self.current, self.line, self.column);
                     let mut name = String::new();
 
-                    while !self.at_end()
-                        && self.peek(0) != '.'
-                        && self.peek(0) != '['
-                        && !ends_reference_name(self.peek(0))
-                    {
+                    // A dot segment is a bare-name (`dot-access = ".", bare-name`): letters, digits,
+                    // `_`, and `-`. A character outside that set — a `+`, say — does not extend the
+                    // name; a segment that reads none of them is the empty name reported just below,
+                    // at that character, exactly as the other implementations report it.
+                    while !self.at_end() && is_reference_name(self.peek(0)) {
                         name.push(self.advance());
                     }
 
