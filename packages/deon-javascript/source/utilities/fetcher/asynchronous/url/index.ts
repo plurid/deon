@@ -8,6 +8,10 @@
         NETWORK_TIMEOUT,
     } from '../../../../data/constants';
 
+    import {
+        decodeResource,
+    } from '../../../../objects/Diagnostic';
+
     import resolveFetchURL from '../../logic/resolveFetchURL';
     // #endregion external
 // #endregion imports
@@ -40,7 +44,13 @@ const fetchFromURL = async (
     if (!response.ok) {
         throw new Error(`HTTP ${response.status} while loading '${url}'.`);
     }
-    const data = await response.text();
+    // The body is decoded strictly: a response that is not valid UTF-8 is a resource-format fault,
+    // the same as a file that is not (matching the six other implementations), not text papered over
+    // with U+FFFD.
+    const data = decodeResource(
+        new Uint8Array(await response.arrayBuffer()),
+        url,
+    );
 
     return {
         data,

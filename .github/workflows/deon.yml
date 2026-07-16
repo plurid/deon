@@ -302,3 +302,8 @@ jobs:
       # grammar, an exit status, and a filesystem they write to, and none of that is in a fixture.
       - name: every tool, the same arguments, the same behaviour
         run: python3 scripts/cli-harness.py
+
+      # Nor does any of the above open a socket. The network client decodes a real response body, and
+      # a body that is not valid UTF-8 must fail the same way for all seven. Loopback only (127.0.0.1).
+      - name: every tool, the same loopback responses, the same behaviour
+        run: python3 scripts/cli-network-harness.py

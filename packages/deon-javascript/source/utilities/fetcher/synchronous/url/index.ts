@@ -15,6 +15,10 @@
         NETWORK_TIMEOUT,
     } from '../../../../data/constants';
 
+    import {
+        decodeResource,
+    } from '../../../../objects/Diagnostic';
+
     import resolveFetchURL from '../../logic/resolveFetchURL';
     // #endregion external
 // #endregion imports
@@ -50,19 +54,23 @@ const fetchFromURL = (
         const response = await fetch(url, { headers, signal: AbortSignal.timeout(${NETWORK_TIMEOUT}) });
         if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        process.stdout.write(await response.text());
+        process.stdout.write(Buffer.from(await response.arrayBuffer()));
     `;
 
-    const data = execFileSync(
+    // The child hands back the raw bytes (no encoding on the capture, so this is a Buffer), which are
+    // then decoded strictly — a response that is not valid UTF-8 is a resource-format fault, the same
+    // as a file that is not, rather than text papered over with U+FFFD.
+    const bytes = execFileSync(
         process.execPath,
         ['--input-type=module', '--eval', script],
         {
-            encoding: 'utf8',
             input: JSON.stringify({ url, headers }),
             maxBuffer: 64 * 1024 * 1024,
             timeout: NETWORK_TIMEOUT + 5000,
         },
     );
+
+    const data = decodeResource(bytes, url);
 
     return {
         data,

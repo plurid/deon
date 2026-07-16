@@ -303,10 +303,15 @@ class Deon {
             );
         }
 
-        const parsed = await this.parse<T>(await response.text(), {
-            ...options,
-            sourceName: link,
-        });
+        // Decoded strictly, like every other resource read: a response that is not valid UTF-8 is a
+        // resource-format fault, not text papered over with U+FFFD.
+        const parsed = await this.parse<T>(
+            decodeResource(new Uint8Array(await response.arrayBuffer()), link),
+            {
+                ...options,
+                sourceName: link,
+            },
+        );
 
         await this.setCache(link, parsed, options);
 
