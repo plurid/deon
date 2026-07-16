@@ -22,7 +22,7 @@
 
 
 
-A [Language Server Protocol](https://microsoft.github.io/language-server-protocol) server for `.deon` documents: the red underline that appears as you type, the outline of what a document declares, the hover that says what a name is, the jump to where it was declared, and the completion of a declared name.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol) server for `.deon` documents: the red underline that appears as you type, the outline of what a document declares, the hover that says what a name is, the jump to where it was declared, the completion of a declared name, the colouring of each name and key by its kind, and the parameter hint that follows the cursor through a call's arguments.
 
 It reads the same `@plurid/deon` the command-line tool does, so a fault an editor shows is a fault the tool would report, at the same place. And it carries **no third-party dependency** — the protocol wire is spoken directly, the way the seven Deon cores speak their own. Nothing is installed to run it but Node.
 
@@ -62,6 +62,8 @@ The server answers over the protocol; an editor turns each answer into what you 
 | `hover` | What the name under the cursor is: the leaflink, the import and where it reads from, the entity and the arguments it would demand. |
 | `definition` | A jump from a `#reference` to the declaration it names. |
 | `completion` | The names a `#` may reach, offered from the last syntax tree that parsed — so a name still completes while the line being typed does not yet. |
+| `semanticTokens` | A colour for each token by what it is: a leaflink name as a declared variable, a map key as a property, a `#reference` as a variable, a scalar as a string, a call's argument name as a parameter. The call *head* has no token of its own — it sits before the `(` — so its `#` is left to the grammar; the two compose. |
+| `signatureHelp` | While the cursor is between a call's parentheses, the entity's parameter list, with the argument being written picked out. The parameters come from the entity's own declaration when the document names one, and otherwise from the argument names already written — so the hint appears even for a call to a name a buffer only imports. |
 
 A diagnostic is never invented. Its code, its severity, and its position are exactly what `@plurid/deon` reports, which is exactly what `spec/diagnostics.md` requires of every implementation; the server only carries them to the editor.
 

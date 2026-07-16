@@ -11,6 +11,8 @@
     import { Analysis } from './analysis.js';
     import {
         TextDocumentSyncKind,
+        SEMANTIC_TOKEN_TYPES,
+        SEMANTIC_TOKEN_MODIFIERS,
         type TextDocumentPositionParams,
     } from './protocol.js';
 // #endregion imports
@@ -69,6 +71,20 @@ export const createServer = (
             completionProvider: {
                 // `#` opens a reference, so it is where a name is most wanted.
                 triggerCharacters: ['#'],
+            },
+            semanticTokensProvider: {
+                // The legend the analyser indexes into: a token names its type and modifiers by their
+                // position in these arrays, so the two ends must agree on the order.
+                legend: {
+                    tokenTypes: [...SEMANTIC_TOKEN_TYPES],
+                    tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS],
+                },
+                // The whole document at once; a Deon document is small enough not to need deltas.
+                full: true,
+            },
+            signatureHelpProvider: {
+                // A `(` opens a call's arguments and a `,` moves to the next, so both re-ask.
+                triggerCharacters: ['(', ','],
             },
         },
         serverInfo: {
@@ -139,6 +155,20 @@ export const createServer = (
         const found = at(params);
         return found
             ? analysis.completion(params.textDocument.uri, found.document.text, params.position)
+            : null;
+    });
+
+    connection.onRequest('textDocument/semanticTokens/full', (params: any) => {
+        const document = documents.get(params.textDocument.uri);
+        return document
+            ? analysis.semanticTokens(params.textDocument.uri, document.text)
+            : { data: [] };
+    });
+
+    connection.onRequest('textDocument/signatureHelp', (params: TextDocumentPositionParams) => {
+        const found = at(params);
+        return found
+            ? analysis.signatureHelp(params.textDocument.uri, found.document.text, params.position)
             : null;
     });
 

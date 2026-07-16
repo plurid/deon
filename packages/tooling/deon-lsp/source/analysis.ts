@@ -13,6 +13,7 @@
         DeclarationNode,
         ValueNode,
         MapItemNode,
+        CallNode,
         Reference,
         Token,
     } from '@plurid/deon';
@@ -21,15 +22,20 @@
         DiagnosticSeverity,
         SymbolKind,
         CompletionItemKind,
+        SemanticTokenType,
+        SemanticTokenModifier,
         type LspDiagnostic,
         type DocumentSymbol,
         type Location,
         type Hover,
         type CompletionItem,
+        type SemanticTokens,
+        type SignatureHelp,
     } from './protocol.js';
 
     import {
         lineStarts,
+        toLspPosition,
         toLspRange,
         toDeonPosition,
         withinSpan,
@@ -588,6 +594,262 @@ export class Analysis {
         }
 
         return items;
+    }
+
+
+    /**
+     * The coloured spans an editor lays over the text so a name reads as a name, a key as a key, a
+     * call argument as an argument. Every token the tree carries a lexeme for is emitted once, in
+     * reading order, then encoded as the protocol's flat run of five-integer deltas against the
+     * legend the server declared on `initialize`. The call *head* has no token of its own — it sits
+     * before the `(` the call is anchored at — so it is left to the TextMate grammar to colour; the
+     * arguments, keys, links, and scalars each have one and are coloured here.
+     */
+    public semanticTokens(
+        uri: string,
+        text: string,
+    ): SemanticTokens {
+        const document = this.syntax(uri, text) ?? this.lastGood.get(uri) ?? null;
+        if (!document) {
+            return { data: [] };
+        }
+
+        const starts = lineStarts(text);
+        const raw: {
+            line: number;
+            character: number;
+            length: number;
+            type: number;
+            modifiers: number;
+        }[] = [];
+
+        const emit = (
+            token: Token,
+            type: number,
+            modifiers = 0,
+        ): void => {
+            // A token spanning lines (a multiline string) would have to be split per line to encode;
+            // it is left uncoloured rather than encoded wrong. The length is the lexeme's UTF-16 code
+            // units, which is the unit the protocol's default encoding measures a token's length in.
+            if (!token.lexeme || token.endLine !== token.line) {
+                return;
+            }
+            const at = toLspPosition(text, starts, token.line, token.column);
+            raw.push({
+                line: at.line,
+                character: at.character,
+                length: token.lexeme.length,
+                type,
+                modifiers,
+            });
+        };
+
+        const call = (node: CallNode): void => {
+            for (const argument of node.arguments) {
+                emit(argument.token, SemanticTokenType.parameter);
+                value(argument.value);
+            }
+        };
+
+        const value = (node: ValueNode): void => {
+            switch (node.type) {
+                case 'scalar':
+                    emit(node.token, SemanticTokenType.string);
+                    return;
+                case 'link':
+                    emit(node.token, SemanticTokenType.variable);
+                    return;
+                case 'call':
+                    call(node);
+                    return;
+                case 'map':
+                    for (const entry of node.entries) {
+                        item(entry);
+                    }
+                    return;
+                case 'list':
+                    for (const element of node.items) {
+                        if (element.type === 'spread-item') {
+                            emit(element.token, SemanticTokenType.variable);
+                        } else {
+                            value(element);
+                        }
+                    }
+                    return;
+                case 'structure':
+                    for (const row of node.rows) {
+                        for (const cell of row) {
+                            value(cell);
+                        }
+                    }
+                    return;
+            }
+        };
+
+        const item = (node: MapItemNode): void => {
+            switch (node.type) {
+                case 'entry':
+                    emit(node.token, SemanticTokenType.property);
+                    value(node.value);
+                    return;
+                case 'link-entry':
+                    if (node.value.type === 'call') {
+                        call(node.value);
+                    } else {
+                        emit(node.value.token, SemanticTokenType.variable);
+                    }
+                    return;
+                case 'spread-entry':
+                    emit(node.token, SemanticTokenType.variable);
+                    return;
+            }
+        };
+
+        for (const declaration of document.declarations) {
+            if (declaration.type === 'leaflink') {
+                emit(declaration.token, SemanticTokenType.variable, SemanticTokenModifier.declaration);
+                value(declaration.value);
+            } else {
+                emit(declaration.token, SemanticTokenType.keyword);
+                if (declaration.authenticator) {
+                    value(declaration.authenticator);
+                }
+            }
+        }
+        value(document.root);
+
+        raw.sort((a, b) => a.line - b.line || a.character - b.character);
+
+        const data: number[] = [];
+        let previousLine = 0;
+        let previousCharacter = 0;
+        for (const token of raw) {
+            const deltaLine = token.line - previousLine;
+            const deltaCharacter = deltaLine === 0
+                ? token.character - previousCharacter
+                : token.character;
+            data.push(deltaLine, deltaCharacter, token.length, token.type, token.modifiers);
+            previousLine = token.line;
+            previousCharacter = token.character;
+        }
+
+        return { data };
+    }
+
+
+    /**
+     * Signature help for an entity call: while the cursor sits inside a call's parentheses, the
+     * entity's parameter list is shown with the argument being written picked out. The parameters
+     * come from the entity's own declaration when the document names one, and otherwise from the
+     * argument names already written — so help still appears for a call to a name declared in a file
+     * the editor buffer only imports.
+     */
+    public signatureHelp(
+        uri: string,
+        text: string,
+        position: LspPosition,
+    ): SignatureHelp | null {
+        const document = this.syntax(uri, text) ?? this.lastGood.get(uri) ?? null;
+        if (!document) {
+            return null;
+        }
+
+        const starts = lineStarts(text);
+        const cursor = toDeonPosition(text, starts, position);
+
+        const calls: CallNode[] = [];
+        const collect = (node: ValueNode): void => {
+            switch (node.type) {
+                case 'call':
+                    calls.push(node);
+                    for (const argument of node.arguments) {
+                        collect(argument.value);
+                    }
+                    return;
+                case 'map':
+                    for (const entry of node.entries) {
+                        if (entry.type === 'entry') {
+                            collect(entry.value);
+                        } else if (entry.type === 'link-entry' && entry.value.type === 'call') {
+                            collect(entry.value);
+                        }
+                    }
+                    return;
+                case 'list':
+                    for (const element of node.items) {
+                        if (element.type !== 'spread-item') {
+                            collect(element);
+                        }
+                    }
+                    return;
+                case 'structure':
+                    for (const row of node.rows) {
+                        for (const cell of row) {
+                            collect(cell);
+                        }
+                    }
+                    return;
+            }
+        };
+        for (const declaration of document.declarations) {
+            if (declaration.type === 'leaflink') {
+                collect(declaration.value);
+            } else if (declaration.authenticator) {
+                collect(declaration.authenticator);
+            }
+        }
+        collect(document.root);
+
+        // The call the cursor is writing into: on the same line as its `(`, at or past that `(`, and
+        // not run far past the last argument (a little slack covers the closing `)` and the space
+        // before the next argument). When calls nest, the innermost wins — the one whose `(` is latest.
+        let best: CallNode | null = null;
+        for (const node of calls) {
+            const open = node.token;
+            if (open.line !== cursor.line || open.column > cursor.column) {
+                continue;
+            }
+            const last = node.arguments[node.arguments.length - 1];
+            const endColumn = last ? last.value.token.endColumn : open.endColumn;
+            if (cursor.column > endColumn + 2) {
+                continue;
+            }
+            if (!best || open.column > best.token.column) {
+                best = node;
+            }
+        }
+        if (!best) {
+            return null;
+        }
+
+        const entity = this.entities(uri, text).find((candidate) => candidate.name === best!.reference.head);
+        const parameters = entity && entity.parameters.length
+            ? entity.parameters
+            : best.arguments.map((argument) => argument.name);
+        const label = `${best.reference.head}(${parameters.join(', ')})`;
+
+        // The argument being written: as many arguments as already end at or before the cursor,
+        // never past the last parameter.
+        let active = 0;
+        for (const argument of best.arguments) {
+            if (argument.value.token.endColumn <= cursor.column) {
+                active += 1;
+            } else {
+                break;
+            }
+        }
+        active = parameters.length > 0
+            ? Math.min(active, parameters.length - 1)
+            : 0;
+
+        return {
+            signatures: [{
+                label,
+                parameters: parameters.map((parameter) => ({ label: parameter })),
+            }],
+            activeSignature: 0,
+            activeParameter: active,
+        };
     }
 
     private entities(

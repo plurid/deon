@@ -1,7 +1,7 @@
 {
     "name": "@plurid/deon-lsp",
     "version": "0.0.0-1",
-    "description": "A zero-dependency Deon language server: live diagnostics, document symbols, hover, go-to-definition, and completion over the Language Server Protocol",
+    "description": "A zero-dependency Deon language server: live diagnostics, document symbols, hover, go-to-definition, completion, semantic tokens, and signature help over the Language Server Protocol",
     "license": "DEL",
     "homepage": "https://github.com/plurid/deon",
     "repository": "https://github.com/plurid/deon",

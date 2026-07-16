@@ -103,6 +103,27 @@ class Client {
 
 
 
+/**
+ * Undo the protocol's five-integer delta encoding back to absolute tokens, so a test can assert one
+ * by its line and character. Each token is `[deltaLine, deltaCharacter, length, type, modifiers]`,
+ * the deltas taken against the previous token (and the character delta reset by a line change).
+ */
+const decodeSemanticTokens = (data) => {
+    const tokens = [];
+    let line = 0;
+    let character = 0;
+    for (let index = 0; index < data.length; index += 5) {
+        const deltaLine = data[index];
+        const deltaCharacter = data[index + 1];
+        line += deltaLine;
+        character = deltaLine === 0 ? character + deltaCharacter : deltaCharacter;
+        tokens.push({ line, character, length: data[index + 2], type: data[index + 3], modifiers: data[index + 4] });
+    }
+    return tokens;
+};
+
+
+
 // #region tests
 describe('deon-lsp', () => {
     it('announces what it can do', async () => {
@@ -114,6 +135,13 @@ describe('deon-lsp', () => {
         assert.equal(result.capabilities.definitionProvider, true);
         assert.equal(result.capabilities.hoverProvider, true);
         assert.deepEqual(result.capabilities.completionProvider.triggerCharacters, ['#']);
+
+        const semantic = result.capabilities.semanticTokensProvider;
+        assert.equal(semantic.full, true);
+        assert.deepEqual(semantic.legend.tokenTypes, ['variable', 'property', 'function', 'keyword', 'string', 'parameter']);
+        assert.deepEqual(semantic.legend.tokenModifiers, ['declaration']);
+        assert.deepEqual(result.capabilities.signatureHelpProvider.triggerCharacters, ['(', ',']);
+
         assert.equal(result.serverInfo.name, 'deon-lsp');
     });
 
@@ -224,6 +252,65 @@ describe('deon-lsp', () => {
 
         const labels = items.map((item) => item.label);
         assert.ok(labels.includes('greeting'), `expected 'greeting' in completions, got ${labels.join(', ')}`);
+    });
+
+    it('colours declarations, keys, links, and scalars as semantic tokens', async () => {
+        const client = new Client();
+        const uri = 'file:///semantic.deon';
+        await client.open(uri, 'greeting hello\n{\n    message #greeting\n}\n');
+
+        const tokens = await client.request('textDocument/semanticTokens/full', {
+            textDocument: { uri },
+        });
+
+        // The legend order the server declared: variable 0, property 1, function 2, keyword 3,
+        // string 4, parameter 5; modifier bit 1 is `declaration`.
+        const decoded = decodeSemanticTokens(tokens.data);
+        const at = (line, character) => decoded.find((t) => t.line === line && t.character === character);
+
+        // `greeting` — a leaflink declaration: a variable, flagged as a declaration.
+        assert.deepEqual(at(0, 0), { line: 0, character: 0, length: 8, type: 0, modifiers: 1 });
+        // `hello` — its scalar value: a string.
+        assert.deepEqual(at(0, 9), { line: 0, character: 9, length: 5, type: 4, modifiers: 0 });
+        // `message` — a map key: a property.
+        assert.deepEqual(at(2, 4), { line: 2, character: 4, length: 7, type: 1, modifiers: 0 });
+        // `#greeting` — a link reference: a variable, with no declaration flag.
+        assert.deepEqual(at(2, 12), { line: 2, character: 12, length: 9, type: 0, modifiers: 0 });
+    });
+
+    it('offers signature help inside an entity call', async () => {
+        const client = new Client();
+        const uri = 'file:///signature.deon';
+        // `greet` is a template with two interpolations, so it has two parameters; the call fills them.
+        await client.open(uri, 'greet `Hi #{name} and #{friend}`\n{\n    m #greet(name Ada, friend Bo)\n}\n');
+
+        const justInsideParen = await client.request('textDocument/signatureHelp', {
+            textDocument: { uri },
+            position: { line: 2, character: 13 }, // right after `#greet(`
+        });
+
+        assert.ok(justInsideParen, 'expected signature help inside the call');
+        assert.equal(justInsideParen.signatures.length, 1);
+        assert.equal(justInsideParen.signatures[0].label, 'greet(name, friend)');
+        assert.deepEqual(
+            justInsideParen.signatures[0].parameters.map((parameter) => parameter.label),
+            ['name', 'friend'],
+        );
+        // At the start of the arguments, the first parameter is the active one.
+        assert.equal(justInsideParen.activeParameter, 0);
+
+        const writingSecond = await client.request('textDocument/signatureHelp', {
+            textDocument: { uri },
+            position: { line: 2, character: 23 }, // at the start of the second argument
+        });
+        assert.equal(writingSecond.activeParameter, 1);
+
+        // The cursor is on `#greet`, before the `(` — not inside the call, so no help.
+        const beforeParen = await client.request('textDocument/signatureHelp', {
+            textDocument: { uri },
+            position: { line: 2, character: 6 },
+        });
+        assert.equal(beforeParen, null);
     });
 });
 // #endregion tests

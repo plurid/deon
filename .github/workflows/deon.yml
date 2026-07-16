@@ -229,6 +229,46 @@ jobs:
       - run: npm test
         working-directory: packages/tooling/deon-mcp
 
+  lsp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install
+        working-directory: packages/deon-javascript
+
+      # The language server, like the MCP server, depends on `@plurid/deon` by `file:` and compiles
+      # against its published type declarations in `distribution/`, which a clean checkout does not
+      # have until the package is built.
+      - run: npm run build
+        working-directory: packages/deon-javascript
+
+      - run: npm install
+        working-directory: packages/tooling/deon-lsp
+      - run: npm test
+        working-directory: packages/tooling/deon-lsp
+
+  # Every fenced deon block in the documentation must be Deon the parser accepts — an example that no
+  # longer parses teaches the reader something the language rejects.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install
+        working-directory: packages/deon-javascript
+
+      # The checker imports the built library to parse each example, so the distribution must exist.
+      - run: npm run build
+        working-directory: packages/deon-javascript
+
+      - name: every documented deon example parses
+        run: node scripts/doc-examples.mjs
+
   # The one that catches what the fixtures cannot.
   harness:
     runs-on: ubuntu-latest

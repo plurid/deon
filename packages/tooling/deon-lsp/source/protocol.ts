@@ -134,4 +134,57 @@ export interface TextDocumentPositionParams {
     textDocument: { uri: string };
     position: LspPosition;
 }
+
+
+/**
+ * The semantic-token legend the server declares and then indexes into. The order is the contract: a
+ * token names its type by that type's position in this array, and its modifiers by a bit set at the
+ * position in the modifier array. The editor is told both on `initialize`.
+ */
+export const SEMANTIC_TOKEN_TYPES = [
+    'variable',
+    'property',
+    'function',
+    'keyword',
+    'string',
+    'parameter',
+] as const;
+
+export const SEMANTIC_TOKEN_MODIFIERS = [
+    'declaration',
+] as const;
+
+export const SemanticTokenType = {
+    variable: 0,
+    property: 1,
+    function: 2,
+    keyword: 3,
+    string: 4,
+    parameter: 5,
+} as const;
+
+export const SemanticTokenModifier = {
+    declaration: 1 << 0,
+} as const;
+
+export interface SemanticTokens {
+    data: number[];
+}
+
+
+export interface ParameterInformation {
+    label: string;
+}
+
+export interface SignatureInformation {
+    label: string;
+    documentation?: MarkupContent;
+    parameters: ParameterInformation[];
+}
+
+export interface SignatureHelp {
+    signatures: SignatureInformation[];
+    activeSignature: number;
+    activeParameter: number;
+}
 // #endregion module
