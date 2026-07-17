@@ -129,15 +129,18 @@ def escaped_interpolation_end(text: str, hash_index: int) -> "int | None":
     return None
 
 
-def decode_name(raw: str) -> str:
+def decode_name(raw: str, token: Token) -> str:
     r"""A quoted name's escapes, decoded.
 
     A name is never interpolated (specification 4.4). A quoted name is lexed like a single-quoted
     string and its escapes decode identically — `\\`, `\'`, `` \` ``, `\n`, `\r`, `\t` — with the
-    single difference that a `#{…}` in name position is literal text rather than a resolved reference.
-    A `\#{` therefore decodes through the common escape to the two literal characters `#{`, never
-    through an escaped interpolation, so both `'a#{n}'` and `'a\#{n}'` are the one literal name
-    `a#{n}` — which is exactly what a value canonically writes back as `'a\#{n}'` and reads in again.
+    single difference that a well-formed `#{name}` in name position is literal text rather than a
+    resolved reference. A `\#{` therefore decodes through the common escape to the two literal
+    characters `#{`, never through an escaped interpolation, so both `'a#{n}'` and `'a\#{n}'` are the
+    one literal name `a#{n}` — which is exactly what a value canonically writes back as `'a\#{n}'` and
+    reads in again. An *empty* interpolation `#{}` or `\#{}` is `DEON_PARSE_EXPECTED` all the same,
+    anchored at the name's first character: the name is lexed as a single-quoted string and emptiness
+    is a lexing fault, not a matter of resolution.
     """
     out: list[str] = []
     index = 0
@@ -188,9 +191,17 @@ def decode_name(raw: str) -> str:
                     continue
 
             if raw.startswith("#{", index + 1):
-                # The common escape: `\#{` is the two literal characters `#{`. A name is never
-                # interpolated, so this never consumes a closing `}` the way an escaped interpolation
-                # does in a value — the rest of the name is ordinary literal text.
+                # An empty escaped interpolation `\#{}` is `DEON_PARSE_EXPECTED` even in a name (§4.4),
+                # anchored at the name's first character. Otherwise `\#{` is the two literal characters
+                # `#{`: a name is never interpolated, so this never consumes a closing `}` the way an
+                # escaped interpolation does in a value — the rest of the name is ordinary literal text.
+                if raw.startswith("#{}", index + 1):
+                    raise error(
+                        DiagnosticCode.PARSE_EXPECTED,
+                        "A reference name was expected here.",
+                        token.span(),
+                    )
+
                 out.append("#{")
                 index += 3
                 continue
@@ -200,7 +211,16 @@ def decode_name(raw: str) -> str:
             index += 1
             continue
 
-        # An unescaped `#{…}` is literal text in name position, so `#`, `{`, and `}` are ordinary.
+        # An empty interpolation `#{}` is `DEON_PARSE_EXPECTED` even in a name (§4.4), anchored at the
+        # name's first character. Otherwise an unescaped `#{…}` is literal text in name position, so
+        # `#`, `{`, and `}` are ordinary characters.
+        if raw.startswith("#{}", index):
+            raise error(
+                DiagnosticCode.PARSE_EXPECTED,
+                "A reference name was expected here.",
+                token.span(),
+            )
+
         out.append(character)
         index += 1
 
@@ -665,7 +685,8 @@ class Scanner:
         if self.peek() == "'":
             head_start = self.mark()
             self.single_string(head_start)
-            head = decode_name(self.tokens.pop().raw)
+            head_token = self.tokens.pop()
+            head = decode_name(head_token.raw, head_token)
         else:
             head = self.bare_name(start, "Expected a reference name after '#'.")
 
@@ -727,7 +748,8 @@ class Scanner:
             quoted_start = self.mark()
             self.single_string(quoted_start)
 
-            return Access(name=decode_name(self.tokens.pop().raw))
+            segment_token = self.tokens.pop()
+            return Access(name=decode_name(segment_token.raw, segment_token))
 
         start = self.mark()
         begin = self.current

@@ -30,7 +30,7 @@ A document contains:
 - exactly one root map or root list;
 - zero or more leaflink declarations.
 
-Their source sections may occur in any order. Imports, injections, and leaflinks share one declaration namespace. Duplicate declaration names are errors. Only the evaluated root is exported when another document imports this document.
+Their source sections may occur in any order, separated by whitespace, newlines, and comments only — the comma is a separator inside a map, a list, or a structure, never between top-level sections, so a comma before, between, or after them is `DEON_PARSE_EXPECTED` at the comma. Imports, injections, and leaflinks share one declaration namespace. Duplicate declaration names are errors. Only the evaluated root is exported when another document imports this document.
 
 Comments and formatting are not semantic data. An implementation MAY expose a lossless syntax tree, but ordinary parsing returns only the root value.
 
@@ -80,7 +80,7 @@ The line-break escapes are what make every string writable. An unquoted string e
 
 An unquoted map key or declaration name uses letters, digits, `_`, or `-`. Single quotes permit any non-newline name. A name is compared after unquoting and escape decoding.
 
-A name is never interpolated. A quoted name is lexed as a single-quoted string (section 4.3) — the same `\\`, `\'`, `\n`, `\r`, `\t`, and `\#{` escapes decode identically — with the single difference that a `#{…}` in name position is literal text rather than a resolved reference. The key written `'a#{n}'` is the literal name `a#{n}`, never a lookup of `n` and never the truncated `a`. This holds wherever a name appears — a map key, a declaration name, a call-argument name, a structure field, and the head or a bracket segment of a reference, so that `#'a#{n}'` and `#items['a#{n}']` name the literal key `a#{n}` — so a name's identity never depends on evaluation. Written back, a name that is not a bare-name is single-quoted and escaped exactly as a single-string value — `#{` included, rendered as `\#{` — so the name `a#{n}` is written `'a\#{n}'` and round-trips to itself; the escape is inert in name position but keeps one conservative spelling.
+A name is never interpolated. A quoted name is lexed as a single-quoted string (section 4.3) — the same `\\`, `\'`, `\n`, `\r`, `\t`, and `\#{` escapes decode identically — with the single difference that a well-formed `#{name}` in name position is literal text rather than a resolved reference. The key written `'a#{n}'` is the literal name `a#{n}`, never a lookup of `n` and never the truncated `a`. That single difference is resolution alone: an *empty* interpolation `#{}` or `\#{}` is `DEON_PARSE_EXPECTED` even in a name, reported at the name's first character, because emptiness is a lexical fault of the string it is lexed as (section 10) and not a reference to resolve or to keep literal. This holds wherever a name appears — a map key, a declaration name, a call-argument name, a structure field, and the head or a bracket segment of a reference, so that `#'a#{n}'` and `#items['a#{n}']` name the literal key `a#{n}` — so a name's identity never depends on evaluation. Written back, a name that is not a bare-name is single-quoted and escaped exactly as a single-string value — `#{` included, rendered as `\#{` — so the name `a#{n}` is written `'a\#{n}'` and round-trips to itself; the escape is inert in name position but keeps one conservative spelling.
 
 ## 5. Maps and lists
 

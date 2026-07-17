@@ -786,6 +786,15 @@ final class Parser {
                     p.advance();
                     lit.appendCodePoint(active);
                 } else if (n == '#' && p.peekAt(1) == '{') {
+                    // An escaped interpolation `\#{reference}` is kept as literal characters, but an
+                    // empty `\#{}` is `DEON_PARSE_EXPECTED` exactly as `#{}` is (sections 4.3, 4.4, 10),
+                    // anchored at the carrying value's — or name's — first character. Only the empty
+                    // form is a fault; `\#{ }`, `\#{x}`, and an unclosed `\#{` stay literal. A quoted
+                    // name funnels through this same routine, so an empty interpolation is refused in a
+                    // name position too, where a `#{…}` is otherwise literal text (section 4.4).
+                    if (p.peekAt(2) == '}') {
+                        throw fail(Code.PARSE_EXPECTED, "A reference name was expected here.", carrier);
+                    }
                     p.advance();
                     p.advance();
                     lit.append("#{");

@@ -750,6 +750,19 @@ class Scanner {
                 continue;
             }
 
+            // An escaped interpolation `\#{reference}` is kept as literal characters, but an empty
+            // `\#{}` is `DEON_PARSE_EXPECTED` exactly as `#{}` is (specification 4.3, 10), anchored at
+            // the value's first character. Only the empty form is a fault: `\#{ }` and `\#{x}` stay
+            // literal, as does a `\#{` that no `}` closes — the backslash branch below keeps them.
+            if (
+                character === '\\'
+                && this.peek(1) === '#'
+                && this.peek(2) === '{'
+                && this.peek(3) === '}'
+            ) {
+                this.failInterpolation(start, line, column);
+            }
+
             // An escaped delimiter must not end the string, so a backslash always takes the next
             // character with it.
             if (character === '\\' && this.current + 1 < this.source.length) {

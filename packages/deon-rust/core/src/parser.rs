@@ -75,7 +75,10 @@ impl Parser {
         let mut declarations: Vec<Declaration> = Vec::new();
         let mut root: Option<ValueNode> = None;
 
-        self.skip_separators();
+        // Top-level sections are separated by whitespace, newlines, and comments only (§3): a comma
+        // separates entries inside a map, list, or structure, never top-level sections, so a stray
+        // comma is left for the item parser below to refuse where it stands rather than skipped.
+        self.skip_newlines();
 
         while !self.check(TokenType::Eof) {
             if self.check(TokenType::Import) || self.check(TokenType::Inject) {
@@ -99,7 +102,7 @@ impl Parser {
                 declarations.push(leaflink);
             }
 
-            self.skip_separators();
+            self.skip_newlines();
         }
 
         let Some(root) = root else {

@@ -34,6 +34,14 @@ func (p *parser) singleString() []stringPart {
 		case isNewline(r):
 			fail(LexUnterminated, "A single-quoted string may not cross a line.", p.spanAt(open))
 		case r == '\\':
+			// An escaped interpolation `\#{reference}` is kept literal, but an empty `\#{}` is
+			// DEON_PARSE_EXPECTED exactly as `#{}` is (§4.3, 10), anchored at the value's first
+			// character. Only the empty form is a fault; `\#{ }`, `\#{x}`, and a `\#{` no `}` closes
+			// stay literal through decodeEscape. The backtick and unquoted forms already validate this
+			// through decodeInner; the single-quoted live-cursor path is the one that did not.
+			if p.startsWith("\\#{}") {
+				fail(ParseExpected, "An interpolation needs a reference immediately between its braces.", p.spanAt(open))
+			}
 			literal.WriteString(p.decodeEscape('\''))
 		case p.startsWith("#{"):
 			flush()
@@ -66,6 +74,11 @@ func (p *parser) singleName() string {
 			return b.String()
 		case isNewline(r):
 			fail(LexUnterminated, "A single-quoted string may not cross a line.", p.spanAt(open))
+		case p.startsWith("\\#{}"), p.startsWith("#{}"):
+			// An empty interpolation is DEON_PARSE_EXPECTED even in a name, where a `#{…}` is otherwise
+			// literal text (§4.4): a name is lexed as a single-quoted string and emptiness is a lexing
+			// fault. Only the empty form faults; `#{n}`, `\#{n}`, and an unclosed `#{`/`\#{` stay literal.
+			fail(ParseExpected, "A reference name was expected here.", p.spanAt(open))
 		case r == '\\':
 			b.WriteString(p.decodeEscape('\''))
 		default:

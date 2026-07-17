@@ -706,6 +706,18 @@ impl Scanner {
                 continue;
             }
 
+            // An escaped interpolation `\#{reference}` is kept as literal characters, but an empty
+            // `\#{}` is `DEON_PARSE_EXPECTED` exactly as `#{}` is (§4.3, 10), anchored at the value's
+            // first character. Only the empty form is a fault; `\#{ }`, `\#{x}`, and a `\#{` no `}`
+            // closes stay literal, taken by the backslash branch below.
+            if character == '\\' && self.peek(1) == '#' && self.peek(2) == '{' && self.peek(3) == '}' {
+                return err(
+                    DiagnosticCode::ParseExpected,
+                    "An interpolation needs a reference immediately between its braces.",
+                    &self.span(start, line, column),
+                );
+            }
+
             // An escaped delimiter must not end the string, so a backslash always takes the next
             // character with it.
             if character == '\\' && self.current + 1 < self.characters.len() {

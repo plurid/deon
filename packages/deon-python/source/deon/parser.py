@@ -128,7 +128,10 @@ class Parser:
         declarations: list[Leaflink | Resource] = []
         root: MapNode | ListNode | None = None
 
-        self.separators()
+        # Top-level sections are separated by whitespace, newlines, and comments only (specification
+        # 3): a comma separates entries inside a map, list, or structure, never top-level sections, so
+        # a stray comma is left for the item parser below to refuse rather than skipped as trivia.
+        self.newlines()
 
         while not self.check(TokenType.EOF):
             token = self.peek()
@@ -146,7 +149,7 @@ class Parser:
             else:
                 declarations.append(self.leaflink())
 
-            self.separators()
+            self.newlines()
 
         if root is None:
             raise self.fail(
@@ -543,9 +546,10 @@ class Parser:
         if token.type == TokenType.STRING:
             self.advance()
 
-            # A quoted name decodes its escapes like a single-string value, except that a `#{…}` here
-            # is literal text and never a resolved reference (specification 4.4).
-            return decode_name(token.raw)
+            # A quoted name decodes its escapes like a single-string value, except that a well-formed
+            # `#{…}` here is literal text and never a resolved reference (specification 4.4); an empty
+            # `#{}` or `\#{}` is `DEON_PARSE_EXPECTED` all the same.
+            return decode_name(token.raw, token)
 
         if token.type != TokenType.WORD:
             raise self.fail(DiagnosticCode.PARSE_EXPECTED, message)

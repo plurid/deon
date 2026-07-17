@@ -132,7 +132,10 @@ class Parser {
         const declarations: DeclarationNode[] = [];
         let root: MapNode | ListNode | null = null;
 
-        this.skipSeparators();
+        // Top-level sections are separated by whitespace, newlines, and comments only (specification
+        // 3): a comma is a map/list/structure separator, never a top-level one, so a stray comma is
+        // left for the item parser below to refuse where it stands rather than skipped as trivia.
+        this.skipNewlines();
 
         while (!this.check(TokenType.EOF)) {
             if (this.check(TokenType.IMPORT) || this.check(TokenType.INJECT)) {
@@ -155,7 +158,7 @@ class Parser {
                 declarations.push(this.leaflink());
             }
 
-            this.skipSeparators();
+            this.skipNewlines();
         }
 
         if (!root) {

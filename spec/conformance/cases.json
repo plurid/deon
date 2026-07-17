@@ -898,6 +898,40 @@
             "position": { "line": 1, "column": 3 }
         },
         {
+            "id": "escaped-empty-interpolation-in-a-single-quoted-value",
+            "required": true,
+            "source": "{ r '\\#{}' }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "escaped-empty-interpolation-in-a-backtick-value",
+            "required": true,
+            "source": "{ r `\\#{}` }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 5 }
+        },
+        {
+            "id": "escaped-whitespace-interpolation-stays-literal",
+            "required": true,
+            "source": "{ r '\\#{ }' }",
+            "canonical": "{\n    r '\\#{ }'\n}\n"
+        },
+        {
+            "id": "empty-interpolation-in-a-quoted-name-is-an-error",
+            "required": true,
+            "source": "{ '#{}' v }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
+            "id": "escaped-empty-interpolation-in-a-quoted-name-is-an-error",
+            "required": true,
+            "source": "{ '\\#{}' v }",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": { "line": 1, "column": 3 }
+        },
+        {
             "id": "environment-reference-requires-a-name",
             "required": true,
             "source": "{ h #$ }",
@@ -1139,6 +1173,26 @@
             "position": {
                 "line": 1,
                 "column": 2
+            }
+        },
+        {
+            "id": "declaration-comma-is-not-a-top-level-separator",
+            "required": true,
+            "source": "a x,\n[]",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 4
+            }
+        },
+        {
+            "id": "root-trailing-comma-is-an-error",
+            "required": true,
+            "source": "[],",
+            "error": "DEON_PARSE_EXPECTED",
+            "position": {
+                "line": 1,
+                "column": 3
             }
         }
     ]
