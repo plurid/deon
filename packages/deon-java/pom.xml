@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven build for publishing the Deon Java library to Maven Central as `com.plurid:deon`.
+
+  This file is additive. The day-to-day build and the cross-implementation harness still use the
+  `Makefile` (`make`, `make test`, `make harness`); Maven exists only to produce and publish the signed
+  library artifact. Only the library — package `deon`, under `source/deon` — is compiled into the jar;
+  the CLI (`source/cli`), the harness adapter (`source/harness`), and the tests (`tests`) are left out.
+
+  Build the artifacts locally (no signing, no upload):
+      mvn -f packages/deon-java/pom.xml package
+
+  Publish to Maven Central (needs a GPG key and a Central token in ~/.m2/settings.xml under the server
+  id `central`):
+      mvn -f packages/deon-java/pom.xml deploy -Prelease
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.plurid</groupId>
+    <artifactId>deon</artifactId>
+    <version>0.0.0-11</version>
+    <packaging>jar</packaging>
+
+    <name>deon</name>
+    <description>DeObject Notation Format — the Java implementation.</description>
+    <url>https://github.com/plurid/deon</url>
+
+    <licenses>
+        <license>
+            <name>DEL</name>
+            <url>https://github.com/plurid/deon/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>plurid</name>
+            <url>https://github.com/plurid</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/plurid/deon.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/plurid/deon.git</developerConnection>
+        <url>https://github.com/plurid/deon</url>
+    </scm>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
+    </properties>
+
+    <build>
+        <sourceDirectory>source</sourceDirectory>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <includes>
+                        <include>deon/**</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <includes>
+                        <include>deon/**</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar-no-fork</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <sourcepath>${project.basedir}/source</sourcepath>
+                    <subpackages>deon</subpackages>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals><goal>sign</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

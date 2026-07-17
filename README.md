@@ -1858,11 +1858,15 @@ cd packages/deon-python && python -m build && twine upload dist/*
 cd packages/deon-rust && cargo publish -p deon-core && cargo publish -p deon
 ```
 
-**Go modules** ([`pkg.go.dev`](https://pkg.go.dev)) — there is no upload; a module is published by tagging the commit, and `pkg.go.dev` indexes it on first request. Note: `packages/deon-go/go.mod` currently declares `module deon`, which is not `go get`-able — before the first publish it must become `module github.com/plurid/deon/packages/deon-go` (with the internal imports adjusted), after which the module is released by tagging `packages/deon-go/v0.0.0-11`.
+**Go modules** ([`pkg.go.dev`](https://pkg.go.dev)) — there is no upload; the module `github.com/plurid/deon/packages/deon-go` is published by tagging the commit, which `pkg.go.dev` indexes on first request. Release it by tagging `packages/deon-go/v0.0.0-11` — Go's tag form for a module in a repository subdirectory.
 
-**`Maven Central`** — `Java`, at a coordinate such as `com.plurid:deon`. The `Java` package currently builds through a `Makefile`; Maven Central additionally requires a `pom.xml` (or `build.gradle`) declaring the coordinates, a sources jar and a javadoc jar, and `GPG` signing. That build tooling has to be added before the first publish.
+**`Maven Central`** — `Java`, as `com.plurid:deon`. `packages/deon-java/pom.xml` builds the signed library jar together with its sources and javadoc (the day-to-day build still uses the `Makefile`). Add a `GPG` key and a Central token to `~/.m2/settings.xml` under the server id `central`, then publish:
 
-**Swift Package Manager** — `deon-swift`, which binds the `C` core. SwiftPM consumes a git URL and a tag rather than a registry upload. Note: `packages/deon-swift` has no `Package.swift` yet; one that exposes the `Deon` product over the `C` sources has to be added, and the commit tagged, before it can be imported with `.package(url: "https://github.com/plurid/deon", …)`.
+``` bash
+mvn -f packages/deon-java/pom.xml deploy -Prelease
+```
+
+**Swift Package Manager** — `deon-swift`, which binds the `C` core. The root [`Package.swift`](https://github.com/plurid/deon/blob/master/Package.swift) exposes the `Deon` library — it is declared at the repository root because SwiftPM will not reach a source file outside the package root, and the whole point is to compile the sibling `C` sources rather than copy them. Consumers add `.package(url: "https://github.com/plurid/deon", from: "…")` and `import Deon`. There is no registry upload; release it by tagging the commit.
 
 **`C`** — no central registry. `C` is distributed as source: clone the repository and run `make` in `packages/deon-c` to build `build/deon` (the CLI) and the static library. It can optionally be packaged for `vcpkg` or `Conan`.
 
@@ -1874,7 +1878,7 @@ vsce publish   # Visual Studio Marketplace
 ovsx publish   # Open VSX (VSCodium, Cursor, Windsurf, …)
 ```
 
-Ready to publish as they stand: the three `npm` packages, `PyPI`, `crates.io`, and the `Visual Studio Code` extension. Needing a one-time setup first: `Go` (the module path), `Java` (the Maven build tooling), and `Swift` (a `Package.swift`); `C` ships as source with no registry step.
+Every package is set up to publish as it stands — the three `npm` packages, `PyPI`, `crates.io`, `Go`, `Swift`, and the `Visual Studio Code` extension by their commands above, and `Java` once a `GPG` key and a Central token are in place (both yours to supply). `C` ships as source, with no registry step.
 
 
 

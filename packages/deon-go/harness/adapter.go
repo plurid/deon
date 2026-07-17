@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strconv"
 
-	"deon"
+	"github.com/plurid/deon/packages/deon-go"
 )
 
 type request struct {

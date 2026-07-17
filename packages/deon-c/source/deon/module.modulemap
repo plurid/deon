@@ -1,0 +1,10 @@
+// A Clang module map so Swift Package Manager — and any Clang-module consumer — sees this C library as
+// the module `CDeon`, exposing only the public header `deon.h`. The internal headers stay out of the
+// module, so an opaque `deon_document` is imported as an `OpaquePointer` rather than a concrete struct,
+// which is what the Swift wrapper expects. The `deon-swift` Makefile build uses its own map over a shim
+// header (`Sources/CDeon`) and does not read this file; it only affects Clang-module consumers such as
+// the root `Package.swift`.
+module CDeon {
+    header "deon.h"
+    export *
+}

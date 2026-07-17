@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"deon"
+	"github.com/plurid/deon/packages/deon-go"
 )
 
 const usage = `Usage: deon <file> [options]
