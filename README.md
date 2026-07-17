@@ -393,6 +393,8 @@ or download the appropriate [binary](https://plurid.link/binaries-deon)
 + [Linux](https://files.plurid.com/binaries/deon/linux)
 + [Windows](https://files.plurid.com/binaries/deon/windows)
 
+For the per-language library — `cargo add deon`, `pip install deon`, `go get`, and the rest — and the registry each lives in, see [Packages](#packages).
+
 
 ### CLI
 
@@ -1788,53 +1790,91 @@ fn main() {
 
 ## Packages
 
+`deon` ships one package per implementation, plus three developer tools. The language itself is at version `1.0`; the packages are versioned independently ([αver](https://github.com/ly3xqhl8g9/alpha-versioning)) — the implementations at `0.0.0-11`, the tooling at `0.0.0-1`. Every implementation carries the same command-line tool, `deon` (see [CLI](#cli)); the library API for each language is documented under [Specifics](#specifics).
 
-<a target="_blank" href="https://marketplace.visualstudio.com/items?itemName=plurid.deon-grammar">
-    <img src="https://img.shields.io/badge/vscode-v.0.0.8-1380C3?style=for-the-badge" alt="Version">
-</a>
+### Implementations
 
-[@plurid/deon-grammar][deon-grammar] • `Visual Studio Code` syntax highlighting
+| Language | Package | Registry | Install |
+| --- | --- | --- | --- |
+| `JavaScript` / `TypeScript` | [`@plurid/deon`][deon-javascript] | [npm](https://www.npmjs.com/package/@plurid/deon) | `npm install @plurid/deon` |
+| `Rust` | [`deon`][deon-rust] | [crates.io](https://crates.io/crates/deon) | `cargo add deon` |
+| `Python` | [`deon`][deon-python] | [PyPI](https://pypi.org/project/deon) | `pip install deon` |
+| `Go` | [`deon-go`][deon-go] | [pkg.go.dev](https://pkg.go.dev/github.com/plurid/deon/packages/deon-go) | `go get github.com/plurid/deon/packages/deon-go` |
+| `C` | [`deon-c`][deon-c] | source | `git clone` then `make` |
+| `Java` | [`deon-java`][deon-java] | [Maven Central](https://central.sonatype.com/artifact/com.plurid/deon) | Gradle / Maven |
+| `Swift` | [`deon-swift`][deon-swift] | Swift Package Manager | `.package(url: "https://github.com/plurid/deon", …)` |
 
-[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-grammar/vscode
+### Tooling
 
-
-
-<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon">
-    <img src="https://img.shields.io/npm/v/@plurid/deon.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
-</a>
-
-[@plurid/deon-javascript][deon-javascript] • `JavaScript` / `TypeScript` implementation
+| Tool | Package | Registry | Install | Command |
+| --- | --- | --- | --- | --- |
+| Command-line interface | [`@plurid/deon`][deon-javascript] | npm | `npm install -g @plurid/deon` | `deon` |
+| Language server (`LSP`) | [`@plurid/deon-lsp`][deon-lsp] | npm | `npm install -g @plurid/deon-lsp` | `deon-lsp` |
+| `Model Context Protocol` server | [`@plurid/deon-mcp`][deon-mcp] | npm | `npm install -g @plurid/deon-mcp` | `deon-mcp` |
+| `Visual Studio Code` extension | [`plurid.deon-grammar`][deon-grammar] | [Marketplace](https://marketplace.visualstudio.com/items?itemName=plurid.deon-grammar) · [Open VSX](https://open-vsx.org/extension/plurid/deon-grammar) | install from the editor | — |
 
 [deon-javascript]: https://github.com/plurid/deon/tree/master/packages/deon-javascript
-
-
-
-<a target="_blank" href="https://crates.io/crates/deon">
-    <img src="https://img.shields.io/crates/v/deon.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
-</a>
-
-[@plurid/deon-rust][deon-rust] • `Rust` implementation
-
 [deon-rust]: https://github.com/plurid/deon/tree/master/packages/deon-rust
-
-
-<a target="_blank" href="https://pypi.org/project/deon">
-    <img src="https://img.shields.io/pypi/v/deon.svg?logo=python&colorB=1380C3&style=for-the-badge" alt="PyPI">
-</a>
-
-[@plurid/deon-python][deon-python] • `Python` implementation
-
 [deon-python]: https://github.com/plurid/deon/tree/master/packages/deon-python
+[deon-go]: https://github.com/plurid/deon/tree/master/packages/deon-go
+[deon-c]: https://github.com/plurid/deon/tree/master/packages/deon-c
+[deon-java]: https://github.com/plurid/deon/tree/master/packages/deon-java
+[deon-swift]: https://github.com/plurid/deon/tree/master/packages/deon-swift
+[deon-lsp]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-lsp
+[deon-mcp]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-mcp
+[deon-grammar]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-grammar
+
+
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon"><img src="https://img.shields.io/npm/v/@plurid/deon.svg?logo=npm&label=%40plurid%2Fdeon&colorB=1380C3&style=for-the-badge" alt="npm @plurid/deon"></a>
+<a target="_blank" href="https://crates.io/crates/deon"><img src="https://img.shields.io/crates/v/deon.svg?logo=rust&label=deon&colorB=1380C3&style=for-the-badge" alt="crates.io deon"></a>
+<a target="_blank" href="https://pypi.org/project/deon"><img src="https://img.shields.io/pypi/v/deon.svg?logo=python&label=deon&colorB=1380C3&style=for-the-badge" alt="PyPI deon"></a>
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon-lsp"><img src="https://img.shields.io/npm/v/@plurid/deon-lsp.svg?logo=npm&label=deon-lsp&colorB=1380C3&style=for-the-badge" alt="npm @plurid/deon-lsp"></a>
+<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon-mcp"><img src="https://img.shields.io/npm/v/@plurid/deon-mcp.svg?logo=npm&label=deon-mcp&colorB=1380C3&style=for-the-badge" alt="npm @plurid/deon-mcp"></a>
+<a target="_blank" href="https://marketplace.visualstudio.com/items?itemName=plurid.deon-grammar"><img src="https://img.shields.io/visual-studio-marketplace/v/plurid.deon-grammar?logo=visualstudiocode&label=deon-grammar&colorB=1380C3&style=for-the-badge" alt="Visual Studio Code deon-grammar"></a>
 
 
 
-<a target="_blank" href="https://www.npmjs.com/package/@plurid/deon-mcp">
-    <img src="https://img.shields.io/npm/v/@plurid/deon-mcp.svg?logo=npm&colorB=1380C3&style=for-the-badge" alt="NPM">
-</a>
+## Publishing
 
-[@plurid/deon-mcp][deon-mcp-package] • `Model Context Protocol` server
+Publishing is manual and per-registry. The workflow at `.github/workflows/deon.yml` runs the full test matrix on every push — all seven implementations, the `LSP`, the `MCP` server, the documentation examples, and the cross-implementation harness — but it does **not** publish. The steps are: bump the version in the relevant manifest, confirm CI is green, then run the publish command for that registry.
 
-[deon-mcp-package]: https://github.com/plurid/deon/tree/master/packages/tooling/deon-mcp
+**`npm`** — three packages: `@plurid/deon`, `@plurid/deon-lsp`, `@plurid/deon-mcp`.
+
+``` bash
+cd packages/deon-javascript   && npm run build && npm publish --access public
+cd packages/tooling/deon-lsp  && npm run build && npm publish --access public
+cd packages/tooling/deon-mcp  && npm run build && npm publish --access public
+```
+
+**`PyPI`** — `deon`.
+
+``` bash
+cd packages/deon-python && python -m build && twine upload dist/*
+```
+
+**`crates.io`** — `deon`, which re-exports `deon-core`; publish the core crate first.
+
+``` bash
+cd packages/deon-rust && cargo publish -p deon-core && cargo publish -p deon
+```
+
+**Go modules** ([`pkg.go.dev`](https://pkg.go.dev)) — there is no upload; a module is published by tagging the commit, and `pkg.go.dev` indexes it on first request. Note: `packages/deon-go/go.mod` currently declares `module deon`, which is not `go get`-able — before the first publish it must become `module github.com/plurid/deon/packages/deon-go` (with the internal imports adjusted), after which the module is released by tagging `packages/deon-go/v0.0.0-11`.
+
+**`Maven Central`** — `Java`, at a coordinate such as `com.plurid:deon`. The `Java` package currently builds through a `Makefile`; Maven Central additionally requires a `pom.xml` (or `build.gradle`) declaring the coordinates, a sources jar and a javadoc jar, and `GPG` signing. That build tooling has to be added before the first publish.
+
+**Swift Package Manager** — `deon-swift`, which binds the `C` core. SwiftPM consumes a git URL and a tag rather than a registry upload. Note: `packages/deon-swift` has no `Package.swift` yet; one that exposes the `Deon` product over the `C` sources has to be added, and the commit tagged, before it can be imported with `.package(url: "https://github.com/plurid/deon", …)`.
+
+**`C`** — no central registry. `C` is distributed as source: clone the repository and run `make` in `packages/deon-c` to build `build/deon` (the CLI) and the static library. It can optionally be packaged for `vcpkg` or `Conan`.
+
+**`Visual Studio Code`** — the `deon-grammar` extension, published as `plurid.deon-grammar`.
+
+``` bash
+cd packages/tooling/deon-grammar/vscode-language-server
+vsce publish   # Visual Studio Marketplace
+ovsx publish   # Open VSX (VSCodium, Cursor, Windsurf, …)
+```
+
+Ready to publish as they stand: the three `npm` packages, `PyPI`, `crates.io`, and the `Visual Studio Code` extension. Needing a one-time setup first: `Go` (the module path), `Java` (the Maven build tooling), and `Swift` (a `Package.swift`); `C` ships as source with no registry step.
 
 
 
