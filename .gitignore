@@ -123,7 +123,7 @@ __pycache__
 
 
 
-### Swift Package Manager (root Package.swift) ###
-/.build/
-/Package.resolved
+### Swift Package Manager (packages/deon-swift) ###
+/packages/deon-swift/.build/
+/packages/deon-swift/Package.resolved
 .swiftpm/

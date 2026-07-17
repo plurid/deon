@@ -1802,7 +1802,7 @@ fn main() {
 | `Go` | [`deon-go`][deon-go] | [pkg.go.dev](https://pkg.go.dev/github.com/plurid/deon/packages/deon-go) | `go get github.com/plurid/deon/packages/deon-go` |
 | `C` | [`deon-c`][deon-c] | source | `git clone` then `make` |
 | `Java` | [`deon-java`][deon-java] | [Maven Central](https://central.sonatype.com/artifact/com.plurid/deon) | Gradle / Maven |
-| `Swift` | [`deon-swift`][deon-swift] | Swift Package Manager | `.package(url: "https://github.com/plurid/deon", …)` |
+| `Swift` | [`deon-swift`][deon-swift] | Swift Package Manager (local) | `.package(path: "…/packages/deon-swift")` |
 
 ### Tooling
 
@@ -1866,7 +1866,14 @@ cd packages/deon-rust && cargo publish -p deon-core && cargo publish -p deon
 mvn -f packages/deon-java/pom.xml deploy -Prelease
 ```
 
-**Swift Package Manager** — `deon-swift`, which binds the `C` core. The root [`Package.swift`](https://github.com/plurid/deon/blob/master/Package.swift) exposes the `Deon` library — it is declared at the repository root because SwiftPM will not reach a source file outside the package root, and the whole point is to compile the sibling `C` sources rather than copy them. Consumers add `.package(url: "https://github.com/plurid/deon", from: "…")` and `import Deon`. There is no registry upload; release it by tagging the commit.
+**Swift Package Manager** — `deon-swift`, which binds the `C` core, is a *local* SwiftPM package: it is consumed by a path dependency rather than a URL, so its manifest lives in the package directory ([`packages/deon-swift/Package.swift`](https://github.com/plurid/deon/blob/master/packages/deon-swift/Package.swift)) and the repository root stays clean. Because SwiftPM will not reference a target path outside the package root and the `C` sources are the sibling `deon-c`, `packages/deon-swift/Sources/CDeonImpl` is a symlink into `../../deon-c/source/deon` — SwiftPM follows it and compiles those sources in place, so there is no copy and no drift. A consuming Swift project depends on it by path and imports the `Deon` library:
+
+``` swift
+.package(path: "/absolute/path/to/deon/packages/deon-swift")
+// then, in a target: import Deon
+```
+
+There is no registry upload and it is not fetched from a URL; building from source with the `Makefile` (`make` in `packages/deon-swift`) is the other way to produce the library.
 
 **`C`** — no central registry. `C` is distributed as source: clone the repository and run `make` in `packages/deon-c` to build `build/deon` (the CLI) and the static library. It can optionally be packaged for `vcpkg` or `Conan`.
 
@@ -1878,7 +1885,7 @@ vsce publish   # Visual Studio Marketplace
 ovsx publish   # Open VSX (VSCodium, Cursor, Windsurf, …)
 ```
 
-Every package is set up to publish as it stands — the three `npm` packages, `PyPI`, `crates.io`, `Go`, `Swift`, and the `Visual Studio Code` extension by their commands above, and `Java` once a `GPG` key and a Central token are in place (both yours to supply). `C` ships as source, with no registry step.
+Every registry package is set up to publish as it stands — the three `npm` packages, `PyPI`, `crates.io`, `Go`, and the `Visual Studio Code` extension by their commands above, and `Java` once a `GPG` key and a Central token are in place (both yours to supply). `Swift` is a local path package rather than a registry one, and `C` ships as source.
 
 
 
